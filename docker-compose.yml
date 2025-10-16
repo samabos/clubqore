@@ -1,0 +1,73 @@
+version: "3.9"
+
+services:
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.le.acme.tlschallenge=true"
+      - "--certificatesresolvers.le.acme.email=your@email.com"
+      - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./letsencrypt:/letsencrypt"
+
+  db:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5431:5432"  # Add this line to expose PostgreSQL port
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@clubqore.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pgadmin.rule=Host(`db.example.com`)"
+      - "traefik.http.routers.pgadmin.entrypoints=websecure"
+      - "traefik.http.routers.pgadmin.tls.certresolver=le"
+      - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
+
+#  backend:
+#    build: ./backend
+#    environment:
+#      - PG_CONNECTION_STRING=postgres://user:password@db:5432/app
+#      - PORT=3000
+#    labels:
+#      - "traefik.enable=true"
+#      - "traefik.http.routers.backend.rule=Host(`api.example.com`)"
+#      - "traefik.http.routers.backend.entrypoints=websecure"
+#      - "traefik.http.routers.backend.tls.certresolver=le"
+
+#  frontend:
+#    build: ./frontend
+#    labels:
+#      - "traefik.enable=true"
+#      - "traefik.http.routers.frontend.rule=Host(`app.example.com`)"
+#      - "traefik.http.routers.frontend.entrypoints=websecure"
+#      - "traefik.http.routers.frontend.tls.certresolver=le"
+
+volumes:
+  db_data:
+  pgadmin_data:
