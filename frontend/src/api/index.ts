@@ -19,5 +19,8 @@ export * from './invites';
 // Accounts API (new)
 export * from './accounts';
 
+// Team Managers API
+export * from './teamManagers';
+
 // Base API client
 export { apiClient } from './base';

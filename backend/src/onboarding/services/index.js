@@ -6,3 +6,4 @@ export { ClubService } from './ClubService.js';
 export { InviteCodeService } from './InviteCodeService.js';
 export { AccountNumberService } from './AccountNumberService.js';
 export { RoleService } from './RoleService.js';
+export { TeamManagerService } from './TeamManagerService.js';

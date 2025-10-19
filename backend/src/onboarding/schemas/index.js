@@ -3,6 +3,7 @@ export { onboardingSchemas } from './onboardingSchemas.js';
 export { profileSchemas } from './profileSchemas.js';
 export { clubSchemas } from './clubSchemas.js';
 export { inviteSchemas, accountSchemas, commonPatterns } from './inviteAccountSchemas.js';
+export { createTeamManagerSchema, updateTeamManagerSchema, teamManagerParamsSchema } from './teamManagerSchemas.js';
 
 // Combined schema definitions for easy reference
 export const allSchemas = {

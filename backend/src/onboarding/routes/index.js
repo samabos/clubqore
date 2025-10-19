@@ -13,6 +13,7 @@ import { clubRoutes } from './clubRoutes.js';
 import { inviteRoutes } from './inviteRoutes.js';
 import { accountRoutes } from './accountRoutes.js';
 import { roleRoute } from './roleRoutes.js';
+import { registerTeamManagerRoutes } from './teamManagerRoutes.js';
 
 export async function registerOnboardingRoutes(fastify, options) {
   // Create authentication middleware
@@ -58,6 +59,11 @@ export async function registerOnboardingRoutes(fastify, options) {
 
   await fastify.register(roleRoute, { 
     prefix: '/roles',
+    authenticate
+  });
+
+  await fastify.register(registerTeamManagerRoutes, {
+    prefix: '',
     authenticate
   });
 };

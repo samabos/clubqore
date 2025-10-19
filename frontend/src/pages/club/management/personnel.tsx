@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -19,9 +20,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, Mail, Phone, User } from "lucide-react";
+import { Plus, Edit, Trash2, Mail, Phone, User, UserPlus } from "lucide-react";
 import { toast } from "@/utils/toast";
 import { useAppStore } from "@/store";
+import { CreateTeamManagerForm, TeamManagerList } from "@/components/teamManager";
 
 interface Personnel {
   userRoleId: number;
@@ -62,6 +64,8 @@ const PersonnelManagement: React.FC = () => {
     phone: "",
     avatar: "",
   });
+  const [showTeamManagerForm, setShowTeamManagerForm] = useState(false);
+  const [teamManagerRefreshTrigger, setTeamManagerRefreshTrigger] = useState(0);
 
   // Get club ID from user club context
   const clubId = userClub?.id;
@@ -260,6 +264,11 @@ const PersonnelManagement: React.FC = () => {
     );
   }
 
+  const handleTeamManagerSuccess = () => {
+    setShowTeamManagerForm(false);
+    setTeamManagerRefreshTrigger(prev => prev + 1);
+  };
+
   return (
     <>
       {/* Header */}
@@ -274,7 +283,49 @@ const PersonnelManagement: React.FC = () => {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <Tabs defaultValue="team-managers" className="space-y-6">
+        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+          <TabsTrigger value="team-managers">Team Managers</TabsTrigger>
+          <TabsTrigger value="personnel">Other Personnel</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="team-managers" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Team Managers (Coaches)
+              </h2>
+              <p className="text-sm text-gray-600">
+                Create and manage coach accounts with automatic login notifications
+              </p>
+            </div>
+
+            {!showTeamManagerForm && (
+              <Button 
+                onClick={() => setShowTeamManagerForm(true)} 
+                className="rounded-xl"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                Add Team Manager
+              </Button>
+            )}
+          </div>
+
+          {showTeamManagerForm ? (
+            <CreateTeamManagerForm
+              clubId={Number(clubId)}
+              onSuccess={handleTeamManagerSuccess}
+              onCancel={() => setShowTeamManagerForm(false)}
+            />
+          ) : (
+            <TeamManagerList 
+              clubId={Number(clubId)} 
+              refreshTrigger={teamManagerRefreshTrigger}
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="personnel" className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">
@@ -622,7 +673,8 @@ const PersonnelManagement: React.FC = () => {
             </form>
           </DialogContent>
         </Dialog>
-      </div>
+        </TabsContent>
+      </Tabs>
     </>
   );
 };

@@ -370,6 +370,210 @@ The ClubQore Team
 
     return await this.sendEmail({ to: email, subject, text, html });
   }
+
+  async sendTeamManagerWelcome({
+    to,
+    userName,
+    email,
+    temporaryPassword,
+    clubName,
+    clubManagerName,
+    accountNumber,
+    loginUrl
+  }) {
+    const subject = `Welcome to ${clubName} - Your Team Manager Account`;
+    
+    const text = `
+Hello ${userName},
+
+${clubManagerName} has created a Team Manager account for you at ${clubName}!
+
+Your Login Credentials:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Email: ${email}
+Temporary Password: ${temporaryPassword}
+Account Number: ${accountNumber}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Login URL: ${loginUrl}
+
+IMPORTANT: 
+1. Please login and change your password immediately
+2. You will be required to change your password on first login
+3. Keep your account number safe for support purposes
+
+What you can do as a Team Manager:
+• Manage team schedules and training sessions
+• Track member attendance and performance
+• Communicate with team members and parents
+• Access club resources and facilities
+• Create and manage events
+
+If you have any questions or didn't expect this account, please contact ${clubManagerName} or the club administrator.
+
+Best regards,
+The ClubQore Team
+    `.trim();
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+          line-height: 1.6; 
+          color: #333; 
+          background-color: #f5f5f5;
+        }
+        .container { 
+          max-width: 600px; 
+          margin: 0 auto; 
+          padding: 20px; 
+          background-color: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header { 
+          text-align: center; 
+          margin-bottom: 30px; 
+          padding: 20px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 8px;
+          color: white;
+        }
+        .credentials-box { 
+          background: #f8f9fa; 
+          border-left: 4px solid #667eea; 
+          padding: 20px; 
+          margin: 20px 0;
+          border-radius: 4px;
+        }
+        .credential-item {
+          margin: 10px 0;
+          font-family: 'Courier New', monospace;
+        }
+        .credential-label {
+          font-weight: bold;
+          color: #495057;
+        }
+        .credential-value {
+          color: #212529;
+          font-size: 16px;
+        }
+        .button { 
+          display: inline-block; 
+          padding: 14px 28px; 
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white; 
+          text-decoration: none; 
+          border-radius: 6px; 
+          margin: 20px 0;
+          font-weight: 600;
+        }
+        .security-notice { 
+          background: #fff3cd; 
+          border: 1px solid #ffeaa7; 
+          border-radius: 6px; 
+          padding: 15px; 
+          margin: 20px 0; 
+        }
+        .features-list {
+          background: #e7f3ff;
+          border-radius: 6px;
+          padding: 20px;
+          margin: 20px 0;
+        }
+        .features-list ul {
+          margin: 10px 0;
+          padding-left: 20px;
+        }
+        .features-list li {
+          margin: 8px 0;
+        }
+        .footer { 
+          margin-top: 30px; 
+          padding-top: 20px;
+          border-top: 1px solid #dee2e6;
+          font-size: 14px; 
+          color: #6c757d;
+          text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="margin: 0;">🎉 Welcome to ${clubName}!</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Your Team Manager Account is Ready</p>
+        </div>
+        
+        <p>Hello <strong>${userName}</strong>,</p>
+        
+        <p>${clubManagerName} has created a Team Manager account for you at <strong>${clubName}</strong>!</p>
+        
+        <div class="credentials-box">
+            <h3 style="margin-top: 0;">🔐 Your Login Credentials</h3>
+            <div class="credential-item">
+                <span class="credential-label">Email:</span><br>
+                <span class="credential-value">${email}</span>
+            </div>
+            <div class="credential-item">
+                <span class="credential-label">Temporary Password:</span><br>
+                <span class="credential-value">${temporaryPassword}</span>
+            </div>
+            <div class="credential-item">
+                <span class="credential-label">Account Number:</span><br>
+                <span class="credential-value">${accountNumber}</span>
+            </div>
+        </div>
+        
+        <div style="text-align: center;">
+            <a href="${loginUrl}" class="button">Login to Your Account</a>
+        </div>
+        
+        <div class="security-notice">
+            <p style="margin-top: 0;"><strong>⚠️ Important Security Steps:</strong></p>
+            <ol style="margin: 10px 0; padding-left: 20px;">
+                <li>Login with the credentials above</li>
+                <li>You will be required to change your password immediately</li>
+                <li>Keep your account number safe for support purposes</li>
+                <li>Enable two-factor authentication (recommended)</li>
+            </ol>
+        </div>
+        
+        <div class="features-list">
+            <h3 style="margin-top: 0;">✨ What You Can Do as a Team Manager:</h3>
+            <ul>
+                <li>📅 Manage team schedules and training sessions</li>
+                <li>📊 Track member attendance and performance</li>
+                <li>💬 Communicate with team members and parents</li>
+                <li>📚 Access club resources and facilities</li>
+                <li>🎯 Create and manage events</li>
+                <li>📈 View team analytics and reports</li>
+            </ul>
+        </div>
+        
+        <p style="background: #f8f9fa; padding: 15px; border-radius: 6px;">
+            <strong>Need Help?</strong><br>
+            If you have any questions or didn't expect this account, please contact 
+            <strong>${clubManagerName}</strong> or the club administrator.
+        </p>
+        
+        <div class="footer">
+            <p>Best regards,<br><strong>The ClubQore Team</strong></p>
+            <p style="font-size: 12px; color: #adb5bd; margin-top: 10px;">
+                This is an automated email. Please do not reply to this message.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+    `.trim();
+
+    return await this.sendEmail({ to, subject, text, html });
+  }
 }
 
 // Export singleton instance
