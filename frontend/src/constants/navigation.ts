@@ -8,6 +8,7 @@ import {
   CheckCircle, 
   Baby,
   User,
+  UserCog,
 } from "lucide-react";
 import { MenuItem } from "../types/user";
 import { UserRole } from "../types/auth";
@@ -26,8 +27,9 @@ export const menuItemsByRole: Record<UserRole, MenuItem[]> = {
   ],
   club_manager: [
     { id: "dashboard", label: "Dashboard", icon: Home, link: "/app/club-manager-dashboard" },
-    { id: "club", label: "Club Management", icon: Building2, link: "club/setup" },
-    { id: "club-members", label: "Club Members", icon: Users, link: "club/members" },
+    { id: "club", label: "Club Management", icon: Building2, link: "/app/club/setup" },
+    { id: "personnel", label: "Personnel", icon: UserCog, link: "/app/club/personnel" },
+    { id: "club-members", label: "Club Members", icon: Users, link: "/app/club/members" },
     { id: "member-management", label: "Member Management", icon: Users, link: "/app/members" },
     { id: "billing", label: "Club Billing", icon: CreditCard, link: "/billing" },
     { id: "communication", label: "Communication", icon: MessageSquare, link: "/communication" },

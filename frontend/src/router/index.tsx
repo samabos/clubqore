@@ -16,6 +16,7 @@ import { MembersLayout } from "../components/members";
 import ClubSetupPage from "../pages/club/management";
 import ClubMemberPage from "../pages/club/member/index";
 import ManageMemberPage from "../pages/club/member/manageMember";
+import PersonnelManagement from "../pages/club/management/personnel";
 
 export const router = createBrowserRouter([
   {
@@ -81,6 +82,10 @@ export const router = createBrowserRouter([
       {
         path: "club/setup",
         element: <ClubSetupPage />,
+      },
+      {
+        path: "club/personnel",
+        element: <PersonnelManagement />,
       },
       {
         path: "club/members",
