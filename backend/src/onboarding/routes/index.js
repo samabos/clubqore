@@ -12,7 +12,7 @@ import { profileRoutes } from './profileRoutes.js';
 import { clubRoutes } from './clubRoutes.js';
 import { inviteRoutes } from './inviteRoutes.js';
 import { accountRoutes } from './accountRoutes.js';
-import { roleRoute } from './roleRoutes.js';
+import { roleRoutes } from './roleRoutes.js';
 import { registerTeamManagerRoutes } from './teamManagerRoutes.js';
 
 export async function registerOnboardingRoutes(fastify, options) {
@@ -57,7 +57,7 @@ export async function registerOnboardingRoutes(fastify, options) {
     authenticate
   });
 
-  await fastify.register(roleRoute, { 
+  await fastify.register(roleRoutes, { 
     prefix: '/roles',
     authenticate
   });
