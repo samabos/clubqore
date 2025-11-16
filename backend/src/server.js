@@ -20,6 +20,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { authRoutes } from './auth/index.js';
 import { registerOnboardingRoutes } from './onboarding/routes/index.js';
+import { registerClubRoutes } from './club/routes/index.js';
 import dbConnector from './db/connector.js';
 import { config, validateConfig } from './config/index.js';
 
@@ -124,6 +125,9 @@ async function createServer() {
   // Register routes
   console.log('🔐 Registering auth routes...');
   await fastify.register(authRoutes);
+
+  console.log('🏢 Registering club routes...');
+  await fastify.register(registerClubRoutes);
 
   console.log('🎯 Registering onboarding routes...');
   await fastify.register(registerOnboardingRoutes);

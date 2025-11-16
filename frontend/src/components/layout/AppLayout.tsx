@@ -25,8 +25,8 @@ import {
   getRoleColor,
   getRoleDisplayName,
 } from "../../utils/roleHelpers";
-import { useAuth, useResponsive } from "../../hooks";
 import { useAppStore } from "../../store";
+import { useAuth } from "../../stores/authStore";
 import { useLocation } from "react-router-dom";
 import type { MenuItem } from "../../types/user";
 import type { UserRoleInfo, UserRole } from "../../types/auth";
@@ -36,17 +36,45 @@ export function AppLayout() {
   // Initialize navigation in the store
   useNavigationSetup();
 
-  const { user, currentRole } = useAuth();
-  const { isMobile } = useResponsive();
+  const { isMobile } = useAppStore();
+  const { user, signOut, currentRole } = useAuth(); // Get user and currentRole from auth store
   const location = useLocation();
 
-  const { handleRoleChange, handleLogout } = useAppStore();
+  // Handle role changes for users with multiple roles
+  const handleRoleChange = (role: UserRole) => {
+    // TODO: Implement role switching in auth store
+    console.log("Role change requested:", role);
+  };
 
-  // Get current active menu item based on pathname
-  const getCurrentMenuItem = (menuItems: MenuItem[]) => {
-    return (
-      menuItems.find((item) => item.link === location.pathname) || menuItems[0]
-    );
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  // Get current active menu item based on pathname (including submenus)
+  const getCurrentMenuItem = (menuItems: MenuItem[]): MenuItem | null => {
+    for (const item of menuItems) {
+      // Check if this item matches the current path
+      if (item.link === location.pathname) {
+        return item;
+      }
+
+      // Check if any child item matches the current path
+      if (item.children) {
+        const matchingChild = item.children.find(
+          (child) => child.link === location.pathname
+        );
+        if (matchingChild) {
+          return item; // Return the parent item for submenus
+        }
+      }
+    }
+
+    // Return the first item as fallback
+    return menuItems[0] || null;
   };
 
   const menuItems = user
@@ -73,7 +101,7 @@ export function AppLayout() {
                   {/* SidebarTrigger would go here */}
                 </div>
 
-                <div className="hidden lg:block border-l border-gray-200 pl-4">
+                <div className="hidden lg:block">
                   <h1 className="text-xl font-semibold text-gray-900">
                     {getCurrentMenuItem(menuItems)?.label || "Dashboard"}
                   </h1>
@@ -108,47 +136,6 @@ export function AppLayout() {
                             </div>
                           </SelectItem>
                         ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {/* Demo Role Switcher - Show only when no real user is logged in */}
-                {!user && (
-                  <div className="hidden lg:flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Demo Role:</span>
-                    <Select
-                      value={currentRole}
-                      onValueChange={handleRoleChange}
-                    >
-                      <SelectTrigger className="w-[160px] rounded-xl border-gray-200">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        <SelectItem value="admin">
-                          <div className="flex items-center gap-2">
-                            {getRoleIcon("admin")}
-                            Admin
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="club_manager">
-                          <div className="flex items-center gap-2">
-                            {getRoleIcon("club_manager")}
-                            Club Manager
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="member">
-                          <div className="flex items-center gap-2">
-                            {getRoleIcon("member")}
-                            Member
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="parent">
-                          <div className="flex items-center gap-2">
-                            {getRoleIcon("parent")}
-                            Parent
-                          </div>
-                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -220,7 +207,7 @@ export function AppLayout() {
 
           {/* Main Content */}
           <div className="flex-1 p-4 lg:p-6 bg-gray-50 pb-20 lg:pb-6">
-            <div className="max-w-7xl mx-auto">
+            <div className="items-center justify-center gap-2 lg:gap-4 mx-4">
               {/* Mobile Page Title */}
               {isMobile && (
                 <div className="mb-6">

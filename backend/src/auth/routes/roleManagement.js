@@ -38,51 +38,8 @@ export function roleManagementRoutes(fastify, controller, authenticate) {
     preHandler: authenticate
   }, controller.getUserRoles.bind(controller));
 
-  // PUT /users/roles - Update user's primary role
-  fastify.put('/users/roles', {
-    schema: {
-      description: 'Update user\'s primary role',
-      tags: ['users'],
-      security: [{ bearerAuth: [] }],
-      body: {
-        type: 'object',
-        required: ['primaryRole'],
-        properties: {
-          primaryRole: { 
-            type: 'string',
-            enum: ['member', 'parent', 'club_manager', 'admin'],
-            description: 'New primary role for the user'
-          }
-        }
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            message: { type: 'string' },
-            user: {
-              type: 'object',
-              properties: {
-                id: { type: 'integer' },
-                primaryRole: { type: 'string' },
-                roles: { 
-                  type: 'array', 
-                  items: { type: 'string' }
-                }
-              }
-            }
-          }
-        },
-        400: errorResponse,
-        401: errorResponse,
-        403: errorResponse
-      }
-    },
-    preHandler: authenticate
-  }, controller.updateUserRole.bind(controller));
-
   // POST /users/roles/assign - Assign new role to user (admin only)
-  fastify.post('/users/roles/assign', {
+  /** fastify.post('/users/roles/assign', {
     schema: {
       description: 'Assign new role to user (admin only)',
       tags: ['users'],
@@ -127,4 +84,5 @@ export function roleManagementRoutes(fastify, controller, authenticate) {
     },
     preHandler: authenticate
   }, controller.assignUserRole.bind(controller));
+  */
 }

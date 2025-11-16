@@ -1,7 +1,7 @@
 import { AccountNumberService } from './AccountNumberService.js';
 import { UserProfileService } from './UserProfileService.js';
 import { UserPreferencesService } from './UserPreferencesService.js';
-import { ClubService } from './ClubService.js';
+import { ClubService } from '../../club/services/ClubService.js';
 import { InviteCodeService } from './InviteCodeService.js';
 import { ValidationUtils, AccountUtils, ChildUtils } from '../utils/index.js';
 
@@ -184,7 +184,7 @@ export class UserRoleService {
 
         // Determine available roles (roles user doesn't have yet)
         const existingRoles = accounts.map(a => a.role);
-        const allRoles = ['club_manager', 'club_coach', 'member', 'parent'];
+        const allRoles = ['club_manager', 'team_manager', 'staff', 'member', 'parent'];
         const availableRoles = allRoles.filter(role => {
           if (role === 'member') return true; // Users can be members of multiple clubs
           return !existingRoles.includes(role);

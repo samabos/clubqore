@@ -11,23 +11,6 @@ export class EmailService {
     if (this.initialized) return;
 
     try {
-      // In test environment, use a mock transporter to avoid network calls
-      // But allow override with USE_REAL_EMAIL=true for frontend testing
-      if (process.env.NODE_ENV === 'test' && process.env.USE_REAL_EMAIL !== 'true') {
-        this.transporter = {
-          sendMail: async () => ({
-            messageId: 'test-message-id',
-            accepted: ['test@example.com'],
-            rejected: [],
-            envelope: { from: 'test@example.com', to: ['test@example.com'] }
-          }),
-          verify: async () => true
-        };
-        console.log('📧 Using mock email service for tests');
-        this.initialized = true;
-        return;
-      }
-
       // Configure based on environment
       if (config.email.provider === 'gmail') {
         this.transporter = nodemailer.createTransport({
@@ -378,7 +361,6 @@ The ClubQore Team
     temporaryPassword,
     clubName,
     clubManagerName,
-    accountNumber,
     loginUrl
   }) {
     const subject = `Welcome to ${clubName} - Your Team Manager Account`;
@@ -392,7 +374,6 @@ Your Login Credentials:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Email: ${email}
 Temporary Password: ${temporaryPassword}
-Account Number: ${accountNumber}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Login URL: ${loginUrl}
@@ -523,10 +504,6 @@ The ClubQore Team
                 <span class="credential-label">Temporary Password:</span><br>
                 <span class="credential-value">${temporaryPassword}</span>
             </div>
-            <div class="credential-item">
-                <span class="credential-label">Account Number:</span><br>
-                <span class="credential-value">${accountNumber}</span>
-            </div>
         </div>
         
         <div style="text-align: center;">
@@ -566,6 +543,80 @@ The ClubQore Team
             <p style="font-size: 12px; color: #adb5bd; margin-top: 10px;">
                 This is an automated email. Please do not reply to this message.
             </p>
+        </div>
+    </div>
+</body>
+</html>
+    `.trim();
+
+    return await this.sendEmail({ to, subject, text, html });
+  }
+
+  async sendMemberWelcome({
+    to,
+    userName,
+    email,
+    temporaryPassword,
+    accountNumber,
+    loginUrl
+  }) {
+    const subject = `Welcome to ClubQore - Your Account Details`;
+
+    const text = `
+Hello ${userName},
+
+Your ClubQore account has been created.
+
+Your Login Credentials:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Email: ${email}
+${temporaryPassword ? `Temporary Password: ${temporaryPassword}\n` : ''}Account Number: ${accountNumber}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Login URL: ${loginUrl}
+
+IMPORTANT:
+1. Please login and change your password immediately
+2. You may be required to change your password on first login
+
+Best regards,
+The ClubQore Team
+    `.trim();
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 24px; padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border-radius: 8px; }
+        .credentials-box { background: #f8f9fa; border-left: 4px solid #667eea; padding: 16px; margin: 16px 0; border-radius: 4px; }
+        .label { font-weight: 600; color: #495057; }
+        .value { font-family: 'Courier New', monospace; color: #212529; }
+        .button { display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; text-decoration: none; border-radius: 6px; margin: 16px 0; font-weight: 600; }
+        .footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid #dee2e6; font-size: 14px; color: #6c757d; text-align: center; }
+    </style>
+    </head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2 style="margin:0;">Welcome to ClubQore</h2>
+        </div>
+        <p>Hello <strong>${userName}</strong>,</p>
+        <p>Your ClubQore account has been created.</p>
+        <div class="credentials-box">
+            <div><span class="label">Email:</span><br><span class="value">${email}</span></div>
+            ${temporaryPassword ? `<div style="margin-top:8px;"><span class="label">Temporary Password:</span><br><span class="value">${temporaryPassword}</span></div>` : ''}
+            <div style="margin-top:8px;"><span class="label">Account Number:</span><br><span class="value">${accountNumber}</span></div>
+        </div>
+        <div style="text-align:center;">
+            <a href="${loginUrl}" class="button">Login to Your Account</a>
+        </div>
+        <div class="footer">
+            <p>Best regards,<br><strong>The ClubQore Team</strong></p>
+            <p style="font-size: 12px; color: #adb5bd; margin-top: 10px;">This is an automated email. Please do not reply.</p>
         </div>
     </div>
 </body>

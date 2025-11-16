@@ -9,6 +9,9 @@ export function createAuthMiddleware(db) {
     
     const authHeader = request.headers.authorization;
     console.log(`🔐 Auth header: ${authHeader ? 'Present' : 'Missing'}`);
+    if (authHeader) {
+      console.log(`🔐 Auth header value: ${authHeader.substring(0, 20)}...`);
+    }
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log(`❌ Auth failed: Missing or invalid authorization header`);

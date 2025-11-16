@@ -16,9 +16,17 @@ import {
 } from "../ui/sheet";
 import { MenuItem } from "../../types/user";
 import { AuthUser } from "../../types/auth";
-import { useAppStore } from "../../store";
+import { useAuth } from "../../stores/authStore";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, User, Settings, LogOut, ChevronDown } from "lucide-react";
+import {
+  Menu,
+  User,
+  Settings,
+  LogOut,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
+import { useState } from "react";
 
 interface MobileNavigationProps {
   currentUser: AuthUser;
@@ -29,9 +37,113 @@ export function MobileNavigation({
   currentUser,
   menuItems,
 }: MobileNavigationProps) {
-  const { handleLogout } = useAppStore();
+  const { signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  const toggleMenu = (menuId: string) => {
+    setExpandedMenus((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(menuId)) {
+        newSet.delete(menuId);
+      } else {
+        newSet.add(menuId);
+      }
+      return newSet;
+    });
+  };
+
+  const isMenuExpanded = (menuId: string) => expandedMenus.has(menuId);
+
+  const isMenuItemActive = (item: MenuItem): boolean => {
+    if (item.link && location.pathname === item.link) {
+      return true;
+    }
+    if (item.children) {
+      return item.children.some((child) => isMenuItemActive(child));
+    }
+    return false;
+  };
+
+  const renderMenuItem = (item: MenuItem, isInSheet = false) => {
+    const isActive = isMenuItemActive(item);
+    const hasChildren = item.children && item.children.length > 0;
+    const isExpanded = isMenuExpanded(item.id);
+
+    if (hasChildren) {
+      return (
+        <div key={item.id} className="space-y-1">
+          <Button
+            variant={isActive ? "default" : "ghost"}
+            onClick={() => toggleMenu(item.id)}
+            className={`w-full justify-between px-4 py-3 rounded-xl ${
+              isActive
+                ? "gradient-primary text-white"
+                : "text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <item.icon className="w-5 h-5" />
+              {item.label}
+            </div>
+            {isExpanded ? (
+              <ChevronDown className="w-4 h-4" />
+            ) : (
+              <ChevronRight className="w-4 h-4" />
+            )}
+          </Button>
+          {isExpanded && (
+            <div className="ml-4 space-y-1">
+              {item.children!.map((child) => {
+                const isChildActive = location.pathname === child.link;
+                return (
+                  <Button
+                    key={child.id}
+                    variant={isChildActive ? "default" : "ghost"}
+                    onClick={() => navigate(child.link!)}
+                    className={`w-full justify-start px-4 py-2 rounded-lg ${
+                      isChildActive
+                        ? "bg-primary/20 text-primary border-l-2 border-primary"
+                        : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    <child.icon className="w-4 h-4 mr-3" />
+                    {child.label}
+                  </Button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <Button
+        key={item.id}
+        variant={isActive ? "default" : "ghost"}
+        onClick={() => navigate(item.link!)}
+        className={`w-full justify-start px-4 py-3 rounded-xl ${
+          isActive
+            ? "gradient-primary text-white"
+            : "text-gray-700 hover:bg-gray-100"
+        }`}
+      >
+        <item.icon className="w-5 h-5 mr-3" />
+        {item.label}
+      </Button>
+    );
+  };
 
   return (
     <>
@@ -108,24 +220,7 @@ export function MobileNavigation({
 
                 <div className="p-4">
                   <nav className="space-y-2">
-                    {menuItems.map((item) => {
-                      const isActive = location.pathname === item.link;
-                      return (
-                        <Button
-                          key={item.id}
-                          variant={isActive ? "default" : "ghost"}
-                          onClick={() => navigate(item.link)}
-                          className={`w-full justify-start px-4 py-3 rounded-xl ${
-                            isActive
-                              ? "gradient-primary text-white"
-                              : "text-gray-700 hover:bg-gray-100"
-                          }`}
-                        >
-                          <item.icon className="w-5 h-5 mr-3" />
-                          {item.label}
-                        </Button>
-                      );
-                    })}
+                    {menuItems.map((item) => renderMenuItem(item, true))}
                   </nav>
                 </div>
               </SheetContent>
@@ -138,19 +233,26 @@ export function MobileNavigation({
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
         <div className="grid grid-cols-4 gap-1 p-2">
           {menuItems.slice(0, 4).map((item) => {
-            const isActive = location.pathname === item.link;
+            const isActive = isMenuItemActive(item);
+            const hasChildren = item.children && item.children.length > 0;
+
+            // For bottom navigation, if item has children, show the first child
+            const targetItem = hasChildren ? item.children![0] : item;
+
             return (
               <Button
                 key={item.id}
                 variant="ghost"
-                onClick={() => navigate(item.link)}
+                onClick={() => navigate(targetItem.link!)}
                 className={`flex flex-col items-center gap-1 h-auto py-3 px-2 rounded-xl ${
                   isActive ? "text-primary bg-primary/10" : "text-gray-600"
                 }`}
               >
-                <item.icon className="w-5 h-5" />
+                <targetItem.icon className="w-5 h-5" />
                 <span className="text-xs font-medium truncate">
-                  {item.label.split(" ")[0]}
+                  {hasChildren
+                    ? item.label.split(" ")[0]
+                    : item.label.split(" ")[0]}
                 </span>
                 {isActive && (
                   <div className="w-1 h-1 bg-primary rounded-full"></div>

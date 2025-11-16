@@ -1,27 +1,11 @@
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 import { SidebarTrigger } from "../ui/sidebar";
-import { UserRole, MenuItem } from "@/types/user";
-import { AuthUser } from "@/types/auth";
+import { MenuItem } from "@/types/user";
+import { AuthUser, UserRole } from "@/types/auth";
 import { getRoleIcon, getRoleColor } from "@/utils/roleHelpers";
-import {
-  Search,
-  Bell,
-  Settings,
-  ChevronDown,
-  ArrowLeft,
-  Shield,
-  Building2,
-  Trophy,
-} from "lucide-react";
+import { Search, Bell, Settings, ChevronDown, ArrowLeft } from "lucide-react";
 
 interface AppHeaderProps {
   currentUser: AuthUser;
@@ -29,7 +13,6 @@ interface AppHeaderProps {
   activeView: string;
   menuItems: MenuItem[];
   onBackToLanding: () => void;
-  onRoleChange: (role: UserRole) => void;
 }
 
 export function AppHeader({
@@ -38,7 +21,6 @@ export function AppHeader({
   activeView,
   menuItems,
   onBackToLanding,
-  onRoleChange,
 }: AppHeaderProps) {
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm hidden lg:block">
@@ -73,35 +55,19 @@ export function AppHeader({
         </div>
 
         <div className="flex items-center gap-2 lg:gap-4">
-          {/* Role Switcher (Demo purposes) - Hidden on mobile */}
-          <div className="hidden lg:flex items-center gap-2">
-            <span className="text-sm text-gray-600">Demo Role:</span>
-            <Select value={userRole} onValueChange={onRoleChange}>
-              <SelectTrigger className="w-[160px] rounded-xl border-gray-200">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                <SelectItem value="admin">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4" />
-                    Admin
-                  </div>
-                </SelectItem>
-                <SelectItem value="club_manager">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4" />
-                    Club Manager
-                  </div>
-                </SelectItem>
-                <SelectItem value="member">
-                  <div className="flex items-center gap-2">
-                    <Trophy className="w-4 h-4" />
-                    Member
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Current Role Badge */}
+          <Badge
+            variant="outline"
+            className={`text-xs px-2 py-1 rounded-lg ${getRoleColor(
+              userRole
+            )} hidden lg:flex items-center gap-1`}
+          >
+            {getRoleIcon(userRole)}
+            {userRole === "club_manager" && "Club Manager"}
+            {userRole === "admin" && "Admin"}
+            {userRole === "member" && "Member"}
+            {userRole === "parent" && "Parent"}
+          </Badge>
 
           {/* Search - Responsive */}
           <div className="relative hidden md:block">

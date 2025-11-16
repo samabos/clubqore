@@ -20,7 +20,6 @@ export class UserCreationUtils {
       .insert({
         email: userData.email,
         password: hashedPassword,
-        primary_role: userData.primaryRole || 'member',
         email_verified: userData.emailVerified || false,
         is_onboarded: userData.isOnboarded || false,
         onboarding_completed_at: userData.isOnboarded ? new Date() : null,
@@ -43,7 +42,6 @@ export class UserCreationUtils {
       .insert({
         email: `${parentUserId}.${Date.now()}@child.local`,
         password: 'temp_password',
-        primary_role: 'member',
         email_verified: false,
         is_onboarded: false,
         created_at: new Date(),

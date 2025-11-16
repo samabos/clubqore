@@ -156,16 +156,16 @@ export const profileAPI = {
     return result.preferences;
   },
 
-  // Upload and set user avatar
-  setAvatar: async (avatarUrl: string): Promise<{ success: boolean; avatarUrl: string }> => {
+  // Upload and set user avatar (base64 data)
+  setAvatar: async (avatarData: string): Promise<{ success: boolean; avatar_url: string }> => {
     const response = await apiClient('/profile/avatar', {
       method: 'POST',
-      body: JSON.stringify({ avatarUrl }),
+      body: JSON.stringify({ avatarData }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'Failed to set avatar');
+      throw new Error(error.message || 'Failed to set avatar');
     }
 
     return response.json();

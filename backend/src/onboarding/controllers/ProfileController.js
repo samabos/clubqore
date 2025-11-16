@@ -89,24 +89,40 @@ export class ProfileController {
 
   /**
    * POST /api/profile/avatar
-   * Upload and set user avatar
+   * Upload and set user avatar (base64 data)
    */
   async uploadAvatar(request, reply) {
     try {
       const userId = request.user.id;
-      
-      // Handle file upload (this would typically use a file upload middleware)
-      // For now, we'll expect the avatar URL to be provided
-      const { avatarUrl } = request.body;
+      const { avatarData } = request.body;
 
-      if (!avatarUrl) {
+      if (!avatarData) {
         return reply.code(400).send({
           success: false,
-          message: 'Avatar URL is required'
+          message: 'Avatar data is required'
         });
       }
 
-      const result = await this.onboardingService.uploadAvatar(userId, avatarUrl);
+      // Validate base64 data format
+      if (!avatarData.startsWith('data:image/')) {
+        return reply.code(400).send({
+          success: false,
+          message: 'Invalid avatar format. Expected base64 image data.'
+        });
+      }
+
+      // Check file size (limit to 2MB for base64)
+      const base64Size = (avatarData.length * 3) / 4;
+      const maxSize = 2 * 1024 * 1024; // 2MB
+      
+      if (base64Size > maxSize) {
+        return reply.code(400).send({
+          success: false,
+          message: 'Avatar file too large. Maximum size is 2MB.'
+        });
+      }
+
+      const result = await this.onboardingService.uploadAvatar(userId, avatarData);
       
       reply.code(200).send(result);
     } catch (error) {

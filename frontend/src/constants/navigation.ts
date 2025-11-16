@@ -9,6 +9,8 @@ import {
   Baby,
   User,
   UserCog,
+  Settings,
+  Shield,
 } from "lucide-react";
 import { MenuItem } from "../types/user";
 import { UserRole } from "../types/auth";
@@ -17,7 +19,17 @@ export const menuItemsByRole: Record<UserRole, MenuItem[]> = {
   admin: [
     { id: "dashboard", label: "Dashboard", icon: Home, link: "/app/admin-dashboard" },
     { id: "members", label: "Member Management", icon: Users, link: "/app/members" },
-    { id: "clubs", label: "Club Management", icon: Building2, link: "/clubs" },
+    { 
+      id: "clubs", 
+      label: "Club Management", 
+      icon: Building2, 
+      children: [
+        { id: "club-details", label: "Club Details", icon: Settings, link: "/clubs" },
+        { id: "club-personnel", label: "Personnel", icon: UserCog, link: "/app/club/personnel" },
+        { id: "club-members", label: "Club Members", icon: Users, link: "/app/club/members" },
+        { id: "club-teams", label: "Teams", icon: Shield, link: "/app/teams" },
+      ]
+    },
     { id: "billing", label: "Billing & Payments", icon: CreditCard, link: "/billing" },
     { id: "communication", label: "Communication", icon: MessageSquare, link: "/communication" },
     { id: "calendar", label: "Calendar", icon: Calendar, link: "/calendar" },
@@ -27,15 +39,23 @@ export const menuItemsByRole: Record<UserRole, MenuItem[]> = {
   ],
   club_manager: [
     { id: "dashboard", label: "Dashboard", icon: Home, link: "/app/club-manager-dashboard" },
-    { id: "club", label: "Club Management", icon: Building2, link: "/app/club/setup" },
-    { id: "personnel", label: "Personnel", icon: UserCog, link: "/app/club/personnel" },
-    { id: "club-members", label: "Club Members", icon: Users, link: "/app/club/members" },
-    { id: "member-management", label: "Member Management", icon: Users, link: "/app/members" },
+    { 
+      id: "club", 
+      label: "Club Management", 
+      icon: Building2, 
+      children: [
+        { id: "club-details", label: "Club Details", icon: Settings, link: "/app/club/setup" },
+        { id: "club-personnel", label: "Personnel", icon: UserCog, link: "/app/club/personnel" },
+        { id: "club-members", label: "Members", icon: Users, link: "/app/club/members" },
+        { id: "club-teams", label: "Teams", icon: Shield, link: "/app/teams" },
+      ]
+    },
+   /* { id: "member-management", label: "Member Management", icon: Users, link: "/app/members" },
     { id: "billing", label: "Club Billing", icon: CreditCard, link: "/billing" },
     { id: "communication", label: "Communication", icon: MessageSquare, link: "/communication" },
     { id: "calendar", label: "Calendar", icon: Calendar, link: "/calendar" },
     { id: "attendance", label: "Attendance", icon: CheckCircle, link: "/attendance" },
-    { id: "profile", label: "Profile", icon: User, link: "/profile" },
+    { id: "profile", label: "Profile", icon: User, link: "/profile" },*/
   ],
   member: [
     { id: "dashboard", label: "Dashboard", icon: Home, link: "/app/member-dashboard" },

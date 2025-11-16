@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAppStore } from "../store";
-import { getDefaultRouteByRole, getPrimaryRole } from "../utils/roleNavigation";
-import { authAPI } from "../api/auth";
+import { useAuth } from "../stores/authStore";
+import { getDefaultRouteByRole } from "../utils/roleNavigation";
 import { onboardingAPI } from "../api/onboarding";
 import {
   UserRole,
@@ -33,7 +32,7 @@ interface OnboardingData {
 
 export function useOnboarding() {
   const navigate = useNavigate();
-  const { user, handleLogin } = useAppStore();
+  const { user , getCurrentUser } = useAuth();
   
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -196,12 +195,10 @@ export function useOnboarding() {
       await onboardingAPI.completeOnboarding(apiData as any);
 
       // Get updated user profile from backend
-      const currentUser = await authAPI.getCurrentUser();
-      handleLogin(currentUser);
+      await getCurrentUser();
 
-      // Navigate to role-specific dashboard
-      const userRole = getPrimaryRole(currentUser);
-      const defaultRoute = getDefaultRouteByRole(userRole);
+      // Navigate to role-specific dashboard - user will be updated in store
+      const defaultRoute = getDefaultRouteByRole(user!.roles);
       navigate(defaultRoute);
       setIsLoading(false);
     } catch (error: any) {

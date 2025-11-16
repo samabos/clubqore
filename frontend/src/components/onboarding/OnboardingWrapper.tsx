@@ -1,21 +1,17 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { OnboardingFlow } from "./OnboardingFlow";
-import { useAppStore } from "../../store";
-import {
-  getDefaultRouteByRole,
-  getPrimaryRole,
-} from "../../utils/roleNavigation";
+import { useAuth } from "../../stores/authStore";
+import { getDefaultRouteByRole } from "../../utils/roleNavigation";
 
 export function OnboardingWrapper() {
   const navigate = useNavigate();
-  const { user } = useAppStore();
+  const { user } = useAuth();
 
   useEffect(() => {
     // If user is already onboarded, redirect to role-specific dashboard
     if (user?.isOnboarded) {
-      const userRole = getPrimaryRole(user);
-      const defaultRoute = getDefaultRouteByRole(userRole);
+      const defaultRoute = getDefaultRouteByRole(user.roles);
       navigate(defaultRoute);
       return;
     }

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { emailVerificationAPI } from "../api/auth";
-import { useAppStore } from "../store";
-import { getDefaultRouteByRole, getPrimaryRole } from "../utils/roleNavigation";
+import { emailVerificationAPI } from "../api/emailVerification";
+import { useAuth } from "../stores/authStore";
+import { getDefaultRouteByRole } from "../utils/roleNavigation";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { CheckCircle, AlertCircle, Loader } from "lucide-react";
 import { Button } from "./ui/button";
@@ -10,7 +10,7 @@ import { Button } from "./ui/button";
 export function EmailVerificationCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { handleLogin } = useAppStore();
+  const { getCurrentUser } = useAuth();
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading"
   );
@@ -33,16 +33,15 @@ export function EmailVerificationCallback() {
         setStatus("success");
         setMessage("Email verified successfully!");
 
-        // Update user in store
-        handleLogin(updatedUser);
+        // Refresh user data in store
+        await getCurrentUser();
 
         // Redirect to onboarding if not completed, otherwise to role-specific dashboard
         setTimeout(() => {
           if (!updatedUser.isOnboarded) {
             navigate("/onboarding");
           } else {
-            const userRole = getPrimaryRole(updatedUser);
-            const defaultRoute = getDefaultRouteByRole(userRole);
+            const defaultRoute = getDefaultRouteByRole(updatedUser.roles);
             navigate(defaultRoute);
           }
         }, 2000);
@@ -55,7 +54,7 @@ export function EmailVerificationCallback() {
     };
 
     verifyEmail();
-  }, [searchParams, navigate, handleLogin]);
+  }, [searchParams, navigate, getCurrentUser]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">

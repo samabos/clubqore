@@ -1,6 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { LandingPage } from "../components/home";
-import { Authentication } from "../components/auth";
+import { Authentication } from "../modules/authentication";
 import { OnboardingWrapper } from "../components/onboarding/OnboardingWrapper";
 import { EmailVerificationCallback } from "../components/EmailVerificationCallback";
 import { RoleBasedRedirect } from "../components/RoleBasedRedirect";
@@ -8,15 +8,18 @@ import { Dashboard } from "../components/Dashboard";
 import { AdminDashboard } from "../components/AdminDashboard";
 import { MemberDashboard } from "../components/MemberDashboard";
 import { ParentDashboard } from "../components/ParentDashboard";
-import { ClubManagerDashboard } from "../pages/club/dashboard";
+import { ClubManagerDashboard, ClubSetupPage } from "../modules/club/pages";
+import {
+  TeamManagementPage,
+  TeamDetailsPage,
+  TeamEditPage,
+} from "../modules/team";
+import { PersonnelManagementPage } from "../modules/personnel/pages";
+import { ClubMemberPage, ManageMemberPage } from "../modules/member/pages";
 import { ParentModule } from "../components/ParentModule";
 import { AppLayout } from "../components/layout";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import { MembersLayout } from "../components/members";
-import ClubSetupPage from "../pages/club/management";
-import ClubMemberPage from "../pages/club/member/index";
-import ManageMemberPage from "../pages/club/member/manageMember";
-import PersonnelManagement from "../pages/club/management/personnel";
 
 export const router = createBrowserRouter([
   {
@@ -72,6 +75,14 @@ export const router = createBrowserRouter([
         element: <ClubManagerDashboard />,
       },
       {
+        path: "staff-dashboard",
+        element: <LandingPage />,
+      },
+      {
+        path: "team-manager-dashboard",
+        element: <LandingPage />,
+      },
+      {
         path: "parent",
         element: <ParentModule />,
       },
@@ -85,11 +96,23 @@ export const router = createBrowserRouter([
       },
       {
         path: "club/personnel",
-        element: <PersonnelManagement />,
+        element: <PersonnelManagementPage />,
       },
       {
         path: "club/members",
         element: <ClubMemberPage />,
+      },
+      {
+        path: "teams",
+        element: <TeamManagementPage />,
+      },
+      {
+        path: "teams/:teamId",
+        element: <TeamDetailsPage />,
+      },
+      {
+        path: "teams/:teamId/edit",
+        element: <TeamEditPage />,
       },
       {
         path: "club/member/manage",
