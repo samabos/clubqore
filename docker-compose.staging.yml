@@ -16,6 +16,12 @@ services:
       # - "traefik.http.routers.frontend-http.rule=Host(`staging.clubqore.com`)" # commented out for IP access
       # - "traefik.http.routers.frontend-http.entrypoints=web" # commented out for IP access
       # - "traefik.http.routers.frontend-http.middlewares=redirect-to-https" # commented out for IP access
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
       - app-network
 
@@ -47,6 +53,12 @@ services:
       # - "traefik.http.routers.backend-http.rule=Host(`api-staging.clubqore.com`)" # commented out for IP access
       # - "traefik.http.routers.backend-http.entrypoints=web" # commented out for IP access
       # - "traefik.http.routers.backend-http.middlewares=redirect-to-https" # commented out for IP access
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     depends_on:
       - db-staging
     networks:
