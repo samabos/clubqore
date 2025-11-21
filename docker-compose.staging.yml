@@ -70,7 +70,7 @@ services:
       retries: 5
 
   traefik:
-    image: traefik:v2.10
+    image: traefik:v3.1
     restart: unless-stopped
     command:
       - "--providers.docker=true"
