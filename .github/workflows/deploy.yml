@@ -106,9 +106,9 @@ jobs:
           GITHUB_RUN_NUMBER=${{ github.run_number }}
 
           # Database configuration (environment-specific)
-          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
-          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          STAGING_POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+          STAGING_POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          STAGING_POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
 
           # JWT secrets
           JWT_SECRET=${{ secrets.JWT_SECRET }}
