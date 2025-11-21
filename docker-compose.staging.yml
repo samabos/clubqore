@@ -53,12 +53,7 @@ services:
       # - "traefik.http.routers.backend-http.rule=Host(`api-staging.clubqore.com`)" # commented out for IP access
       # - "traefik.http.routers.backend-http.entrypoints=web" # commented out for IP access
       # - "traefik.http.routers.backend-http.middlewares=redirect-to-https" # commented out for IP access
-    healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/health', (r) => {if(r.statusCode !== 200) throw new Error('Health check failed')})\""]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+    # Health check disabled - backend has health check in Dockerfile, docker-compose check was interfering with Traefik routing
     depends_on:
       - db-staging
     networks:
