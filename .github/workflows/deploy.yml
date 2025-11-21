@@ -136,6 +136,12 @@ jobs:
 
             echo "🚀 Deploying ClubQore (${{ env.ENVIRONMENT }})..."
 
+            # Debug: Show environment variables
+            echo "🔍 Debug: Environment variables:"
+            echo "STAGING_POSTGRES_DB: ${STAGING_POSTGRES_DB}"
+            echo "STAGING_POSTGRES_USER: ${STAGING_POSTGRES_USER}"
+            echo "JWT_SECRET: $([ -n "${JWT_SECRET}" ] && echo "Set" || echo "Missing")"
+
             # Pull latest images
             echo "📦 Pulling Docker images..."
             docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.run_number }}

@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=staging
-      - DATABASE_URL=postgres://${STAGING_POSTGRES_USER}:${STAGING_POSTGRES_PASSWORD}@db-staging:5432/${STAGING_POSTGRES_DB}
+      - PG_CONNECTION_STRING=postgres://${STAGING_POSTGRES_USER}:${STAGING_POSTGRES_PASSWORD}@db-staging:5432/${STAGING_POSTGRES_DB}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
       - FRONTEND_URL=${FRONTEND_URL}
