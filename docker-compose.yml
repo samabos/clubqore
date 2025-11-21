@@ -49,24 +49,34 @@ services:
       - "traefik.http.routers.pgadmin.tls.certresolver=le"
       - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
 
-#  backend:
-#    build: ./backend
-#    environment:
-#      - PG_CONNECTION_STRING=postgres://user:password@db:5432/app
-#      - PORT=3000
-#    labels:
-#      - "traefik.enable=true"
-#      - "traefik.http.routers.backend.rule=Host(`api.example.com`)"
-#      - "traefik.http.routers.backend.entrypoints=websecure"
-#      - "traefik.http.routers.backend.tls.certresolver=le"
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgres://user:password@db:5432/app
+      - JWT_SECRET=your-dev-jwt-secret-change-in-production
+      - JWT_REFRESH_SECRET=your-dev-refresh-secret-change-in-production
+      - FRONTEND_URL=http://localhost:8080
+      - EMAIL_PROVIDER=ethereal
+      - EMAIL_FROM_NAME=ClubQore Dev
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    networks:
+      - default
 
-#  frontend:
-#    build: ./frontend
-#    labels:
-#      - "traefik.enable=true"
-#      - "traefik.http.routers.frontend.rule=Host(`app.example.com`)"
-#      - "traefik.http.routers.frontend.entrypoints=websecure"
-#      - "traefik.http.routers.frontend.tls.certresolver=le"
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=http://localhost:3000
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    networks:
+      - default
 
 volumes:
   db_data:
