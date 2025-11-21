@@ -7,9 +7,9 @@ services:
     labels:
       - "traefik.enable=true"
       # - "traefik.http.routers.frontend.rule=Host(`staging.clubqore.com`)" # commented out for IP access
-      - "traefik.http.routers.frontend.rule=(PathPrefix(`/`) && !PathPrefix(`/api`))"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
       - "traefik.http.routers.frontend.priority=1"
-      # - "traefik.http.routers.frontend.entrypoints=websecure" # commented out for IP access
+      - "traefik.http.routers.frontend.entrypoints=web"
       # - "traefik.http.routers.frontend.tls.certresolver=le" # commented out for IP access
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
       # Redirect HTTP to HTTPS
@@ -38,9 +38,9 @@ services:
       # - "traefik.http.routers.backend.rule=Host(`api-staging.clubqore.com`)" # commented out for IP access
       - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
       - "traefik.http.routers.backend.priority=10"
+      - "traefik.http.routers.backend.entrypoints=web"
       - "traefik.http.routers.backend.middlewares=api-stripprefix"
       - "traefik.http.middlewares.api-stripprefix.stripprefix.prefixes=/api"
-      # - "traefik.http.routers.backend.entrypoints=websecure" # commented out for IP access
       # - "traefik.http.routers.backend.tls.certresolver=le" # commented out for IP access
       - "traefik.http.services.backend.loadbalancer.server.port=3000"
       # Redirect HTTP to HTTPS
