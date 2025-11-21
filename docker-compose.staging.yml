@@ -17,7 +17,7 @@ services:
       # - "traefik.http.routers.frontend-http.entrypoints=web" # commented out for IP access
       # - "traefik.http.routers.frontend-http.middlewares=redirect-to-https" # commented out for IP access
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -54,7 +54,7 @@ services:
       # - "traefik.http.routers.backend-http.entrypoints=web" # commented out for IP access
       # - "traefik.http.routers.backend-http.middlewares=redirect-to-https" # commented out for IP access
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { if (res.statusCode !== 200) process.exit(1); }).on('error', () => process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 3
