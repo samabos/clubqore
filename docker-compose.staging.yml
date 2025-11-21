@@ -7,7 +7,8 @@ services:
     labels:
       - "traefik.enable=true"
       # - "traefik.http.routers.frontend.rule=Host(`staging.clubqore.com`)" # commented out for IP access
-      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.rule=(PathPrefix(`/`) && !PathPrefix(`/api`))"
+      - "traefik.http.routers.frontend.priority=1"
       # - "traefik.http.routers.frontend.entrypoints=websecure" # commented out for IP access
       # - "traefik.http.routers.frontend.tls.certresolver=le" # commented out for IP access
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
@@ -21,10 +22,22 @@ services:
   backend:
     image: ${DOCKER_USERNAME}/clubqore-backend:${GITHUB_RUN_NUMBER:-latest}
     restart: unless-stopped
+    environment:
+      - NODE_ENV=staging
+      - DATABASE_URL=postgres://${STAGING_POSTGRES_USER}:${STAGING_POSTGRES_PASSWORD}@db-staging:5432/${STAGING_POSTGRES_DB}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - EMAIL_PROVIDER=${EMAIL_PROVIDER:-ethereal}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME:-ClubQore}
+      - EMAIL_FROM_EMAIL=${EMAIL_FROM_EMAIL}
     labels:
       - "traefik.enable=true"
       # - "traefik.http.routers.backend.rule=Host(`api-staging.clubqore.com`)" # commented out for IP access
       - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.priority=10"
       # - "traefik.http.routers.backend.entrypoints=websecure" # commented out for IP access
       # - "traefik.http.routers.backend.tls.certresolver=le" # commented out for IP access
       - "traefik.http.services.backend.loadbalancer.server.port=3000"
