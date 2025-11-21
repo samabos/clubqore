@@ -23,6 +23,7 @@ import { registerOnboardingRoutes } from './onboarding/routes/index.js';
 import { registerClubRoutes } from './club/routes/index.js';
 import dbConnector from './db/connector.js';
 import { config, validateConfig } from './config/index.js';
+import logger from './config/logger.js';
 
 console.log('📦 Modules imported successfully');
 
@@ -88,10 +89,11 @@ const swaggerUIConfig = {
 
 // Create and configure Fastify instance
 async function createServer() {
-  const fastify = Fastify({ 
-    logger: {
-      level: config.logLevel
-    }
+  const fastify = Fastify({
+    logger: logger,
+    disableRequestLogging: false,
+    requestIdLogLabel: 'reqId',
+    genReqId: (req) => req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
   });
 
   // Register plugins
@@ -115,7 +117,7 @@ async function createServer() {
   });
 
   // Register database
-  console.log('🔌 Registering database connector...');
+  fastify.log.info('🔌 Registering database connector...');
   await fastify.register(dbConnector, {
     client: 'pg',
     connection: config.pgConnectionString,
@@ -123,13 +125,13 @@ async function createServer() {
   });
 
   // Register routes
-  console.log('🔐 Registering auth routes...');
+  fastify.log.info('🔐 Registering auth routes...');
   await fastify.register(authRoutes);
 
-  console.log('🏢 Registering club routes...');
+  fastify.log.info('🏢 Registering club routes...');
   await fastify.register(registerClubRoutes);
 
-  console.log('🎯 Registering onboarding routes...');
+  fastify.log.info('🎯 Registering onboarding routes...');
   await fastify.register(registerOnboardingRoutes);
 
   // Health check endpoint
@@ -163,36 +165,36 @@ async function createServer() {
 // Start server
 async function startServer() {
   try {
-    console.log('🚀 Starting Fastify server...');
+    logger.info('🚀 Starting Fastify server...');
     const fastify = await createServer();
-    
-    const address = await fastify.listen({ 
-      port: Number(PORT), 
-      host: HOST 
+
+    const address = await fastify.listen({
+      port: Number(PORT),
+      host: HOST
     });
-    
-    console.log(`🚀 Server running at ${address}`);
-    console.log(`📖 API Documentation available at ${address}/docs`);
-    console.log(`❤️  Health check available at ${address}/health`);
+
+    logger.info({ port: PORT, host: HOST }, `🚀 Server running at ${address}`);
+    logger.info(`📖 API Documentation available at ${address}/docs`);
+    logger.info(`❤️  Health check available at ${address}/health`);
     
     // Graceful shutdown
     const gracefulShutdown = async (signal) => {
-      console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
+      logger.info(`🛑 Received ${signal}, shutting down gracefully...`);
       try {
         await fastify.close();
-        console.log('✅ Server closed successfully');
+        logger.info('✅ Server closed successfully');
         process.exit(0);
       } catch (err) {
-        console.error('❌ Error during shutdown:', err);
+        logger.error({ err }, '❌ Error during shutdown');
         process.exit(1);
       }
     };
 
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-    
+
   } catch (err) {
-    console.error('❌ Error starting server:', err);
+    logger.error({ err }, '❌ Error starting server');
     process.exit(1);
   }
 }

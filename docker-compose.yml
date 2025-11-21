@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   traefik:
     image: traefik:v2.10
@@ -49,21 +47,36 @@ services:
       - "traefik.http.routers.pgadmin.tls.certresolver=le"
       - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
 
+  seq:
+    image: datalust/seq:latest
+    restart: unless-stopped
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - "5341:80"      # Seq web UI
+      - "5342:5341"    # Seq ingestion endpoint
+    volumes:
+      - seq_data:/data
+    networks:
+      - default
+
   backend:
     build: ./backend
     restart: unless-stopped
     environment:
       - NODE_ENV=development
-      - DATABASE_URL=postgres://user:password@db:5432/app
+      - PG_CONNECTION_STRING=postgres://user:password@db:5432/app
       - JWT_SECRET=your-dev-jwt-secret-change-in-production
       - JWT_REFRESH_SECRET=your-dev-refresh-secret-change-in-production
       - FRONTEND_URL=http://localhost:8080
       - EMAIL_PROVIDER=ethereal
       - EMAIL_FROM_NAME=ClubQore Dev
+      - SEQ_SERVER_URL=http://seq:5341
     ports:
       - "3000:3000"
     depends_on:
       - db
+      - seq
     networks:
       - default
 
@@ -81,3 +94,4 @@ services:
 volumes:
   db_data:
   pgadmin_data:
+  seq_data:
