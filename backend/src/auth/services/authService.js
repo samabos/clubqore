@@ -42,7 +42,7 @@ export class AuthService {
       ]);
 
     //Assign Default Role
-    const role = await this.db('role').where({ name: defaultRole, is_active: true }).first();
+    const role = await this.db('roles').where({ name: defaultRole, is_active: true }).first();
     if (role) {
       await this.db('user_roles').insert({
         user_id: user.id,
