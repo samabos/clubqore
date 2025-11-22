@@ -92,6 +92,7 @@ export function TeamDetailsPage() {
   }, [teamId, loadTeamDetails]);
 
   const handleAssignMember = async () => {
+    
     if (!selectedMemberId || !teamId) return;
 
     // Validate that the selected member is a child

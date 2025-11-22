@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../../stores/authStore";
 import { useNavigate } from "react-router-dom";
 import { tokenManager } from "../../../api/secureAuth";
-// import { ClubMember } from "../types/component-types";
 import {
   MemberHeader,
   MemberFilters,
@@ -13,7 +12,8 @@ import { useMembers } from "@/stores/membersStore";
 import { useTeams } from "@/stores/teamsStore";
 import { fetchTeamMembers } from "../../team/actions";
 import { ClubMember } from "../types";
-// import { Team } from "../../team/types";
+import { NotFoundError } from "@/lib/errors";
+import { toast } from "sonner";
 
 export function ClubMemberPage() {
   const navigate = useNavigate();
@@ -54,18 +54,13 @@ export function ClubMemberPage() {
       await loadMembersFromStore();
       console.log("🔍 Members loaded via store:", members.length);
     } catch (error) {
-      console.error("Failed to load members:", error);
-      // Check if it's a "no club found" error
       if (
-        error instanceof Error &&
-        error.message &&
-        error.message.includes("No club found")
+        error instanceof NotFoundError && error.message
       ) {
+        toast.info(error.message);
         navigate("/app/club/setup");
         return;
       }
-      // Fallback to empty array if API fails
-      // Store keeps previous state; nothing to set locally
     } finally {
       setIsLoading(false);
     }
@@ -188,7 +183,7 @@ export function ClubMemberPage() {
         teams={teams}
       />
 
-      <MemberList members={organizedMembers} onEdit={handleEdit} />
+      <MemberList members={organizedMembers} onEdit={handleEdit} onAddMember={handleAddMember} />
     </div>
   );
 }

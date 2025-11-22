@@ -4,13 +4,6 @@ import { MobileNavigation } from "./MobileNavigation";
 import { SidebarProvider } from "../ui/sidebar";
 import { useNavigationSetup } from "../../hooks/useNavigationSetup";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -25,11 +18,10 @@ import {
   getRoleColor,
   getRoleDisplayName,
 } from "../../utils/roleHelpers";
-import { useAppStore } from "../../store";
+import { useAppStore } from "../../stores/appStore";
 import { useAuth } from "../../stores/authStore";
 import { useLocation } from "react-router-dom";
 import type { MenuItem } from "../../types/user";
-import type { UserRoleInfo, UserRole } from "../../types/auth";
 import { LogOut, Settings, User, ChevronDown } from "lucide-react";
 
 export function AppLayout() {
@@ -40,12 +32,6 @@ export function AppLayout() {
   const { user, signOut, currentRole } = useAuth(); // Get user and currentRole from auth store
   const location = useLocation();
 
-  // Handle role changes for users with multiple roles
-  const handleRoleChange = (role: UserRole) => {
-    // TODO: Implement role switching in auth store
-    console.log("Role change requested:", role);
-  };
-
   const handleLogout = async () => {
     try {
       await signOut();
@@ -55,7 +41,11 @@ export function AppLayout() {
   };
 
   // Get current active menu item based on pathname (including submenus)
-  const getCurrentMenuItem = (menuItems: MenuItem[]): MenuItem | null => {
+  const getCurrentMenuItem = (menuItems?: MenuItem[]): MenuItem | null => {
+    if (!menuItems || menuItems.length === 0) {
+      return null;
+    }
+
     for (const item of menuItems) {
       // Check if this item matches the current path
       if (item.link === location.pathname) {
@@ -77,9 +67,10 @@ export function AppLayout() {
     return menuItems[0] || null;
   };
 
-  const menuItems = user
+  // Get menu items for current role with fallback to club_manager if role is invalid
+  const menuItems = currentRole && menuItemsByRole[currentRole as UserRole]
     ? menuItemsByRole[currentRole as UserRole]
-    : menuItemsByRole[currentRole as UserRole];
+    : menuItemsByRole.club_manager || [];
 
   return (
     <SidebarProvider>
@@ -112,35 +103,6 @@ export function AppLayout() {
               </div>
 
               <div className="flex items-center gap-2 lg:gap-4">
-                {/* Role Switcher - Show only if user has multiple roles */}
-                {user && user.roles && user.roles.length > 1 && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600 hidden lg:inline">
-                      Switch Role:
-                    </span>
-                    <Select
-                      value={currentRole}
-                      onValueChange={handleRoleChange}
-                    >
-                      <SelectTrigger className="w-[140px] lg:w-[160px] rounded-xl border-gray-200">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        {user.roles.map((roleInfo: UserRoleInfo) => (
-                          <SelectItem key={roleInfo.role} value={roleInfo.role}>
-                            <div className="flex items-center gap-2">
-                              {getRoleIcon(roleInfo.role)}
-                              <span className="hidden lg:inline">
-                                {getRoleDisplayName(roleInfo.role)}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
                 {/* Current Role Badge */}
                 <Badge
                   variant="outline"
@@ -220,31 +182,6 @@ export function AppLayout() {
                         Welcome back! Here's what's happening today.
                       </p>
                     </div>
-                    {user && user.roles && user.roles.length > 1 && (
-                      <Select
-                        value={currentRole}
-                        onValueChange={handleRoleChange}
-                      >
-                        <SelectTrigger className="w-[120px] rounded-xl border-gray-200">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                          {user.roles.map((roleInfo: UserRoleInfo) => (
-                            <SelectItem
-                              key={roleInfo.role}
-                              value={roleInfo.role}
-                            >
-                              <div className="flex items-center gap-2">
-                                {getRoleIcon(roleInfo.role)}
-                                <span className="text-xs">
-                                  {getRoleDisplayName(roleInfo.role)}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
                   </div>
                 </div>
               )}

@@ -104,6 +104,7 @@ export interface MemberFiltersProps {
 export interface MemberListProps {
   members: ClubMember[];
   onEdit: (memberId: number) => void;
+  onAddMember: () => void;
 }
 
 export interface RelationshipInfoProps {

@@ -17,7 +17,7 @@ export class MemberController {
       if (!clubId) {
         return reply.status(404).send({
           error: 'No club found for this user. Please create a club first before adding members.',
-          message: 'You need to set up your club before you can add members. Please go to the Club Setup page to create your club.',
+          message: 'You need to set up your club before you can add members. Please setup club first.',
           action: 'create_club'
         });
       }

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from './index';
 import { useAuth } from '../stores/authStore';
-import type { AppStore } from '../store';
+import type { AppStore } from '../stores/appStore';
 
 export const useNavigationSetup = () => {
   const navigate = useNavigate();

@@ -13,10 +13,6 @@ RUN npm ci --only=production
 # Copy application code
 COPY . .
 
-# Copy and make startup script executable
-COPY start.sh /app/start.sh
-RUN chmod +x /app/start.sh
-
 # Expose port
 EXPOSE 3000
 
@@ -25,5 +21,5 @@ EXPOSE 3000
 # HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
 #   CMD node -e "require('http').get('http://localhost:3000/health', (r) => {if(r.statusCode !== 200) throw new Error('Health check failed')})"
 
-# Start application (runs migrations first)
-CMD ["/app/start.sh"]
+# Start application (runs migrations first via sh to handle line endings)
+CMD ["sh", "-c", "KNEX_ENV=${NODE_ENV:-development} && echo \"🔄 Running database migrations for environment: $KNEX_ENV...\" && npx knex migrate:latest --knexfile knexfile.js --env $KNEX_ENV && echo \"🚀 Starting application...\" && exec node src/server.js"]

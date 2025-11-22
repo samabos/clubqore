@@ -53,15 +53,6 @@ export const useMembersStore = create<MembersState>()(
               assigned_team_id?: number;
               team_name?: string;
             };
-            console.log('🔎 Members sample (team fields):', {
-              id: m?.id,
-              team_id: m?.team_id,
-              teamId: m?.teamId,
-              nested_team_id: m?.team?.id,
-              nested_team_name: m?.team?.name,
-              assigned_team_id: m?.assigned_team_id,
-              team_name: m?.team_name,
-            });
           }
           set({
             members,

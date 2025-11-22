@@ -21,7 +21,7 @@ import {
 } from "../../../components/ui/table";
 import { MemberListProps } from "../types/component-types";
 
-export function MemberList({ members, onEdit }: MemberListProps) {
+export function MemberList({ members, onEdit, onAddMember }: MemberListProps) {
   // Show parents (who can be edited) instead of children
   const parentMembers = members.filter((m) => m.membershipType === "parent");
 
@@ -49,13 +49,6 @@ export function MemberList({ members, onEdit }: MemberListProps) {
             <p className="text-gray-500 mb-6">
               Get started by adding your first parent to the club.
             </p>
-            <Button
-              onClick={() => onEdit(0)}
-              className="bg-primary hover:bg-primary/90 text-white"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add First Member
-            </Button>
           </div>
         </CardContent>
       </Card>

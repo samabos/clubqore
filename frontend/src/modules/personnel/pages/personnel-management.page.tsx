@@ -14,8 +14,10 @@ import {
   updatePersonnel,
   deletePersonnel,
 } from "../actions";
+import { useNavigate } from "react-router-dom";
 
 export function PersonnelManagementPage() {
+  const navigate = useNavigate();
   const { userClub } = useAuth();
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,6 @@ export function PersonnelManagementPage() {
 
   const loadPersonnel = useCallback(async () => {
     if (!clubId) return;
-
     try {
       setLoading(true);
       const personnelData = await fetchPersonnel(clubId);
@@ -64,13 +65,17 @@ export function PersonnelManagementPage() {
   useEffect(() => {
     if (clubId) {
       loadPersonnel();
+    }else{
+    toast.error("No club found", {
+      description: "Please set up your club before managing personnel",
+    });
+    navigate("/app/club/setup");
     }
   }, [clubId, loadPersonnel]);
 
   const handleAddPersonnel = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clubId) return;
-
     try {
       await addPersonnel(clubId, formData);
       toast.success("Staff added successfully", {
@@ -177,10 +182,6 @@ export function PersonnelManagementPage() {
       sendLoginEmail: true,
     });
   };
-
-  if (!clubId) {
-    return <PersonnelLoading />;
-  }
 
   return (
     <>

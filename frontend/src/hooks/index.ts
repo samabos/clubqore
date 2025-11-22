@@ -1,5 +1,5 @@
 // Re-export the stores for direct use
-export { useAppStore, useUIStore } from '../store';
+export { useAppStore } from '../stores/appStore';
 
 // NEW: Centralized authentication system
 export { useAuth } from '../stores/authStore';

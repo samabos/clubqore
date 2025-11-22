@@ -128,7 +128,8 @@ export const useAuthStore = create<AuthState>()(
             // Navigate based on onboarding status
             const { navigate } = get();
             if (navigate) {
-              navigate(user.isOnboarded ? '/app' : '/onboarding');
+              //navigate(user.isOnboarded ? '/app' : '/onboarding');
+              navigate('/app');
             }
             
           } catch (error) {

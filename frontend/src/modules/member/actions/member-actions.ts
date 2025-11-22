@@ -1,13 +1,13 @@
 import { apiClient } from "@/api/base";
 import { ClubMember, CreateMemberRequest, ChildData } from "../types/component-types";
+import { handleApiError, NotFoundError } from "@/lib/errors";
 
 // Fetch all members for the current club
 export const fetchClubMembers = async (): Promise<ClubMember[]> => {
   const response = await apiClient("/clubs/my-club/members");
-  
+
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Failed to fetch club members");
+    await handleApiError(response);
   }
 
   const data = await response.json();
@@ -18,20 +18,19 @@ export const fetchClubMembers = async (): Promise<ClubMember[]> => {
 export const getMemberById = async (memberId: number): Promise<ClubMember> => {
   console.log("🔍 Fetching member with ID:", memberId);
   const response = await apiClient(`/clubs/my-club/members/${memberId}`);
-  
+
   if (!response.ok) {
-    const errorData = await response.json();
-    console.error("❌ API Error:", errorData);
-    throw new Error(errorData.message || "Failed to fetch member");
+    console.error("❌ API Error - Status:", response.status);
+    await handleApiError(response);
   }
 
   const data = await response.json();
   console.log("🔍 API Response:", data);
-  
+
   if (!data.success || !data.member) {
-    throw new Error("Member not found");
+    throw new NotFoundError("Member");
   }
-  
+
   return data.member;
 };
 
@@ -43,11 +42,7 @@ export const createMember = async (memberData: CreateMemberRequest): Promise<{ m
   });
 
   if (!response.ok) {
-    if (response.status === 409) {
-      throw new Error('Email already exists');
-    }
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Failed to create member");
+    await handleApiError(response);
   }
 
   return await response.json();
@@ -78,8 +73,7 @@ export const updateMember = async (
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Failed to update member");
+    await handleApiError(response);
   }
 };
 
@@ -90,8 +84,7 @@ export const deleteMember = async (memberId: number): Promise<void> => {
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Failed to delete member");
+    await handleApiError(response);
   }
 };
 
@@ -103,8 +96,7 @@ export const bulkDeleteMembers = async (memberIds: number[]): Promise<void> => {
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Failed to delete members");
+    await handleApiError(response);
   }
 };
 
@@ -116,8 +108,7 @@ export const exportMembers = async (memberIds: number[]): Promise<Blob> => {
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Failed to export members");
+    await handleApiError(response);
   }
 
   return await response.blob();
@@ -134,7 +125,6 @@ export const endMemberContract = async (
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Failed to end contract");
+    await handleApiError(response);
   }
 };

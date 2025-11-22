@@ -11,7 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../stores/authStore";
 import { User, LogOut, Settings, ChevronDown } from "lucide-react";
 import { getDefaultRouteByRole } from "../../utils/roleNavigation";
-import { AuthUser } from "@/store";
+import { AuthUser } from "@/types/auth";
 
 interface LandingNavigationProps {
   onGetStarted?: () => void;

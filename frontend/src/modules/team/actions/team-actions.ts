@@ -1,4 +1,5 @@
 import { apiClient } from "@/api/base";
+import { handleApiError } from "@/lib/errors";
 import {
   Team,
   TeamWithDetails,
@@ -195,18 +196,16 @@ export const fetchTeamManagers = async (teamId: number): Promise<TeamManager[]> 
 export const assignMemberToTeam = async (teamId: number, request: AssignMemberRequest): Promise<{ success: boolean }> => {
   console.log('🔍 Frontend: Assigning member to team:', { teamId, request });
   console.log('🔍 Frontend: Request body will be:', JSON.stringify(request));
-  
+
   const response = await apiClient(`/teams/${teamId}/members`, {
     method: 'POST',
     body: JSON.stringify(request),
   });
-  
+
   if (!response.ok) {
-    const errorData = await response.json();
-    console.error('❌ Frontend: Assign member error:', errorData);
-    throw new Error(errorData.message || 'Failed to assign member to team');
+    await handleApiError(response);
   }
-  
+
   const data = await response.json();
   return data;
 };

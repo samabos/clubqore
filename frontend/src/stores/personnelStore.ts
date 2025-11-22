@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { TeamManagerPersonnel } from '@/modules/team/types';
+import { TeamManager } from '@/modules/team/types';
 import { loadAvailablePersonnel } from '@/modules/team/actions/team-actions';
 
 export interface PersonnelState {
   // Data
-  availablePersonnel: TeamManagerPersonnel[];
+  availablePersonnel: TeamManager[];
   isLoading: boolean;
   lastLoaded: number | null;
   clubId: number | null;

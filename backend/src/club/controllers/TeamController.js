@@ -228,7 +228,7 @@ export class TeamController {
       const teamId = parseInt(request.params.teamId);
       const { userId: managerUserId } = request.body;
       const currentUserId = request.user.id;
-      const clubId = await this.userService.getUserClubId(currentUserId);
+      const clubId = await this.clubService.getManagersClubId(currentUserId);
 
       if (!clubId) {
         return reply.code(400).send({
@@ -270,7 +270,7 @@ export class TeamController {
       const teamId = parseInt(request.params.teamId);
       const managerUserId = parseInt(request.params.userId);
       const currentUserId = request.user.id;
-      const clubId = await this.userService.getUserClubId(currentUserId);
+      const clubId = await this.clubService.getManagersClubId(currentUserId);
 
       if (!clubId) {
         return reply.code(400).send({
@@ -342,7 +342,7 @@ export class TeamController {
       const teamId = parseInt(request.params.teamId);
       const { memberId } = request.body;
       const currentUserId = request.user.id;
-      const clubId = await this.userService.getUserClubId(currentUserId);
+      const clubId = await this.clubService.getManagersClubId(currentUserId);
 
       if (!clubId) {
         return reply.code(400).send({
@@ -384,7 +384,7 @@ export class TeamController {
       const teamId = parseInt(request.params.teamId);
       const memberId = parseInt(request.params.memberId);
       const currentUserId = request.user.id;
-      const clubId = await this.userService.getUserClubId(currentUserId);
+      const clubId = await this.clubService.getManagersClubId(currentUserId);
 
       if (!clubId) {
         return reply.code(400).send({

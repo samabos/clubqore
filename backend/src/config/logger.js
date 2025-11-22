@@ -1,8 +1,6 @@
 import pino from 'pino';
 
-const isProduction = process.env.NODE_ENV === 'production';
 const isDevelopment = process.env.NODE_ENV === 'development';
-const seqServerUrl = process.env.SEQ_SERVER_URL;
 
 // Base logger configuration
 const loggerConfig = {
@@ -25,43 +23,10 @@ const loggerConfig = {
   },
 };
 
-// Configure transports based on environment
-const transports = [];
-
-if (isDevelopment) {
-  // Pretty print to console in development
-  transports.push({
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: 'HH:MM:ss Z',
-      ignore: 'pid,hostname',
-      singleLine: false,
-    }
-  });
-}
-
-if (seqServerUrl) {
-  // Send structured logs to Seq
-  transports.push({
-    target: 'pino-seq',
-    options: {
-      serverUrl: seqServerUrl,
-      apiKey: process.env.SEQ_API_KEY || undefined,
-      onError: (error) => {
-        console.error('Seq logging error:', error);
-      }
-    }
-  });
-}
-
-// Create logger with transports
-const logger = pino({
-  ...loggerConfig,
-  transport: transports.length > 0 ? {
-    targets: transports
-  } : undefined
-});
+// Create logger with simple configuration
+// NOTE: Transports are disabled for now due to worker thread flush timeout issues
+// TODO: Re-enable transports once pino transport stability is resolved
+const logger = pino(loggerConfig);
 
 // Create child logger with context
 export function createLogger(context = {}) {

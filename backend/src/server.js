@@ -90,11 +90,14 @@ const swaggerUIConfig = {
 // Create and configure Fastify instance
 async function createServer() {
   const fastify = Fastify({
-    logger: logger,
+    logger: true,
     disableRequestLogging: false,
     requestIdLogLabel: 'reqId',
     genReqId: (req) => req.headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
   });
+
+  // Replace Fastify's logger with our custom Pino logger
+  fastify.log = logger;
 
   // Register plugins
   await fastify.register(import('@fastify/swagger'), swaggerConfig);
