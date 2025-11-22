@@ -1,8 +1,8 @@
 const stats = [
-  { number: "10,000+", label: "Active Members" },
-  { number: "500+", label: "Football Clubs" },
-  { number: "50,000+", label: "Events Managed" },
-  { number: "99.9%", label: "Uptime" },
+  { number: "Growing", label: "Community of Clubs" },
+  { number: "100%", label: "Free for Clubs" },
+  { number: "Modern", label: "Cloud-Based Platform" },
+  { number: "24/7", label: "Always Available" },
 ];
 
 export function StatsSection() {

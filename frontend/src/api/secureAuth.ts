@@ -16,6 +16,10 @@ class SecureTokenManager {
   private readonly ACCESS_TOKEN_KEY = 'clubqore_access_token';
   private readonly REFRESH_TOKEN_KEY = 'clubqore_refresh_token';
   private readonly TOKEN_DATA_KEY = 'clubqore_token_data';
+  private refreshInterval: NodeJS.Timeout | null = null;
+  private readonly REFRESH_INTERVAL = parseInt(import.meta.env.VITE_TOKEN_REFRESH_INTERVAL || '120000'); // 2 minutes
+  private readonly EXPIRY_BUFFER = parseInt(import.meta.env.VITE_TOKEN_EXPIRY_BUFFER || '60000'); // 1 minute
+  private readonly EXPIRY_WARNING = parseInt(import.meta.env.VITE_TOKEN_EXPIRY_WARNING || '300000'); // 5 minutes
 
   constructor(strategy: StorageStrategy = 'localStorage') {
     this.strategy = strategy;
@@ -101,24 +105,25 @@ class SecureTokenManager {
   getAccessToken(): string | null {
     const tokenData = this.getTokenData();
     if (!tokenData) {
-      console.log('🔐 No token data found');
+      // Don't log this as it's normal when user is not authenticated
       return null;
     }
 
-    // Check if token is expired (with 1-minute buffer)
-    const bufferTime = 1 * 60 * 1000; // 1 minute
+    // Check if token is expired (with configurable buffer)
     const now = Date.now();
     const expiresAt = tokenData.expiresAt;
     const timeUntilExpiry = expiresAt - now;
-    
+
     console.log('🔐 Token check:', {
       now: new Date(now).toISOString(),
       expiresAt: new Date(expiresAt).toISOString(),
       timeUntilExpiry: Math.round(timeUntilExpiry / 1000 / 60) + ' minutes',
-      isExpired: now > (expiresAt - bufferTime)
+      isExpired: now > expiresAt,
+      isExpiringSoon: timeUntilExpiry > 0 && timeUntilExpiry <= this.EXPIRY_WARNING
     });
-    
-    if (now > (expiresAt - bufferTime)) {
+
+    // Only treat as expired after the actual expiration time
+    if (now > expiresAt) {
       console.log('🔐 Token expired, clearing tokens');
       this.clearTokens();
       return null;
@@ -203,11 +208,84 @@ class SecureTokenManager {
     return this.decodeJWTPayload(tokenData.accessToken);
   }
 
-  // Check if token is close to expiring (within 5 minutes)
+  // Check if token is close to expiring (within configurable warning time)
   isTokenExpiringSoon(): boolean {
     const timeUntilExpiration = this.getTimeUntilExpiration();
-    const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
-    return timeUntilExpiration > 0 && timeUntilExpiration <= fiveMinutes;
+    return timeUntilExpiration > 0 && timeUntilExpiration <= this.EXPIRY_WARNING;
+  }
+
+  // Start proactive token refresh
+  startProactiveRefresh(): void {
+    if (this.refreshInterval) {
+      console.log('🔄 Proactive refresh already running');
+      return;
+    }
+
+    // Only start if we have a valid token
+    if (!this.getAccessToken()) {
+      console.log('🔄 No token available, skipping proactive refresh');
+      return;
+    }
+
+    console.log(`🔄 Starting proactive token refresh (interval: ${this.REFRESH_INTERVAL}ms)`);
+    
+    this.refreshInterval = setInterval(async () => {
+      try {
+        if (this.isTokenExpiringSoon()) {
+          console.log('🔄 Token expiring soon, attempting proactive refresh...');
+          await this.refreshToken();
+        }
+      } catch (error) {
+        console.error('🔄 Proactive refresh failed:', error);
+        // Don't clear tokens on proactive refresh failure
+        // Let the reactive refresh handle it
+      }
+    }, this.REFRESH_INTERVAL);
+  }
+
+  // Stop proactive token refresh
+  stopProactiveRefresh(): void {
+    if (this.refreshInterval) {
+      console.log('🔄 Stopping proactive token refresh');
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
+    }
+  }
+
+  // Refresh token using refresh token
+  private async refreshToken(): Promise<boolean> {
+    const refreshToken = this.getRefreshToken();
+    if (!refreshToken) {
+      console.log('🔄 No refresh token available for proactive refresh');
+      return false;
+    }
+
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!response.ok) {
+        console.log('🔄 Proactive refresh failed with status:', response.status);
+        return false;
+      }
+
+      const result = await response.json();
+      this.setTokens(result.accessToken, result.refreshToken);
+      console.log('🔄 Proactive token refresh successful');
+      return true;
+    } catch (error) {
+      console.error('🔄 Proactive refresh failed:', error);
+      return false;
+    }
+  }
+
+  // Check if proactive refresh is running
+  isProactiveRefreshRunning(): boolean {
+    return this.refreshInterval !== null;
   }
 }
 

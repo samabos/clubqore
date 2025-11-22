@@ -8,12 +8,10 @@ import {
 } from "../ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useNavigate } from "react-router-dom";
-import { useAuth, useAppStore } from "../../hooks";
+import { useAuth } from "../../stores/authStore";
 import { User, LogOut, Settings, ChevronDown } from "lucide-react";
-import {
-  getDefaultRouteByRole,
-  getPrimaryRole,
-} from "../../utils/roleNavigation";
+import { getDefaultRouteByRole } from "../../utils/roleNavigation";
+import { AuthUser } from "@/types/auth";
 
 interface LandingNavigationProps {
   onGetStarted?: () => void;
@@ -21,11 +19,19 @@ interface LandingNavigationProps {
 
 export function LandingNavigation({ onGetStarted }: LandingNavigationProps) {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
-  const { handleLogout } = useAppStore();
+  const { user, isAuthenticated, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   // Helper functions for user display
-  const getDisplayName = (user: any) => {
+  const getDisplayName = (user: AuthUser) => {
     if (user?.profile?.firstName && user?.profile?.lastName) {
       return `${user.profile.firstName} ${user.profile.lastName}`;
     }
@@ -53,8 +59,7 @@ export function LandingNavigation({ onGetStarted }: LandingNavigationProps) {
   // Get the appropriate dashboard route for the user
   const getDashboardRoute = () => {
     if (user) {
-      const userRole = getPrimaryRole(user);
-      return getDefaultRouteByRole(userRole);
+      return getDefaultRouteByRole(user.roles);
     }
     return "/app"; // Fallback to role-based redirect
   };

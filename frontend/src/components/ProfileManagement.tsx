@@ -30,6 +30,7 @@ import {
   XCircle,
   Clock,
 } from "lucide-react";
+import { useAvatarUpload } from "../hooks/useAvatarUpload";
 
 export function ProfileManagement() {
   const [profileImage, setProfileImage] = useState<string>("");
@@ -41,6 +42,15 @@ export function ProfileManagement() {
     events: true,
     payments: true,
     announcements: false,
+  });
+
+  const { handleFileSelect, isUploading } = useAvatarUpload({
+    onSuccess: (avatarUrl) => {
+      setProfileImage(avatarUrl);
+    },
+    onError: (error) => {
+      console.error("Avatar upload failed:", error);
+    },
   });
 
   const transactionHistory = [
@@ -90,17 +100,6 @@ export function ProfileManagement() {
       method: "Credit Card",
     },
   ];
-
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfileImage(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const handleNotificationChange = (key: string, value: boolean) => {
     setNotifications((prev) => ({
@@ -179,7 +178,8 @@ export function ProfileManagement() {
                     id="profile-upload"
                     type="file"
                     accept="image/*"
-                    onChange={handleImageUpload}
+                    onChange={handleFileSelect}
+                    disabled={isUploading}
                     className="hidden"
                   />
                 </div>

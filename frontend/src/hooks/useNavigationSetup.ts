@@ -1,13 +1,16 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from './index';
-import type { AppStore } from '../store';
+import { useAuth } from '../stores/authStore';
+import type { AppStore } from '../stores/appStore';
 
 export const useNavigationSetup = () => {
   const navigate = useNavigate();
   const setNavigate = useAppStore((state: AppStore) => state.setNavigate);
+  const { setNavigate: setAuthNavigate } = useAuth();
 
   useEffect(() => {
     setNavigate(navigate);
-  }, [navigate, setNavigate]);
+    setAuthNavigate(navigate); // Also set navigation for auth store
+  }, [navigate, setNavigate, setAuthNavigate]);
 };

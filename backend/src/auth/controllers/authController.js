@@ -1,5 +1,6 @@
 import { AuthService } from '../services/authService.js';
 import { TokenService } from '../services/tokenService.js';
+import { AppError } from '../../errors/AppError.js';
 
 export class AuthController {
   constructor(db) {
@@ -10,7 +11,7 @@ export class AuthController {
   async register(request, reply) {
     try {
       const { email, password } = request.body;
-      
+
       if (!email || !password) {
         return reply.code(400).send({ error: 'Email and password required' });
       }
@@ -18,8 +19,8 @@ export class AuthController {
       const result = await this.authService.registerUser(email, password);
       return reply.send(result);
     } catch (error) {
-      if (error.message === 'Email taken') {
-        return reply.code(400).send({ error: error.message });
+      if (error instanceof AppError) {
+        return reply.code(error.statusCode).send({ error: error.message });
       }
       throw error;
     }
@@ -28,7 +29,7 @@ export class AuthController {
   async login(request, reply) {
     try {
       const { email, password } = request.body;
-      
+
       if (!email || !password) {
         return reply.code(400).send({ error: 'Email and password required' });
       }
@@ -36,8 +37,8 @@ export class AuthController {
       const result = await this.authService.loginUser(email, password);
       return reply.send(result);
     } catch (error) {
-      if (error.message === 'Invalid credentials') {
-        return reply.code(401).send({ error: error.message });
+      if (error instanceof AppError) {
+        return reply.code(error.statusCode).send({ error: error.message });
       }
       throw error;
     }
@@ -79,8 +80,7 @@ export class AuthController {
   // Verify email is available
   async isEmailAvailable(request, reply) {
     try {
-      const { email } = request.params;
-      
+      const { email } = request.query;
       if (!email) {
         return reply.code(400).send({ error: 'Email is required' });
       }

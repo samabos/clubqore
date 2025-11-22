@@ -1,7 +1,7 @@
 import { UserRoleService } from './UserRoleService.js';
 import { UserProfileService } from './UserProfileService.js';
 import { UserPreferencesService } from './UserPreferencesService.js';
-import { ClubService } from './ClubService.js';
+import { ClubService } from '../../club/services/ClubService.js';
 import { InviteCodeService } from './InviteCodeService.js';
 import { AccountNumberService } from './AccountNumberService.js';
 

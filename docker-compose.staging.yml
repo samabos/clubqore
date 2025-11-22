@@ -1,0 +1,112 @@
+version: "3.9"
+
+services:
+  frontend:
+    image: ${DOCKER_USERNAME}/clubqore-frontend:${GITHUB_RUN_NUMBER:-latest}
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      # - "traefik.http.routers.frontend.rule=Host(`staging.clubqore.com`)" # commented out for IP access
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.priority=1"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      # - "traefik.http.routers.frontend.tls.certresolver=le" # commented out for IP access
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+      # Redirect HTTP to HTTPS
+      # - "traefik.http.routers.frontend-http.rule=Host(`staging.clubqore.com`)" # commented out for IP access
+      # - "traefik.http.routers.frontend-http.entrypoints=web" # commented out for IP access
+      # - "traefik.http.routers.frontend-http.middlewares=redirect-to-https" # commented out for IP access
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - app-network
+
+  backend:
+    image: ${DOCKER_USERNAME}/clubqore-backend:${GITHUB_RUN_NUMBER:-latest}
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=staging
+      - PG_CONNECTION_STRING=postgres://${STAGING_POSTGRES_USER}:${STAGING_POSTGRES_PASSWORD}@db-staging:5432/${STAGING_POSTGRES_DB}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - EMAIL_PROVIDER=${EMAIL_PROVIDER:-ethereal}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME:-ClubQore}
+      - EMAIL_FROM_EMAIL=${EMAIL_FROM_EMAIL}
+    labels:
+      - "traefik.enable=true"
+      # - "traefik.http.routers.backend.rule=Host(`api-staging.clubqore.com`)" # commented out for IP access
+      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.priority=10"
+      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.routers.backend.middlewares=api-stripprefix"
+      - "traefik.http.middlewares.api-stripprefix.stripprefix.prefixes=/api"
+      # - "traefik.http.routers.backend.tls.certresolver=le" # commented out for IP access
+      - "traefik.http.services.backend.loadbalancer.server.port=3000"
+      - "traefik.http.services.backend.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.backend.loadbalancer.healthcheck.interval=10s"
+      # Redirect HTTP to HTTPS
+      # - "traefik.http.routers.backend-http.rule=Host(`api-staging.clubqore.com`)" # commented out for IP access
+      # - "traefik.http.routers.backend-http.entrypoints=web" # commented out for IP access
+      # - "traefik.http.routers.backend-http.middlewares=redirect-to-https" # commented out for IP access
+    # Health check disabled - backend has health check in Dockerfile, docker-compose check was interfering with Traefik routing
+    depends_on:
+      - db-staging
+    networks:
+      - app-network
+
+  db-staging:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${STAGING_POSTGRES_DB}
+      - POSTGRES_USER=${STAGING_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${STAGING_POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data_staging:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${STAGING_POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  traefik:
+    image: traefik:v3.6
+    restart: unless-stopped
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # - "--certificatesresolvers.le.acme.tlschallenge=true" # commented out for IP access
+      # - "--certificatesresolvers.le.acme.email=${ACME_EMAIL}" # commented out for IP access
+      # - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json" # commented out for IP access
+      - "--log.level=DEBUG"
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+    environment:
+      - DOCKER_API_VERSION=1.44
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data_staging:

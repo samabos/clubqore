@@ -8,6 +8,7 @@ import { profileRoutes } from './profile.js';
 import { logoutRoutes } from './logout.js';
 import { emailVerificationRoutes } from './emailVerification.js';
 import { passwordResetRoutes } from './passwordReset.js';
+import { emailAvailabilityRoutes } from './emailAvailability.js';
 import { roleManagementRoutes } from './roleManagement.js';
 
 export async function authRoutes(fastify, options) {
@@ -24,4 +25,5 @@ export async function authRoutes(fastify, options) {
   emailVerificationRoutes(fastify, authController, authenticate);
   passwordResetRoutes(fastify, authController);
   roleManagementRoutes(fastify, userController, authenticate);
+  emailAvailabilityRoutes(fastify, authController);
 }

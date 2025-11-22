@@ -6,10 +6,11 @@ export class AccountUtils {
   /**
    * Create a user role
    */
-  static async createUserRole(userId, role, clubId, trx) {
+  static async createUserRole(userId, roleId, clubId, trx) {
+    
     await trx('user_roles').insert({
       user_id: userId,
-      role: role,
+      role_id: roleId,
       club_id: clubId,
       is_active: true,
       created_at: new Date(),
@@ -20,11 +21,11 @@ export class AccountUtils {
   /**
    * Create a user account with account number
    */
-  static async createUserAccount(userId, role, clubId, accountNumber, trx, additionalData = {}) {
+  static async createUserAccount(userId, roleId, clubId, accountNumber, trx, additionalData = {}) {
     const accountData = {
       user_id: userId,
       account_number: accountNumber,
-      role: role,
+      role_id: roleId,
       club_id: clubId,
       is_active: true,
       onboarding_completed_at: new Date(),
@@ -40,9 +41,9 @@ export class AccountUtils {
   /**
    * Create user role and account together
    */
-  static async createRoleAndAccount(userId, role, clubId, accountNumber, trx, additionalData = {}) {
-    await this.createUserRole(userId, role, clubId, trx);
-    return await this.createUserAccount(userId, role, clubId, accountNumber, trx, additionalData);
+  static async createRoleAndAccount(userId, roleId, clubId, accountNumber, trx, additionalData = {}) {
+    await this.createUserRole(userId, roleId, clubId, trx);
+    return await this.createUserAccount(userId, roleId, clubId, accountNumber, trx, additionalData);
   }
 
   /**

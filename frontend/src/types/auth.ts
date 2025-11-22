@@ -3,13 +3,12 @@ import { ClubInfo } from "./membership"
 
 export type AuthMode = 'signin' | 'signup' | 'forgot-password' | 'reset-password' | 'email-verification';
 export type AccountType = 'club' | 'member' | 'parent';
-export type UserRole = 'admin' | 'club_manager' | 'member' | 'parent';
+export type UserRole = 'admin' | 'club_manager' | 'member' | 'parent' | 'staff' | 'team_manager';
 
 // Updated to match new backend schema
 export interface AuthUser {
   id: string;
   email: string;
-  primaryRole: UserRole;
   isOnboarded: boolean;
   emailVerified?: boolean;
   emailVerifiedAt?: string;
@@ -25,7 +24,7 @@ export interface AuthUser {
   // Related data loaded from normalized tables
   profile?: UserProfile;
   preferences?: UserPreferences;
-  roles?: UserRoleInfo[];
+  roles: string[];
   accounts?: UserAccount[];
   children?: UserChild[];
 }

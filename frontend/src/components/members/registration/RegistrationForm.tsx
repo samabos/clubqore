@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AuthUser } from "@/types/auth";
-import { useAppStore } from "@/store/appStore";
+import { useAuth } from "@/stores/authStore";
 import {
   Card,
   CardContent,
@@ -53,8 +53,8 @@ export function RegistrationForm({
   const [sendWelcomeEmail, setSendWelcomeEmail] = useState(true);
 
   // Form data states
-  // Get current user's club from app store
-  const { userClub } = useAppStore();
+  // Get current user's club from auth store
+  const { userClub } = useAuth();
   const currentUserClub = userClub || {
     id: 0,
     name: "Default Club",

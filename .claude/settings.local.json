@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ssh root@87.106.36.252 \"cd /root/clubqore-staging && docker compose -f docker-compose.staging.yml logs backend --tail 50\")",
+      "Bash(docker compose up:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

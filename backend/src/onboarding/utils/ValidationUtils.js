@@ -14,7 +14,8 @@ export class ValidationUtils {
     // Role-specific validation
     const requiredFields = {
       club_manager: ['personalData.firstName', 'personalData.lastName', 'clubData.name', 'clubData.type'],
-      club_coach: ['personalData.firstName', 'personalData.lastName'],
+      team_manager: ['personalData.firstName', 'personalData.lastName', 'personalData.dateOfBirth', 'personalData.certificationLevel', 'personalData.yearsOfExperience', 'personalData.bio'],
+      staff: ['personalData.firstName', 'personalData.lastName', 'personalData.dateOfBirth', 'personalData.certificationLevel', 'personalData.yearsOfExperience', 'personalData.bio'],
       member: ['personalData.firstName', 'personalData.lastName', 'personalData.dateOfBirth'],
       parent: ['personalData.firstName', 'personalData.lastName', 'parentData.children']
     };

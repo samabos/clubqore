@@ -3,39 +3,63 @@ import { createAccessToken, createRefreshToken, verifyToken } from '../jwt.js';
 import { TokenService } from './tokenService.js';
 import { config, getJwtExpiration } from '../../config/index.js';
 import { emailService } from '../../services/emailService.js';
+import { EmailOutboxService } from '../../services/emailOutboxService.js';
+import { RoleService } from '../../onboarding/services/RoleService.js';
+import { EmailTakenError, InvalidCredentialsError } from '../../errors/AppError.js';
+
+const defaultRole = 'club_manager';
 
 export class AuthService {
   constructor(db) {
     this.db = db;
     this.tokenService = new TokenService(db);
+    this.roleService = new RoleService(db);
   }
 
   async registerUser(email, password) {
     // Normalize email to lowercase for consistent comparison
     const normalizedEmail = email.toLowerCase();
-    
+
     // Check if user exists (case-insensitive)
     const existing = await this.db('users').whereRaw('LOWER(email) = ?', [normalizedEmail]).first();
     if (existing) {
-      throw new Error('Email taken');
+      throw new EmailTakenError(normalizedEmail);
     }
 
     // Create user with default values
     const hashed = await hashPassword(password);
     const [user] = await this.db('users')
-      .insert({ 
-        email: normalizedEmail, 
+      .insert({
+        email: normalizedEmail,
         password: hashed,
-        roles: JSON.stringify(['club_manager']),
-        primary_role: 'club_manager',
         is_onboarded: false,
         email_verified: false
       })
       .returning([
-        'id', 'email', 'name', 'avatar', 'roles', 'primary_role',
+        'id', 'email', 'name', 'avatar',
         'account_type', 'is_onboarded', 'email_verified', 'email_verified_at',
         'club_id', 'children', 'created_at', 'updated_at'
       ]);
+
+    //Assign Default Role
+    const role = await this.db('roles').where({ name: defaultRole, is_active: true }).first();
+    if (role) {
+      await this.db('user_roles').insert({
+        user_id: user.id,
+        role_id: role.id,
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+    }
+
+    // Get user roles from user_roles table
+    const userRoles = await this.db('user_roles')
+      .join('roles', 'user_roles.role_id', 'roles.id')
+      .where({ 'user_roles.user_id': user.id })
+      .select('roles.name');
+
+    const roleNames = userRoles.length > 0 ? userRoles.map(r => r.name) : [];
 
     // Create tokens
     const { accessTokenId, refreshTokenId } = await this.tokenService.createTokens(user.id);
@@ -48,8 +72,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         avatar: user.avatar,
-        roles: Array.isArray(user.roles) ? user.roles : ['club_manager'],
-        primaryRole: user.primary_role || 'club_manager',
+        roles: roleNames,
         accountType: user.account_type,
         isOnboarded: user.is_onboarded || false,
         emailVerified: user.email_verified || false,
@@ -66,12 +89,25 @@ export class AuthService {
   async loginUser(email, password) {
     // Normalize email to lowercase for consistent comparison
     const normalizedEmail = email.toLowerCase();
-    
+
     // Find user (case-insensitive)
-    const user = await this.db('users').whereRaw('LOWER(email) = ?', [normalizedEmail]).first();
+    const user = await this.db('users')
+      .join('user_roles', 'users.id', 'user_roles.user_id')
+      .select('users.id', 'users.email', 'users.name','users.password', 'users.avatar', 'users.account_type',
+        'users.is_onboarded', 'users.email_verified', 'users.email_verified_at', 'user_roles.club_id', 'users.children')
+      .whereRaw('LOWER(email) = ?', [normalizedEmail]).first();
+
     if (!user || !(await verifyPassword(password, user.password))) {
-      throw new Error('Invalid credentials');
+      throw new InvalidCredentialsError();
     }
+
+    // Get user roles from user_roles table
+    const userRoles = await this.db('user_roles')
+      .join('roles', 'user_roles.role_id', 'roles.id')
+      .where({ 'user_roles.user_id': user.id, 'user_roles.is_active': true })
+      .select('roles.name');
+
+    const roleNames = userRoles.length > 0 ? userRoles.map(r => r.name) : [];
 
     // Create tokens
     const { accessTokenId, refreshTokenId } = await this.tokenService.createTokens(user.id);
@@ -84,8 +120,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         avatar: user.avatar,
-        roles: Array.isArray(user.roles) ? user.roles : ['club_manager'],
-        primaryRole: user.primary_role || 'club_manager',
+        roles: roleNames,
         accountType: user.account_type,
         isOnboarded: user.is_onboarded || false,
         emailVerified: user.email_verified || false,
@@ -161,22 +196,28 @@ export class AuthService {
     const tokenId = await this.tokenService.createEmailVerificationToken(userId, email);
     const verificationToken = createAccessToken(tokenId, userId, getJwtExpiration('emailVerification'));
 
-    // Send verification email
+    // Send verification email using database template
     try {
-      const emailResult = await emailService.sendEmailVerification(
-        email, 
-        verificationToken, 
-        user.name || 'User'
-      );
-      
+      const verificationUrl = `${config.app.frontendUrl}/verify-email?token=${verificationToken}`;
+
+      const outbox = new EmailOutboxService(this.db, emailService);
+      const emailResult = await outbox.sendAndLog({
+        to: email,
+        templateKey: 'email_verification',
+        templateData: {
+          userName: user.name || 'User',
+          verificationUrl
+        }
+      });
+
       console.log(`✅ Verification email sent to ${email}`);
       if (emailResult.preview) {
         console.log(`📧 Preview URL: ${emailResult.preview}`);
       }
-      
-      return { 
-        success: true, 
-        email, 
+
+      return {
+        success: true,
+        email,
         message: 'Verification email sent successfully',
         // Only return token in development mode
         ...(process.env.NODE_ENV === 'development' && { token: verificationToken })
@@ -239,21 +280,27 @@ export class AuthService {
     const tokenId = await this.tokenService.createPasswordResetToken(user.id, normalizedEmail);
     const resetToken = createAccessToken(tokenId, user.id, getJwtExpiration('passwordReset'));
 
-    // Send password reset email
+    // Send password reset email using database template
     try {
-      const emailResult = await emailService.sendPasswordReset(
-        normalizedEmail, 
-        resetToken, 
-        user.name || 'User'
-      );
-      
+      const resetUrl = `${config.app.frontendUrl}/reset-password?token=${resetToken}`;
+
+      const outbox = new EmailOutboxService(this.db, emailService);
+      const emailResult = await outbox.sendAndLog({
+        to: normalizedEmail,
+        templateKey: 'password_reset',
+        templateData: {
+          userName: user.name || 'User',
+          resetUrl
+        }
+      });
+
       console.log(`✅ Password reset email sent to ${normalizedEmail}`);
       if (emailResult.preview) {
         console.log(`📧 Preview URL: ${emailResult.preview}`);
       }
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         message: 'Password reset email sent successfully',
         // Only return token in development mode
         ...(process.env.NODE_ENV === 'development' && { token: resetToken })

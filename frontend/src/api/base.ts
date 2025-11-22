@@ -12,12 +12,14 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
   console.log(`🔐 API Request to ${endpoint}:`, {
     hasToken: !!token,
     tokenValid: tokenManager.isTokenValid(),
-    tokenLength: token?.length || 0
+    tokenLength: token?.length || 0,
+    method: options.method || 'GET'
   });
   
   const config: RequestInit = {
     headers: {
-      'Content-Type': 'application/json',
+      // Only set Content-Type for requests that have a body
+      ...(options.body && { 'Content-Type': 'application/json' }),
       ...(token && { Authorization: `Bearer ${token}` }),
       ...options.headers,
     },
@@ -28,7 +30,7 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
     const response = await fetch(url, config);
     
     // Handle token refresh on 401
-    if (response.status === 401 && token) {
+    if (response.status === 401 && (token || tokenManager.getRefreshToken())) {
       console.log('🔐 Received 401, attempting token refresh...');
       const refreshed = await refreshAccessToken();
       if (refreshed) {

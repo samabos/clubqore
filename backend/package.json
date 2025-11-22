@@ -6,11 +6,10 @@
   "scripts": {
     "dev": "node src/server.js",
     "start": "node src/server.js",
-    "test:setup": "node src/test/setup-db.js",
-    "test": "npm run test:setup && cross-env NODE_ENV=test USE_REAL_EMAIL=false node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:email": "npm run test:setup && cross-env NODE_ENV=test USE_REAL_EMAIL=true node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:watch": "cross-env NODE_ENV=test USE_REAL_EMAIL=false node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
-    "test:coverage": "cross-env NODE_ENV=test USE_REAL_EMAIL=false node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test:setup": "cross-env DOTENV_CONFIG_PATH=.env.test node -r dotenv/config src/test/setup-db.js",
+    "test": "npm run test:setup && cross-env NODE_ENV=test DOTENV_CONFIG_PATH=.env.test node -r dotenv/config --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "cross-env NODE_ENV=test DOTENV_CONFIG_PATH=.env.test node -r dotenv/config --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "test:coverage": "cross-env NODE_ENV=test DOTENV_CONFIG_PATH=.env.test node -r dotenv/config --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "migrate:make": "knex migrate:make --knexfile knexfile.js",
     "migrate:latest": "knex migrate:latest --knexfile knexfile.js",
     "migrate:rollback": "knex migrate:rollback --knexfile knexfile.js",
@@ -35,7 +34,11 @@
     "fastify": "^5.4.0",
     "jsonwebtoken": "^9.0.2",
     "knex": "^3.1.0",
-    "pg": "^8.16.3"
+    "nodemailer": "^7.0.5",
+    "pg": "^8.16.3",
+    "pino": "^10.1.0",
+    "pino-pretty": "^13.1.2",
+    "pino-seq": "^3.0.0"
   },
   "devDependencies": {
     "@jest/globals": "^30.0.5",

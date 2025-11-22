@@ -52,6 +52,26 @@ export default {
       directory: './src/db/migrations'
     }
   },
+  staging: {
+    client: 'pg',
+    connection: process.env.PG_CONNECTION_STRING,
+    pool: {
+      min: 2,
+      max: 20,
+      acquireTimeoutMillis: 60000,
+      createTimeoutMillis: 30000,
+      destroyTimeoutMillis: 5000,
+      idleTimeoutMillis: 30000,
+      reapIntervalMillis: 1000,
+      createRetryIntervalMillis: 100,
+      propagateCreateError: false
+    },
+    migrations: {
+      directory: './src/db/migrations',
+      extension: 'js',
+      loadExtensions: ['.js']
+    },
+  },
   production: {
     client: 'pg',
     connection: process.env.PG_CONNECTION_STRING,

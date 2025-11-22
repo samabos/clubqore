@@ -1,6 +1,130 @@
 export class RoleService {
   constructor(db) {
     this.db = db;
+    this.roleCache = null;
+    this.roleMapByName = null;
+    this.roleMapById = null;
+  }
+
+  /**
+   * Initialize and cache all roles from database
+   */
+  async initializeCache() {
+    if (this.roleCache) return;
+
+    const roles = await this.db('roles')
+      .select('id', 'name', 'display_name', 'is_active')
+      .where({ is_active: true });
+
+    this.roleCache = roles;
+    this.roleMapByName = {};
+    this.roleMapById = {};
+
+    roles.forEach(role => {
+      this.roleMapByName[role.name] = role;
+      this.roleMapById[role.id] = role;
+    });
+  }
+
+  /**
+   * Get role ID by role name
+   * @param {string} roleName - Role name (e.g., 'club_manager')
+   * @returns {Promise<number>} Role ID
+   */
+  async getRoleIdByName(roleName) {
+    await this.initializeCache();
+
+    const role = this.roleMapByName[roleName];
+    if (!role) {
+      throw new Error(`Role "${roleName}" not found`);
+    }
+
+    return role.id;
+  }
+
+  /**
+   * Get role name by role ID
+   * @param {number} roleId - Role ID
+   * @returns {Promise<string>} Role name
+   */
+  async getRoleNameById(roleId) {
+    await this.initializeCache();
+
+    const role = this.roleMapById[roleId];
+    if (!role) {
+      throw new Error(`Role with ID ${roleId} not found`);
+    }
+
+    return role.name;
+  }
+
+  /**
+   * Get complete role object by name
+   * @param {string} roleName - Role name
+   * @returns {Promise<Object>} Role object
+   */
+  async getRoleByName(roleName) {
+    await this.initializeCache();
+
+    const role = this.roleMapByName[roleName];
+    if (!role) {
+      throw new Error(`Role "${roleName}" not found`);
+    }
+
+    return role;
+  }
+
+  /**
+   * Get multiple role IDs by names
+   * @param {Array<string>} roleNames - Array of role names
+   * @returns {Promise<Array<number>>} Array of role IDs
+   */
+  async getRoleIdsByNames(roleNames) {
+    await this.initializeCache();
+
+    return roleNames.map(name => {
+      const role = this.roleMapByName[name];
+      if (!role) {
+        throw new Error(`Role "${name}" not found`);
+      }
+      return role.id;
+    });
+  }
+
+  /**
+   * Get multiple role names by IDs
+   * @param {Array<number>} roleIds - Array of role IDs
+   * @returns {Promise<Array<string>>} Array of role names
+   */
+  async getRoleNamesByIds(roleIds) {
+    await this.initializeCache();
+
+    return roleIds.map(id => {
+      const role = this.roleMapById[id];
+      if (!role) {
+        throw new Error(`Role with ID ${id} not found`);
+      }
+      return role.name;
+    });
+  }
+
+  /**
+   * Check if a role exists
+   * @param {string} roleName - Role name to check
+   * @returns {Promise<boolean>} True if role exists
+   */
+  async roleExists(roleName) {
+    await this.initializeCache();
+    return !!this.roleMapByName[roleName];
+  }
+
+  /**
+   * Clear the cache (useful for testing or when roles are updated)
+   */
+  clearCache() {
+    this.roleCache = null;
+    this.roleMapByName = null;
+    this.roleMapById = null;
   }
 
   /**
@@ -11,7 +135,7 @@ export class RoleService {
       const roles = await this.db('roles')
         .select('*')
         .orderBy('name', 'asc');
-      
+
       return roles;
     } catch (error) {
       console.error('Error getting all roles:', error);

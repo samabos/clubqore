@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   traefik:
     image: traefik:v2.10
@@ -18,7 +16,7 @@ services:
       - "./letsencrypt:/letsencrypt"
 
   db:
-    image: postgres:latest
+    image: postgres:16-alpine
     restart: always
     environment:
       POSTGRES_DB: app
@@ -28,6 +26,11 @@ services:
       - "5431:5432"  # Add this line to expose PostgreSQL port
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d app"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -49,25 +52,54 @@ services:
       - "traefik.http.routers.pgadmin.tls.certresolver=le"
       - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
 
-#  backend:
-#    build: ./backend
-#    environment:
-#      - PG_CONNECTION_STRING=postgres://user:password@db:5432/app
-#      - PORT=3000
-#    labels:
-#      - "traefik.enable=true"
-#      - "traefik.http.routers.backend.rule=Host(`api.example.com`)"
-#      - "traefik.http.routers.backend.entrypoints=websecure"
-#      - "traefik.http.routers.backend.tls.certresolver=le"
+  seq:
+    image: datalust/seq:latest
+    restart: unless-stopped
+    environment:
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_NOAUTHENTICATION=true
+    ports:
+      - "5341:80"      # Seq web UI
+      - "5342:5341"    # Seq ingestion endpoint
+    volumes:
+      - seq_data:/data
+    networks:
+      - default
 
-#  frontend:
-#    build: ./frontend
-#    labels:
-#      - "traefik.enable=true"
-#      - "traefik.http.routers.frontend.rule=Host(`app.example.com`)"
-#      - "traefik.http.routers.frontend.entrypoints=websecure"
-#      - "traefik.http.routers.frontend.tls.certresolver=le"
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - PG_CONNECTION_STRING=postgres://user:password@db:5432/app
+      - JWT_SECRET=your-dev-jwt-secret-change-in-production
+      - JWT_REFRESH_SECRET=your-dev-refresh-secret-change-in-production
+      - FRONTEND_URL=http://localhost:8080
+      - EMAIL_PROVIDER=ethereal
+      - EMAIL_FROM_NAME=ClubQore Dev
+      - SEQ_SERVER_URL=http://seq:5341
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      seq:
+        condition: service_started
+    networks:
+      - default
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=http://localhost:3000
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    networks:
+      - default
 
 volumes:
   db_data:
   pgadmin_data:
+  seq_data:
