@@ -68,7 +68,7 @@ export function RecentMembers({ members }: RecentMembersProps) {
   }, [members]);
 
   return (
-    <Card className="border-0 shadow-lg rounded-xl lg:col-span-2">
+    <Card className="border-0 shadow-lg rounded-xl">
       <CardHeader className="pb-4">
         <div className="flex justify-between items-center">
           <div>

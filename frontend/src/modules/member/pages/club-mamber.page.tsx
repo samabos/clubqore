@@ -8,9 +8,9 @@ import {
   MemberList,
   MemberLoading,
 } from "../components";
-import { useMembers } from "@/stores/membersStore";
 import { useTeams } from "@/stores/teamsStore";
 import { fetchTeamMembers } from "../../team/actions";
+import { fetchClubMembers } from "../actions/member-actions";
 import { ClubMember } from "../types";
 import { NotFoundError } from "@/lib/errors";
 import { toast } from "sonner";
@@ -21,11 +21,8 @@ export function ClubMemberPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("active");
   const [filterTeam, setFilterTeam] = useState("all");
-  const {
-    members,
-    loadMembers: loadMembersFromStore,
-    isLoading: isMembersLoading,
-  } = useMembers();
+  const [members, setMembers] = useState<ClubMember[]>([]);
+  const [isMembersLoading, setIsMembersLoading] = useState(false);
   const teamsHook = useTeams() as unknown as {
     teams: Array<{ id: number; name: string; color?: string }>;
     loadTeams: (forceRefresh?: boolean) => Promise<void>;
@@ -49,10 +46,12 @@ export function ClubMemberPage() {
     }
 
     setIsLoading(true);
+    setIsMembersLoading(true);
     try {
-      // Load via store (cached with TTL)
-      await loadMembersFromStore();
-      console.log("🔍 Members loaded via store:", members.length);
+      // Load members directly from API
+      const fetchedMembers = await fetchClubMembers();
+      setMembers(fetchedMembers);
+      console.log("🔍 Members loaded directly:", fetchedMembers.length);
     } catch (error) {
       if (
         error instanceof NotFoundError && error.message
@@ -63,8 +62,9 @@ export function ClubMemberPage() {
       }
     } finally {
       setIsLoading(false);
+      setIsMembersLoading(false);
     }
-  }, [navigate, isAuthenticated, loadMembersFromStore, members.length]);
+  }, [navigate, isAuthenticated]);
 
   const loadTeams = useCallback(async () => {
     if (!isAuthenticated || !tokenManager.getAccessToken()) {
