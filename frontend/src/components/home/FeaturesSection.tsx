@@ -22,64 +22,64 @@ const features = [
     title: "Member Management",
     description:
       "Streamline member registration, profiles, and tracking with advanced member management tools.",
-    color: "text-blue-600",
+    color: "text-primary",
     bgColor: "bg-blue-50",
   },
   {
     icon: Building2,
     title: "Club Administration",
     description:
-      "Comprehensive club management system for multiple football academies and training centers.",
-    color: "text-green-600",
-    bgColor: "bg-green-50",
+      "Comprehensive club management system for multiple football academies and training centres.",
+    color: "text-primary",
+    bgColor: "bg-purple-50",
   },
   {
     icon: Calendar,
     title: "Event Scheduling",
     description:
-      "Organize matches, training sessions, and tournaments with intelligent calendar management.",
-    color: "text-purple-600",
-    bgColor: "bg-purple-50",
+      "Organise matches, training sessions, and tournaments with intelligent calendar management.",
+    color: "text-primary",
+    bgColor: "bg-blue-50",
   },
   {
     icon: CreditCard,
     title: "Billing & Payments",
     description:
       "Automated payment processing, subscription management, and financial reporting.",
-    color: "text-orange-600",
-    bgColor: "bg-orange-50",
+    color: "text-primary",
+    bgColor: "bg-purple-50",
   },
   {
     icon: MessageSquare,
     title: "Communication Hub",
     description:
       "Connect coaches, parents, and members with built-in messaging and notification systems.",
-    color: "text-indigo-600",
-    bgColor: "bg-indigo-50",
+    color: "text-primary",
+    bgColor: "bg-blue-50",
   },
   {
     icon: CheckCircle,
     title: "Attendance Tracking",
     description:
       "Monitor participation rates and generate detailed attendance reports for all activities.",
-    color: "text-emerald-600",
-    bgColor: "bg-emerald-50",
+    color: "text-primary",
+    bgColor: "bg-purple-50",
   },
   {
     icon: Baby,
     title: "Parent Portal",
     description:
       "Dedicated parent dashboard to track their child's progress, payments, and communications.",
-    color: "text-pink-600",
-    bgColor: "bg-pink-50",
+    color: "text-primary",
+    bgColor: "bg-blue-50",
   },
   {
     icon: Shield,
     title: "Data Security",
     description:
       "Enterprise-grade security with encryption, backup, and compliance with data protection laws.",
-    color: "text-red-600",
-    bgColor: "bg-red-50",
+    color: "text-primary",
+    bgColor: "bg-purple-50",
   },
 ];
 
@@ -89,12 +89,11 @@ export function FeaturesSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Everything You Need to Manage Your Football Club
+            Built for Modern Football Clubs
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Our comprehensive platform provides all the tools you need to
-            streamline operations, engage with members, and grow your football
-            club.
+            We're creating a fresh, simple platform designed specifically for grassroots
+            football clubs. All the essential tools you need, without the complexity.
           </p>
         </div>
 
@@ -110,12 +109,12 @@ export function FeaturesSection() {
                 >
                   <feature.icon className={`w-6 h-6 ${feature.color}`} />
                 </div>
-                <CardTitle className="text-lg font-semibold text-gray-900">
+                <CardTitle className="text-base font-semibold text-gray-900">
                   {feature.title}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription className="text-gray-600 leading-relaxed">
+                <CardDescription className="text-gray-600 text-sm leading-relaxed">
                   {feature.description}
                 </CardDescription>
               </CardContent>
