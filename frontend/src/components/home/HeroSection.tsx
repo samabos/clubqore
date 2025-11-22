@@ -14,8 +14,8 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <ImageWithFallback
-          src="https://images.unsplash.com/photo-1487466365202-1afdb86c764e?w=1920&h=1080&fit=crop&q=80"
-          alt="Green football field"
+          src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1920&h=1080&fit=crop&q=80"
+          alt="Youth football academy"
           className="w-full h-full object-cover object-center"
         />
         {/* Gradient overlay for better text readability - stronger on left where text is */}
