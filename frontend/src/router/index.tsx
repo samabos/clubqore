@@ -16,6 +16,8 @@ import {
 } from "../modules/team";
 import { PersonnelManagementPage } from "../modules/personnel/pages";
 import { ClubMemberPage, ManageMemberPage } from "../modules/member/pages";
+import { SeasonManagementPage } from "../modules/season/pages/season-management.page";
+import { TrainingSessionManagementPage } from "../modules/training-session/pages/training-session-management.page";
 import { ParentModule } from "../components/ParentModule";
 import { AppLayout } from "../components/layout";
 import { ProtectedRoute } from "../components/ProtectedRoute";
@@ -101,6 +103,14 @@ export const router = createBrowserRouter([
       {
         path: "club/members",
         element: <ClubMemberPage />,
+      },
+      {
+        path: "seasons",
+        element: <SeasonManagementPage />,
+      },
+      {
+        path: "training-sessions",
+        element: <TrainingSessionManagementPage />,
       },
       {
         path: "teams",

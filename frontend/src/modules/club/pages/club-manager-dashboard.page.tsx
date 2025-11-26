@@ -8,6 +8,7 @@ import {
   RecentMembers,
   AlertsPanel,
   UpcomingSessions,
+  UpcomingMatches,
   LoadingSpinner,
 } from "../components";
 
@@ -79,7 +80,10 @@ export function ClubManagerDashboard() {
       <DashboardHeader />
       <StatsGrid members={members} />
 
-      <UpcomingSessions />
+      <div className="grid grid-cols-1 gap-6">
+        <UpcomingSessions />
+        <UpcomingMatches />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <RecentMembers members={members} />

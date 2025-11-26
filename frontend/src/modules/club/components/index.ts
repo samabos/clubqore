@@ -4,6 +4,7 @@ export { StatsGrid } from "./stats-grid";
 export { RecentMembers } from "./recent-members";
 export { AlertsPanel } from "./alerts-panel";
 export { UpcomingSessions } from "./upcoming-sessions";
+export { UpcomingMatches } from "./upcoming-matches";
 export { MonthlyGoals } from "./monthly-goals";
 export { QuickActions } from "./quick-actions";
 export { LoadingSpinner } from "./loading-spinner";

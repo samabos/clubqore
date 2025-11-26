@@ -1,9 +1,12 @@
-import { ClubController, MemberController, PersonnelController, TeamController } from '../controllers/index.js';
+import { ClubController, MemberController, PersonnelController, TeamController, SeasonController, TrainingSessionController, MatchController } from '../controllers/index.js';
 import { createAuthMiddleware } from '../../auth/middleware.js';
 import { clubRoutes } from './clubRoutes.js';
 import { memberRoutes } from './memberRoute.js';
 import { personnelRoutes } from './personnelRoutes.js';
 import { teamRoutes } from './teamRoutes.js';
+import { seasonRoutes } from './seasonRoutes.js';
+import { trainingSessionRoutes } from './trainingSessionRoutes.js';
+import { matchRoutes } from './matchRoutes.js';
 
 export async function registerClubRoutes(fastify, options) {
   // Create authentication middleware
@@ -14,6 +17,9 @@ export async function registerClubRoutes(fastify, options) {
   const memberController = new MemberController(fastify.db);
   const personnelController = new PersonnelController(fastify.db);
   const teamController = new TeamController(fastify.db);
+  const seasonController = new SeasonController(fastify.db);
+  const trainingSessionController = new TrainingSessionController(fastify.db);
+  const matchController = new MatchController(fastify.db);
 
   // Register club routes
   await fastify.register(clubRoutes, {
@@ -41,6 +47,27 @@ export async function registerClubRoutes(fastify, options) {
   await fastify.register(teamRoutes, {
     prefix: '/teams',
     teamController,
+    authenticate
+  });
+
+  // Register season routes
+  await fastify.register(seasonRoutes, {
+    prefix: '/seasons',
+    seasonController,
+    authenticate
+  });
+
+  // Register training session routes
+  await fastify.register(trainingSessionRoutes, {
+    prefix: '/training-sessions',
+    trainingSessionController,
+    authenticate
+  });
+
+  // Register match routes
+  await fastify.register(matchRoutes, {
+    prefix: '/matches',
+    matchController,
     authenticate
   });
 };
