@@ -122,11 +122,10 @@ class SecureTokenManager {
       isExpiringSoon: timeUntilExpiry > 0 && timeUntilExpiry <= this.EXPIRY_WARNING
     });
 
-    // Only treat as expired after the actual expiration time
+    // Don't clear tokens here - let the API interceptor handle token refresh
+    // This allows the 401 handler in base.ts to attempt refresh with the refresh token
     if (now > expiresAt) {
-      console.log('🔐 Token expired, clearing tokens');
-      this.clearTokens();
-      return null;
+      console.log('🔐 Token expired, but returning it to allow refresh attempt');
     }
 
     return tokenData.accessToken;

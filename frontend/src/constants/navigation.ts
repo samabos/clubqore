@@ -1,16 +1,19 @@
-import { 
-  Home, 
-  Users, 
-  Building2, 
-  CreditCard, 
-  MessageSquare, 
-  Calendar, 
-  CheckCircle, 
+import {
+  Home,
+  Users,
+  Building2,
+  CreditCard,
+  MessageSquare,
+  Calendar,
+  CheckCircle,
   Baby,
   User,
   UserCog,
   Settings,
   Shield,
+  CalendarDays,
+  Trophy,
+  Dumbbell,
 } from "lucide-react";
 import { MenuItem } from "../types/user";
 import { UserRole } from "../types/auth";
@@ -39,15 +42,25 @@ export const menuItemsByRole: Record<UserRole, MenuItem[]> = {
   ],
   club_manager: [
     { id: "dashboard", label: "Dashboard", icon: Home, link: "/app/club-manager-dashboard" },
-    { 
-      id: "club", 
-      label: "Club Management", 
-      icon: Building2, 
+    {
+      id: "club",
+      label: "Club Management",
+      icon: Building2,
       children: [
         { id: "club-details", label: "Club Details", icon: Settings, link: "/app/club/setup" },
         { id: "club-personnel", label: "Personnel", icon: UserCog, link: "/app/club/personnel" },
         { id: "club-members", label: "Members", icon: Users, link: "/app/club/members" },
         { id: "club-teams", label: "Teams", icon: Shield, link: "/app/teams" },
+      ]
+    },
+    {
+      id: "operations",
+      label: "Club Operations",
+      icon: CalendarDays,
+      children: [
+        { id: "seasons", label: "Seasons", icon: Calendar, link: "/app/seasons" },
+        { id: "training-sessions", label: "Training Sessions", icon: Dumbbell, link: "/app/training-sessions" },
+        { id: "matches", label: "Matches", icon: Trophy, link: "/app/matches" },
       ]
     },
    /* { id: "member-management", label: "Member Management", icon: Users, link: "/app/members" },
