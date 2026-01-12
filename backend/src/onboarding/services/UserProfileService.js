@@ -48,16 +48,33 @@ export class UserProfileService {
 
     console.log('🔍 Generated full name:', fullName);
 
+    // Handle address dual-write (both TEXT and JSONB)
+    let addressText = null;
+    let addressStructured = null;
+
+    if (profileData.address) {
+      if (typeof profileData.address === 'string') {
+        // Legacy string format - write to TEXT column only
+        addressText = profileData.address;
+      } else if (typeof profileData.address === 'object') {
+        // New structured format - write to both columns
+        addressStructured = JSON.stringify(profileData.address);
+        // Also write to TEXT column for backward compatibility (use street or full address)
+        addressText = profileData.address.street || null;
+      }
+    }
+
     const profileFields = {
       first_name: profileData.firstName,
       last_name: profileData.lastName,
       date_of_birth: profileData.dateOfBirth,
       phone: profileData.phone,
-      //address: profileData.address,
-      //emergency_contact: profileData.emergencyContact,
-      //workplace: profileData.workplace,
-      //work_phone: profileData.workPhone,
-      //medical_info: profileData.medicalInfo,
+      address: addressText,
+      address_structured: addressStructured,
+      emergency_contact: profileData.emergencyContact ? JSON.stringify(profileData.emergencyContact) : undefined,
+      workplace: profileData.workplace,
+      work_phone: profileData.workPhone,
+      medical_info: profileData.medicalInfo,
       full_name: fullName,
       updated_at: new Date()
     };
@@ -207,14 +224,37 @@ export class UserProfileService {
       };
     }
 
+    // Parse address - prefer structured format, fallback to text
+    let address = null;
+    if (profile.address_structured) {
+      try {
+        address = JSON.parse(profile.address_structured);
+      } catch (e) {
+        console.error('Failed to parse address_structured:', e);
+        address = profile.address || null;
+      }
+    } else {
+      address = profile.address || null;
+    }
+
+    // Parse emergency contact if it's JSON
+    let emergencyContact = profile.emergency_contact;
+    if (typeof emergencyContact === 'string') {
+      try {
+        emergencyContact = JSON.parse(emergencyContact);
+      } catch (e) {
+        // It's already a plain object or null
+      }
+    }
+
     return {
       firstName: profile.first_name || null,
       lastName: profile.last_name || null,
       fullName: profile.full_name || null,
       dateOfBirth: profile.date_of_birth || null,
       phone: profile.phone || null,
-      address: profile.address || null,
-      emergencyContact: profile.emergency_contact || null,
+      address,
+      emergencyContact,
       workplace: profile.workplace || null,
       workPhone: profile.work_phone || null,
       medicalInfo: profile.medical_info || null,

@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { MobileNavigation } from "./MobileNavigation";
 import { SidebarProvider } from "../ui/sidebar";
@@ -21,7 +21,7 @@ import {
 import { useAppStore } from "../../stores/appStore";
 import { useAuth } from "../../stores/authStore";
 import { useLocation } from "react-router-dom";
-import type { MenuItem } from "../../types/user";
+import type { MenuItem, UserRole } from "../../types/user";
 import { LogOut, Settings, User, ChevronDown } from "lucide-react";
 
 export function AppLayout() {
@@ -31,6 +31,7 @@ export function AppLayout() {
   const { isMobile } = useAppStore();
   const { user, signOut, currentRole } = useAuth(); // Get user and currentRole from auth store
   const location = useLocation();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
@@ -104,17 +105,19 @@ export function AppLayout() {
 
               <div className="flex items-center gap-2 lg:gap-4">
                 {/* Current Role Badge */}
-                <Badge
-                  variant="outline"
-                  className={`text-xs px-2 py-1 rounded-lg ${getRoleColor(
-                    currentRole
-                  )} hidden lg:flex items-center gap-1`}
-                >
-                  {getRoleIcon(currentRole)}
-                  <span className="capitalize">
-                    {getRoleDisplayName(currentRole)}
-                  </span>
-                </Badge>
+                {currentRole && (
+                  <Badge
+                    variant="outline"
+                    className={`text-xs px-2 py-1 rounded-lg ${getRoleColor(
+                      currentRole
+                    )} hidden lg:flex items-center gap-1`}
+                  >
+                    {getRoleIcon(currentRole)}
+                    <span className="capitalize">
+                      {getRoleDisplayName(currentRole)}
+                    </span>
+                  </Badge>
+                )}
 
                 {/* User Avatar and Info with Dropdown - Desktop only */}
                 <div className="hidden lg:block">
@@ -124,10 +127,18 @@ export function AppLayout() {
                         variant="ghost"
                         className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-xl"
                       >
-                        <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-xl bg-primary flex items-center justify-center">
-                          <span className="text-white text-sm lg:text-base font-medium">
-                            {user?.initials}
-                          </span>
+                        <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-xl bg-primary flex items-center justify-center overflow-hidden">
+                          {user?.avatar ? (
+                            <img
+                              src={user.avatar}
+                              alt={user?.name || 'User'}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-white text-sm lg:text-base font-medium">
+                              {user?.initials}
+                            </span>
+                          )}
                         </div>
                         <div className="hidden xl:block text-left">
                           <p className="text-sm font-medium text-gray-900">
@@ -144,11 +155,11 @@ export function AppLayout() {
                         <p className="text-xs text-gray-500">{user?.email}</p>
                       </div>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="cursor-pointer">
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/app/profile')}>
                         <User className="mr-2 h-4 w-4" />
                         Profile Settings
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="cursor-pointer">
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/app/account')}>
                         <Settings className="mr-2 h-4 w-4" />
                         Account Settings
                       </DropdownMenuItem>

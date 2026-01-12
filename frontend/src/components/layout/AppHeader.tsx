@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { SidebarTrigger } from "../ui/sidebar";
 import { MenuItem } from "@/types/user";
 import { AuthUser, UserRole } from "@/types/auth";
-import { getRoleIcon, getRoleColor } from "@/utils/roleHelpers";
+import { getRoleIcon, getRoleColor, getRoleDisplayName } from "@/utils/roleHelpers";
 import { Search, Bell, Settings, ChevronDown, ArrowLeft } from "lucide-react";
 
 interface AppHeaderProps {
@@ -63,10 +63,7 @@ export function AppHeader({
             )} hidden lg:flex items-center gap-1`}
           >
             {getRoleIcon(userRole)}
-            {userRole === "club_manager" && "Club Manager"}
-            {userRole === "admin" && "Admin"}
-            {userRole === "member" && "Member"}
-            {userRole === "parent" && "Parent"}
+            {getRoleDisplayName(userRole)}
           </Badge>
 
           {/* Search - Responsive */}
@@ -125,8 +122,8 @@ export function AppHeader({
                   )}`}
                 >
                   {getRoleIcon(userRole)}
-                  <span className="ml-1 capitalize">
-                    {userRole.replace("_", " ")}
+                  <span className="ml-1">
+                    {getRoleDisplayName(userRole)}
                   </span>
                 </Badge>
               </div>

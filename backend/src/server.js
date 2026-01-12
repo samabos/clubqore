@@ -18,12 +18,21 @@ loadEnvironment();
 
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import cookie from '@fastify/cookie';
+import rateLimit from '@fastify/rate-limit';
 import { authRoutes } from './auth/index.js';
 import { registerOnboardingRoutes } from './onboarding/routes/index.js';
 import { registerClubRoutes } from './club/routes/index.js';
+import { registerParentRoutes } from './parent/routes/index.js';
+import { registerAdminRoutes } from './admin/index.js';
+import { postcodeRoutes } from './services/postcodeRoutes.js';
+import { startInvoiceScheduler } from './workers/invoice-scheduler.js';
 import dbConnector from './db/connector.js';
 import { config, validateConfig } from './config/index.js';
 import logger from './config/logger.js';
+
+// Environment check
+const isProduction = process.env.NODE_ENV === 'production';
 
 console.log('📦 Modules imported successfully');
 
@@ -100,20 +109,49 @@ async function createServer() {
   fastify.log = logger;
 
   // Register plugins
-  await fastify.register(import('@fastify/swagger'), swaggerConfig);
-  await fastify.register(import('@fastify/swagger-ui'), swaggerUIConfig);
-  
-  await fastify.register(cors, { 
-    origin: [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://localhost:3001',
-      'http://127.0.0.1:3001',
-      'http://localhost:5173',
-      'http://127.0.0.1:5173',
-      /^http:\/\/localhost:\d+$/,
-      /^http:\/\/127\.0\.0\.1:\d+$/
-    ],
+
+  // Only register Swagger docs in development
+  if (!isProduction) {
+    await fastify.register(import('@fastify/swagger'), swaggerConfig);
+    await fastify.register(import('@fastify/swagger-ui'), swaggerUIConfig);
+    fastify.log.info('📖 Swagger docs enabled (development mode)');
+  }
+
+  // Cookie support for httpOnly auth cookies
+  await fastify.register(cookie, {
+    secret: config.jwtSecret, // Used for signing cookies
+    parseOptions: {}
+  });
+
+  // Rate limiting - global config with selective overrides per route
+  await fastify.register(rateLimit, {
+    global: true,
+    max: 100, // Default: 100 requests per minute
+    timeWindow: '1 minute',
+    errorResponseBuilder: (request, context) => ({
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: `Rate limit exceeded. Try again in ${Math.ceil(context.ttl / 1000)} seconds.`,
+      retryAfter: Math.ceil(context.ttl / 1000)
+    })
+  });
+
+  // CORS configuration - secure in production
+  const corsOrigins = isProduction
+    ? [process.env.FRONTEND_URL].filter(Boolean) // Only allow configured frontend URL in production
+    : [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        /^http:\/\/localhost:\d+$/,
+        /^http:\/\/127\.0\.0\.1:\d+$/
+      ];
+
+  await fastify.register(cors, {
+    origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -134,8 +172,17 @@ async function createServer() {
   fastify.log.info('🏢 Registering club routes...');
   await fastify.register(registerClubRoutes);
 
+  fastify.log.info('👨‍👩‍👧 Registering parent routes...');
+  await fastify.register(registerParentRoutes);
+
   fastify.log.info('🎯 Registering onboarding routes...');
   await fastify.register(registerOnboardingRoutes);
+
+  fastify.log.info('🔧 Registering admin routes...');
+  await fastify.register(registerAdminRoutes);
+
+  fastify.log.info('📮 Registering postcode routes...');
+  await fastify.register(postcodeRoutes);
 
   // Health check endpoint
   fastify.get('/health', {
@@ -177,13 +224,23 @@ async function startServer() {
     });
 
     logger.info({ port: PORT, host: HOST }, `🚀 Server running at ${address}`);
-    logger.info(`📖 API Documentation available at ${address}/docs`);
+    if (!isProduction) {
+      logger.info(`📖 API Documentation available at ${address}/docs`);
+    }
     logger.info(`❤️  Health check available at ${address}/health`);
-    
+
+    // Start invoice scheduler
+    const invoiceScheduler = startInvoiceScheduler(fastify.db);
+    logger.info('✅ Invoice scheduler initialized');
+
     // Graceful shutdown
     const gracefulShutdown = async (signal) => {
       logger.info(`🛑 Received ${signal}, shutting down gracefully...`);
       try {
+        // Stop the scheduler
+        if (invoiceScheduler) {
+          invoiceScheduler.stop();
+        }
         await fastify.close();
         logger.info('✅ Server closed successfully');
         process.exit(0);

@@ -1,4 +1,4 @@
-import { ClubController, MemberController, PersonnelController, TeamController, SeasonController, TrainingSessionController, MatchController } from '../controllers/index.js';
+import { ClubController, MemberController, PersonnelController, TeamController, SeasonController, TrainingSessionController, MatchController, BillingController } from '../controllers/index.js';
 import { createAuthMiddleware } from '../../auth/middleware.js';
 import { clubRoutes } from './clubRoutes.js';
 import { memberRoutes } from './memberRoute.js';
@@ -7,6 +7,7 @@ import { teamRoutes } from './teamRoutes.js';
 import { seasonRoutes } from './seasonRoutes.js';
 import { trainingSessionRoutes } from './trainingSessionRoutes.js';
 import { matchRoutes } from './matchRoutes.js';
+import { billingRoutes } from './billingRoutes.js';
 
 export async function registerClubRoutes(fastify, options) {
   // Create authentication middleware
@@ -20,6 +21,7 @@ export async function registerClubRoutes(fastify, options) {
   const seasonController = new SeasonController(fastify.db);
   const trainingSessionController = new TrainingSessionController(fastify.db);
   const matchController = new MatchController(fastify.db);
+  const billingController = new BillingController(fastify.db);
 
   // Register club routes
   await fastify.register(clubRoutes, {
@@ -68,6 +70,13 @@ export async function registerClubRoutes(fastify, options) {
   await fastify.register(matchRoutes, {
     prefix: '/matches',
     matchController,
+    authenticate
+  });
+
+  // Register billing routes
+  await fastify.register(billingRoutes, {
+    prefix: '',
+    billingController,
     authenticate
   });
 };

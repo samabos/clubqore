@@ -14,7 +14,8 @@ export class UserController {
       if (error instanceof AppError) {
         return reply.code(error.statusCode).send({ error: error.message });
       }
-      throw error;
+      request.log.error('Get profile error:', error);
+      return reply.code(500).send({ error: 'An error occurred while retrieving profile' });
     }
   }
 
@@ -36,7 +37,8 @@ export class UserController {
       if (error instanceof AppError) {
         return reply.code(error.statusCode).send({ error: error.message });
       }
-      throw error;
+      request.log.error('Update profile error:', error);
+      return reply.code(500).send({ error: 'An error occurred while updating profile' });
     }
   }
 
@@ -48,7 +50,8 @@ export class UserController {
       if (error instanceof AppError) {
         return reply.code(error.statusCode).send({ error: error.message });
       }
-      throw error;
+      request.log.error('Delete profile error:', error);
+      return reply.code(500).send({ error: 'An error occurred while deleting profile' });
     }
   }
 
@@ -61,7 +64,8 @@ export class UserController {
       if (error instanceof AppError) {
         return reply.code(error.statusCode).send({ error: error.message });
       }
-      throw error;
+      request.log.error('Get user roles error:', error);
+      return reply.code(500).send({ error: 'An error occurred while retrieving user roles' });
     }
   }
 }

@@ -2,23 +2,26 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { AuthUser, UserRole } from '@/types/auth';
 import { authService, SignInData, SignUpData } from '@/services/authService';
-import { tokenManager } from '@/api/secureAuth';
+import { tokenManager, getScopesFromToken } from '@/api/secureAuth';
 import { Club } from '@/types/club';
 
 export interface AuthState {
   // Core auth state
   user: AuthUser | null;
   isAuthenticated: boolean;
-  
+
   // Token state
   hasToken: boolean;
   tokenExpiresAt: number | null;
   isTokenExpiringSoon: boolean;
-  
+
+  // RBAC scopes (from JWT token)
+  scopes: string[];
+
   // Related data
   userClub: Club | null;
   clubDataLoaded: boolean;
-  
+
   // UI state
   isLoading: boolean;
   error: string | null;
@@ -40,6 +43,10 @@ export interface AuthState {
   setUser: (user: AuthUser | null) => void;
   setUserClub: (club: Club | null) => void;
   setClubDataLoaded: (loaded: boolean) => void;
+  setScopes: (scopes: string[]) => void;
+  restoreScopesFromToken: () => void;
+  clearAuth: () => void;
+  updateUserAvatar: (avatar: string) => void;
 
   // Actions - Navigation callback (set by router)
   navigate?: (path: string) => void;
@@ -85,6 +92,7 @@ export const useAuthStore = create<AuthState>()(
         hasToken: !!tokenManager.getAccessToken(),
         tokenExpiresAt: null,
         isTokenExpiringSoon: false,
+        scopes: [],
         userClub: null,
         clubDataLoaded: false,
         isLoading: false,
@@ -93,19 +101,25 @@ export const useAuthStore = create<AuthState>()(
         // Authentication actions
         signIn: async (credentials: SignInData) => {
           set({ isLoading: true, error: null });
-          
+
           try {
-            const { user } = await authService.signIn(credentials);
-            
+            const { user, accessToken } = await authService.signIn(credentials);
+
+            // Extract scopes from JWT token
+            const tokenScopes = accessToken ? getScopesFromToken(accessToken) : { roles: [], scopes: [] };
+
             // Enhance user object with display properties
             const name = getDisplayName(user);
             const initials = generateInitials(name, user.email);
-            const enhancedUser = { ...user, name, initials };
-            
-            set({ 
-              user: enhancedUser, 
-              isAuthenticated: true, 
-              isLoading: false 
+            // Get avatar from user object or profile
+            const avatar = user.avatar || user.profile?.profileImage;
+            const enhancedUser = { ...user, name, initials, avatar };
+
+            set({
+              user: enhancedUser,
+              isAuthenticated: true,
+              scopes: tokenScopes.scopes,
+              isLoading: false
             });
 
             // Update token state
@@ -118,25 +132,25 @@ export const useAuthStore = create<AuthState>()(
             console.log('🔄 signIn: About to call loadClubData for user:', enhancedUser.roles);
             await get().loadClubData(enhancedUser);
             console.log('🔄 signIn: loadClubData completed');
-            
+
             const currentState = get();
-            console.log('🔄 signIn: Final state after loadClubData:', { 
-              userClub: currentState.userClub, 
-              clubDataLoaded: currentState.clubDataLoaded 
+            console.log('🔄 signIn: Final state after loadClubData:', {
+              userClub: currentState.userClub,
+              clubDataLoaded: currentState.clubDataLoaded,
+              scopes: currentState.scopes
             });
 
             // Navigate based on onboarding status
             const { navigate } = get();
             if (navigate) {
-              //navigate(user.isOnboarded ? '/app' : '/onboarding');
               navigate('/app');
             }
-            
+
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Sign in failed';
-            set({ 
-              error: errorMessage, 
-              isLoading: false 
+            set({
+              error: errorMessage,
+              isLoading: false
             });
             throw error;
           }
@@ -144,19 +158,25 @@ export const useAuthStore = create<AuthState>()(
 
         signUp: async (userData: SignUpData) => {
           set({ isLoading: true, error: null });
-          
+
           try {
-            const { user } = await authService.signUp(userData);
-            
+            const { user, accessToken } = await authService.signUp(userData);
+
+            // Extract scopes from JWT token
+            const tokenScopes = accessToken ? getScopesFromToken(accessToken) : { roles: [], scopes: [] };
+
             // Enhance user object with display properties
             const name = getDisplayName(user);
             const initials = generateInitials(name, user.email);
-            const enhancedUser = { ...user, name, initials };
-            
-            set({ 
-              user: enhancedUser, 
-              isAuthenticated: true, 
-              isLoading: false 
+            // Get avatar from user object or profile
+            const avatar = user.avatar || user.profile?.profileImage;
+            const enhancedUser = { ...user, name, initials, avatar };
+
+            set({
+              user: enhancedUser,
+              isAuthenticated: true,
+              scopes: tokenScopes.scopes,
+              isLoading: false
             });
 
             // Update token state
@@ -202,6 +222,7 @@ export const useAuthStore = create<AuthState>()(
               hasToken: false,
               tokenExpiresAt: null,
               isTokenExpiringSoon: false,
+              scopes: [],
               userClub: null,
               clubDataLoaded: false,
               isLoading: false,
@@ -218,19 +239,21 @@ export const useAuthStore = create<AuthState>()(
         getCurrentUser: async () => {
           set({ isLoading: true, error: null });
           console.log('🔄 getCurrentUser: Starting, preserving club data...');
-          
+
           try {
             const user = await authService.getCurrentUser();
-            
+
             // Enhance user object with display properties
             const name = getDisplayName(user);
             const initials = generateInitials(name, user.email);
-            const enhancedUser = { ...user, name, initials };
-            
-            set({ 
-              user: enhancedUser, 
-              isAuthenticated: true, 
-              isLoading: false 
+            // Get avatar from user object or profile
+            const avatar = user.avatar || user.profile?.profileImage;
+            const enhancedUser = { ...user, name, initials, avatar };
+
+            set({
+              user: enhancedUser,
+              isAuthenticated: true,
+              isLoading: false
             });
 
             // Load club data if needed
@@ -258,6 +281,45 @@ export const useAuthStore = create<AuthState>()(
         setUserClub: (club) => set({ userClub: club }),
         
         setClubDataLoaded: (loaded) => set({ clubDataLoaded: loaded }),
+
+        setScopes: (scopes) => set({ scopes }),
+
+        // Restore scopes from JWT token (called on app initialization)
+        restoreScopesFromToken: () => {
+          const accessToken = tokenManager.getAccessToken();
+          if (accessToken) {
+            const { scopes } = getScopesFromToken(accessToken);
+            console.log('🔑 Restored scopes from token:', scopes.length, 'scopes');
+            set({ scopes });
+          } else {
+            console.log('🔑 No access token found, cannot restore scopes');
+          }
+        },
+
+        clearAuth: () => {
+          // Stop token refresh first
+          get().stopTokenRefresh();
+          // Clear all auth state
+          set({
+            user: null,
+            isAuthenticated: false,
+            hasToken: false,
+            tokenExpiresAt: null,
+            isTokenExpiringSoon: false,
+            scopes: [],
+            userClub: null,
+            clubDataLoaded: false,
+            isLoading: false,
+            error: null
+          });
+        },
+
+        updateUserAvatar: (avatar: string) => {
+          const { user } = get();
+          if (user) {
+            set({ user: { ...user, avatar } });
+          }
+        },
 
         setNavigate: (navigate) => set({ navigate }),
 
@@ -399,6 +461,7 @@ export const useAuth = () => {
     hasToken,
     tokenExpiresAt,
     isTokenExpiringSoon,
+    scopes,
     userClub,
     clubDataLoaded,
     isLoading,
@@ -417,47 +480,56 @@ export const useAuth = () => {
     setUserClub,
     setClubDataLoaded,
     reloadClubData,
+    restoreScopesFromToken,
+    updateUserAvatar,
   } = useAuthStore();
 
   return {
     // Auth state
     user,
     isAuthenticated,
+    scopes,
     userClub,
     clubDataLoaded,
     isLoading,
     error,
-    
+
     // Token state
     hasToken,
     tokenExpiresAt,
     isTokenExpiringSoon,
-    
+
     // Auth actions
     signIn,
     signUp,
     signOut,
     getCurrentUser,
     clearError,
-    
+
     // Token actions
     refreshToken,
     checkTokenValidity,
     startTokenRefresh,
     stopTokenRefresh,
     updateTokenState,
-    
+
     // Navigation
     setNavigate,
-    
+
     // Club data management
     setUserClub,
     setClubDataLoaded,
     reloadClubData,
-    
+
+    // Scope restoration
+    restoreScopesFromToken,
+
+    // User updates
+    updateUserAvatar,
+
     // Derived state
-    currentRole: user?.roles || [] as UserRole[],
-    
+    currentRole: (user?.roles?.[0] || null) as UserRole | null,
+
     // Token utilities
     tokenExpiresIn: tokenExpiresAt ? Math.max(0, tokenExpiresAt - Date.now()) : 0,
     tokenExpiresInMinutes: tokenExpiresAt ? Math.max(0, Math.ceil((tokenExpiresAt - Date.now()) / 60000)) : 0,

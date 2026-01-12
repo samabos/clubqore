@@ -15,7 +15,23 @@ export class ClubService {
    */
   async createClub(clubData, createdBy, trx = null) {
     const db = trx || this.db;
-    
+
+    // Handle address dual-write (both TEXT and JSONB)
+    let addressText = null;
+    let addressStructured = null;
+
+    if (clubData.address) {
+      if (typeof clubData.address === 'string') {
+        // Legacy string format - write to TEXT column only
+        addressText = clubData.address;
+      } else if (typeof clubData.address === 'object') {
+        // New structured format - write to both columns
+        addressStructured = JSON.stringify(clubData.address);
+        // Also write to TEXT column for backward compatibility (use street or full address)
+        addressText = clubData.address.street || null;
+      }
+    }
+
     const club = await db('clubs').insert({
       name: clubData.name,
       club_type: clubData.clubType || clubData.type,
@@ -23,7 +39,8 @@ export class ClubService {
       founded_year: clubData.foundedYear || null,
       membership_capacity: clubData.membershipCapacity || null,
       website: clubData.website || null,
-      address: clubData.address || null,
+      address: addressText,
+      address_structured: addressStructured,
       phone: clubData.phone || null,
       email: clubData.email || null,
       logo_url: clubData.logoUrl || null,
@@ -120,6 +137,25 @@ export class ClubService {
       throw new Error('Only club managers can update club information');
     }
 
+    // Handle address dual-write (both TEXT and JSONB)
+    let addressText = undefined;
+    let addressStructured = undefined;
+
+    if (updateData.address !== undefined) {
+      if (updateData.address === null) {
+        addressText = null;
+        addressStructured = null;
+      } else if (typeof updateData.address === 'string') {
+        // Legacy string format - write to TEXT column only
+        addressText = updateData.address;
+      } else if (typeof updateData.address === 'object') {
+        // New structured format - write to both columns
+        addressStructured = JSON.stringify(updateData.address);
+        // Also write to TEXT column for backward compatibility
+        addressText = updateData.address.street || null;
+      }
+    }
+
     const updateFields = {
       name: updateData.name,
       club_type: updateData.clubType,
@@ -127,7 +163,8 @@ export class ClubService {
       founded_year: updateData.foundedYear,
       membership_capacity: updateData.membershipCapacity,
       website: updateData.website,
-      address: updateData.address,
+      address: addressText,
+      address_structured: addressStructured,
       phone: updateData.phone,
       email: updateData.email,
       logo_url: updateData.logoUrl,
@@ -330,6 +367,19 @@ export class ClubService {
    * Format club data for API response
    */
   formatClub(club) {
+    // Parse address - prefer structured format, fallback to text
+    let address = null;
+    if (club.address_structured) {
+      try {
+        address = JSON.parse(club.address_structured);
+      } catch (e) {
+        console.error('Failed to parse address_structured:', e);
+        address = club.address || null;
+      }
+    } else {
+      address = club.address || null;
+    }
+
     return {
       id: club.id.toString(),
       name: club.name,
@@ -339,7 +389,7 @@ export class ClubService {
       foundedYear: club.founded_year,
       membershipCapacity: club.membership_capacity,
       website: club.website,
-      address: club.address,
+      address,
       phone: club.phone,
       email: club.email,
       logoUrl: club.logo_url,

@@ -2,6 +2,7 @@
 // Updated to match actual backend implementation
 
 import { apiClient } from './base';
+import { Address } from '@/types/common';
 
 // Profile types matching backend
 export interface UserProfile {
@@ -10,7 +11,7 @@ export interface UserProfile {
   fullName: string;
   dateOfBirth?: string;
   phone?: string;
-  address?: string;
+  address?: Address | string; // Support both new Address object and legacy string
   emergencyContact?: {
     name: string;
     relationship: string;
@@ -30,7 +31,7 @@ export interface UpdateProfileRequest {
   lastName?: string;
   dateOfBirth?: string;
   phone?: string;
-  address?: string;
+  address?: Address | string | null; // Support both new Address object and legacy string
   workplace?: string;
   workPhone?: string;
   medicalInfo?: string;

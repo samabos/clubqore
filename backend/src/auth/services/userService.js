@@ -28,12 +28,20 @@ export class UserService {
 
     const roleNames = userRoles.length > 0 ? userRoles.map(r => r.name) : [];
 
+    // Get user profile to include avatar
+    const profile = await this.db('user_profiles')
+      .where({ user_id: id })
+      .first();
+
+    // Use profile avatar if available, otherwise fall back to users table avatar
+    const avatarUrl = profile?.avatar || user.avatar;
+
     // Transform database fields to camelCase for API response
     return {
       id: user.id,
       email: user.email,
       name: user.name,
-      avatar: user.avatar,
+      avatar: avatarUrl,
       roles: roleNames,
       accountType: user.account_type,
       isOnboarded: user.is_onboarded || false,

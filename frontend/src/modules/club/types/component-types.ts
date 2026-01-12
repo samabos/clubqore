@@ -1,3 +1,5 @@
+import { Address } from '@/types/common';
+
 // Club-specific types
 export interface CreateClubRequest {
   // Club information
@@ -7,7 +9,7 @@ export interface CreateClubRequest {
   foundedYear?: number;
   membershipCapacity?: number;
   website?: string;
-  address?: string;
+  address?: Address | string | null; // Support both new Address object and legacy string
   phone?: string;
   email?: string;
   logoUrl?: string;
@@ -35,7 +37,7 @@ export interface ContactLocationFormProps {
   clubData: Partial<CreateClubRequest>;
   updateField: (
     field: keyof CreateClubRequest,
-    value: string | number | undefined
+    value: string | number | Address | null | undefined
   ) => void;
 }
 

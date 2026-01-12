@@ -64,29 +64,33 @@ export class TrainingSessionService {
         );
 
         // Create parent session first
+        const insertData = {
+          season_id: sessionData.season_id || null,
+          club_id: clubId,
+          title: sessionData.title,
+          description: sessionData.description || null,
+          session_type: sessionData.session_type || 'training',
+          date: sessionData.date,
+          start_time: sessionData.start_time,
+          end_time: sessionData.end_time,
+          location: sessionData.location || null,
+          coach_id: sessionData.coach_id || null,
+          max_participants: sessionData.max_participants || null,
+          status: sessionData.status || 'draft',
+          is_recurring: true,
+          recurrence_pattern: sessionData.recurrence_pattern,
+          recurrence_days: sessionData.recurrence_days && Array.isArray(sessionData.recurrence_days)
+            ? trx.raw('?::integer[]', [sessionData.recurrence_days])
+            : null,
+          recurrence_end_date: sessionData.recurrence_end_date,
+          parent_session_id: null,
+          created_by: userId,
+          created_at: new Date(),
+          updated_at: new Date()
+        };
+
         const [parentResult] = await trx('training_sessions')
-          .insert({
-            season_id: sessionData.season_id || null,
-            club_id: clubId,
-            title: sessionData.title,
-            description: sessionData.description || null,
-            session_type: sessionData.session_type || 'training',
-            date: sessionData.date,
-            start_time: sessionData.start_time,
-            end_time: sessionData.end_time,
-            location: sessionData.location || null,
-            coach_id: sessionData.coach_id || null,
-            max_participants: sessionData.max_participants || null,
-            status: sessionData.status || 'draft',
-            is_recurring: true,
-            recurrence_pattern: sessionData.recurrence_pattern,
-            recurrence_days: sessionData.recurrence_days ? JSON.stringify(sessionData.recurrence_days) : null,
-            recurrence_end_date: sessionData.recurrence_end_date,
-            parent_session_id: null,
-            created_by: userId,
-            created_at: new Date(),
-            updated_at: new Date()
-          })
+          .insert(insertData)
           .returning('id');
 
         const parentId = parentResult.id;

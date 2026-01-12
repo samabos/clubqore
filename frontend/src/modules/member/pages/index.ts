@@ -1,2 +1,2 @@
-export { ClubMemberPage } from "./club-mamber.page";
-export { ManageMemberPage } from "./manage-memeber.page";
+export { ClubMemberPage } from "./club-member.page";
+export { ManageMemberPage } from "./manage-member.page";

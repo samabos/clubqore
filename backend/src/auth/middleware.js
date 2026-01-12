@@ -5,36 +5,37 @@ export function createAuthMiddleware(db) {
   const tokenService = new TokenService(db);
 
   return async function authenticate(request, reply) {
-    console.log(`🔐 Auth middleware called for ${request.method} ${request.url}`);
-    
-    const authHeader = request.headers.authorization;
-    console.log(`🔐 Auth header: ${authHeader ? 'Present' : 'Missing'}`);
-    if (authHeader) {
-      console.log(`🔐 Auth header value: ${authHeader.substring(0, 20)}...`);
-    }
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log(`❌ Auth failed: Missing or invalid authorization header`);
-      return reply.code(401).send({ error: 'Missing or invalid authorization header' });
+    // Hybrid auth: Try cookie first, then fall back to Authorization header
+    let token = null;
+
+    // 1. Try httpOnly cookie (browser clients)
+    if (request.cookies?.access_token) {
+      token = request.cookies.access_token;
     }
 
-    const token = authHeader.substring(7);
-    console.log(`🔐 Token extracted: ${token.substring(0, 20)}...`);
-    
+    // 2. Fall back to Bearer token (mobile/API clients)
+    if (!token) {
+      const authHeader = request.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
+
+    // No token found in either location
+    if (!token) {
+      return reply.code(401).send({ error: 'Authentication required' });
+    }
+
     const payload = verifyToken(token);
-    console.log(`🔐 Token verification result: ${payload ? 'Valid' : 'Invalid'}`);
 
     if (!payload || payload.type !== 'access') {
-      console.log(`❌ Auth failed: Invalid access token or wrong type`);
       return reply.code(401).send({ error: 'Invalid access token' });
     }
 
     // Validate token in database
     const tokenRecord = await tokenService.validateToken(payload.tokenId, 'access');
-    console.log(`🔐 Database token validation: ${tokenRecord ? 'Valid' : 'Invalid'}`);
-    
+
     if (!tokenRecord) {
-      console.log(`❌ Auth failed: Token revoked or expired`);
       return reply.code(401).send({ error: 'Token revoked or expired' });
     }
 
@@ -45,11 +46,8 @@ export function createAuthMiddleware(db) {
       .first();
 
     if (!user) {
-      console.log(`❌ Auth failed: User not found`);
       return reply.code(401).send({ error: 'User not found' });
     }
-
-    console.log(`✅ Auth successful for user ${user.id} (${user.email})`);
 
     // Add user info to request
     request.user = {

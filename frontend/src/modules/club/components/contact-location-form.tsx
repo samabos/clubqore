@@ -1,7 +1,8 @@
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
-import { Textarea } from "../../../components/ui/textarea";
+import { AddressInput } from "../../../components/ui/address-input";
 import { ContactLocationFormProps } from "../types/component-types";
+import { normalizeAddress } from "../../../types/common";
 
 export function ContactLocationForm({
   clubData,
@@ -20,13 +21,10 @@ export function ContactLocationForm({
         >
           Club Address
         </Label>
-        <Textarea
-          id="clubAddress"
-          value={clubData.address || ""}
-          onChange={(e) => updateField("address", e.target.value)}
-          placeholder="Enter your club's full address..."
-          rows={3}
-          className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
+        <AddressInput
+          value={normalizeAddress(clubData.address)}
+          onChange={(address) => updateField("address", address)}
+          required={false}
         />
       </div>
 

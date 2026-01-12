@@ -14,10 +14,40 @@ export const profileSchemas = {
         pattern: '^[+]?[1-9]\\d{1,14}$',
         description: 'Phone number in international format'
       },
-      address: { 
-        type: 'string', 
-        maxLength: 255,
-        description: 'Full address including street, city, state, country'
+      address: {
+        oneOf: [
+          // Legacy string format
+          {
+            type: 'string',
+            maxLength: 255,
+            description: 'Full address as string (legacy)'
+          },
+          // New structured format
+          {
+            type: 'object',
+            properties: {
+              street: { type: 'string', maxLength: 255 },
+              city: { type: 'string', maxLength: 100 },
+              county: { type: 'string', maxLength: 100 },
+              postcode: {
+                type: 'string',
+                pattern: '^[A-Z]{1,2}[0-9]{1,2}[A-Z]?\\s?[0-9][A-Z]{2}$',
+                description: 'UK postcode format'
+              },
+              country: {
+                type: 'string',
+                enum: ['England', 'Scotland', 'Wales', 'Northern Ireland']
+              }
+            },
+            required: ['postcode', 'country'],
+            additionalProperties: false,
+            description: 'Structured UK address'
+          },
+          // Null value
+          {
+            type: 'null'
+          }
+        ]
       },
       emergencyContact: {
         type: 'object',

@@ -588,6 +588,242 @@ The ClubQore Team
       `.trim(),
       variables: JSON.stringify(['userName', 'email', 'temporaryPassword', 'clubName', 'clubManagerName', 'loginUrl']),
       is_active: true
+    },
+
+    // Invoice Notification Template
+    {
+      template_key: 'invoice_notification',
+      name: 'Invoice Notification',
+      description: 'Sent to parents when a new invoice is created or published',
+      subject: 'New Invoice from {{clubName}} - {{invoiceNumber}}',
+      body_text: `
+Hello {{parentName}},
+
+A new invoice has been issued for {{memberName}}.
+
+Invoice Details:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Invoice Number: {{invoiceNumber}}
+Member: {{memberName}}
+{{#seasonName}}Season: {{seasonName}}
+{{/seasonName}}Issue Date: {{issueDate}}
+Due Date: {{dueDate}}
+Total Amount: {{totalAmount}}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{{#items}}
+Items:
+{{#items}}
+• {{description}} - {{totalPrice}}
+{{/items}}
+{{/items}}
+
+{{#notes}}
+Notes: {{notes}}
+{{/notes}}
+
+You can view the full invoice details by logging into your account:
+{{invoiceUrl}}
+
+Payment is due by {{dueDate}}.
+
+If you have any questions about this invoice, please contact the club.
+
+Best regards,
+{{clubName}}
+      `.trim(),
+      body_html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          background-color: #f5f5f5;
+        }
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 20px;
+          background-color: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+          padding: 20px;
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          border-radius: 8px;
+          color: white;
+        }
+        .invoice-box {
+          background: #f8f9fa;
+          border-left: 4px solid #10b981;
+          padding: 20px;
+          margin: 20px 0;
+          border-radius: 4px;
+        }
+        .invoice-item {
+          margin: 10px 0;
+        }
+        .invoice-label {
+          font-weight: 600;
+          color: #495057;
+          display: inline-block;
+          width: 140px;
+        }
+        .invoice-value {
+          color: #212529;
+        }
+        .items-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 20px 0;
+        }
+        .items-table th {
+          background: #f1f3f5;
+          padding: 10px;
+          text-align: left;
+          font-weight: 600;
+          border-bottom: 2px solid #dee2e6;
+        }
+        .items-table td {
+          padding: 10px;
+          border-bottom: 1px solid #e9ecef;
+        }
+        .total-row {
+          background: #e7f5ff;
+          font-weight: 600;
+          font-size: 18px;
+        }
+        .button {
+          display: inline-block;
+          padding: 14px 28px;
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          text-decoration: none;
+          border-radius: 6px;
+          margin: 20px 0;
+          font-weight: 600;
+        }
+        .due-date-notice {
+          background: #fff3cd;
+          border: 1px solid #ffeaa7;
+          border-radius: 6px;
+          padding: 15px;
+          margin: 20px 0;
+        }
+        .footer {
+          margin-top: 30px;
+          padding-top: 20px;
+          border-top: 1px solid #dee2e6;
+          font-size: 14px;
+          color: #6c757d;
+          text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="margin: 0;">📄 New Invoice</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">From {{clubName}}</p>
+        </div>
+
+        <p>Hello <strong>{{parentName}}</strong>,</p>
+
+        <p>A new invoice has been issued for <strong>{{memberName}}</strong>.</p>
+
+        <div class="invoice-box">
+            <h3 style="margin-top: 0;">Invoice Details</h3>
+            <div class="invoice-item">
+                <span class="invoice-label">Invoice Number:</span>
+                <span class="invoice-value"><strong>{{invoiceNumber}}</strong></span>
+            </div>
+            <div class="invoice-item">
+                <span class="invoice-label">Member:</span>
+                <span class="invoice-value">{{memberName}}</span>
+            </div>
+            {{#seasonName}}
+            <div class="invoice-item">
+                <span class="invoice-label">Season:</span>
+                <span class="invoice-value">{{seasonName}}</span>
+            </div>
+            {{/seasonName}}
+            <div class="invoice-item">
+                <span class="invoice-label">Issue Date:</span>
+                <span class="invoice-value">{{issueDate}}</span>
+            </div>
+            <div class="invoice-item">
+                <span class="invoice-label">Due Date:</span>
+                <span class="invoice-value"><strong>{{dueDate}}</strong></span>
+            </div>
+            <div class="invoice-item">
+                <span class="invoice-label">Total Amount:</span>
+                <span class="invoice-value"><strong style="font-size: 20px; color: #10b981;">{{totalAmount}}</strong></span>
+            </div>
+        </div>
+
+        {{#items}}
+        <h3>Invoice Items</h3>
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th style="text-align: right;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#items}}
+                <tr>
+                    <td>{{description}}</td>
+                    <td style="text-align: right;">{{totalPrice}}</td>
+                </tr>
+                {{/items}}
+                <tr class="total-row">
+                    <td>Total</td>
+                    <td style="text-align: right;">{{totalAmount}}</td>
+                </tr>
+            </tbody>
+        </table>
+        {{/items}}
+
+        {{#notes}}
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 20px 0;">
+            <strong>Notes:</strong><br>
+            {{notes}}
+        </div>
+        {{/notes}}
+
+        <div style="text-align: center;">
+            <a href="{{invoiceUrl}}" class="button">View Full Invoice</a>
+        </div>
+
+        <div class="due-date-notice">
+            <p style="margin: 0;"><strong>⏰ Payment Due:</strong> {{dueDate}}</p>
+        </div>
+
+        <p style="background: #f8f9fa; padding: 15px; border-radius: 6px;">
+            <strong>Questions?</strong><br>
+            If you have any questions about this invoice, please contact the club.
+        </p>
+
+        <div class="footer">
+            <p>Best regards,<br><strong>{{clubName}}</strong></p>
+            <p style="font-size: 12px; color: #adb5bd; margin-top: 10px;">
+                This is an automated email. Please do not reply to this message.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+      `.trim(),
+      variables: JSON.stringify(['parentName', 'memberName', 'clubName', 'invoiceNumber', 'seasonName', 'issueDate', 'dueDate', 'totalAmount', 'items', 'notes', 'invoiceUrl']),
+      is_active: true
     }
   ]);
 }

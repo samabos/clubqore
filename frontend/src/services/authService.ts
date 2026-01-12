@@ -15,13 +15,17 @@ export interface SignUpData {
 
 export interface AuthResponse {
   user: AuthUser;
-  accessToken: string;
-  refreshToken: string;
+  accessToken?: string;
+  refreshToken?: string;
 }
+
+// Check if using httpOnly cookies
+const useHttpOnlyCookies = () => tokenManager.getStorageStrategy() === 'httpOnly';
 
 /**
  * Centralized Authentication Service
  * This is the SINGLE source of truth for all authentication operations
+ * Supports both httpOnly cookies (browser) and Bearer tokens (mobile/API)
  */
 export class AuthService {
   /**
@@ -35,17 +39,20 @@ export class AuthService {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || "Login failed");
+      throw new Error(errorData.message || errorData.error || "Login failed");
     }
 
     const data = await response.json();
-    
-    // Store tokens
-    if (data.accessToken && data.refreshToken) {
-      console.log('🔐 Storing tokens after login');
+
+    // Store tokens only if not using httpOnly cookies
+    // Server sets cookies automatically for browser clients
+    if (!useHttpOnlyCookies() && data.accessToken && data.refreshToken) {
       tokenManager.setTokens(data.accessToken, data.refreshToken);
+    } else if (useHttpOnlyCookies() && data.accessToken) {
+      // For httpOnly, store metadata only for expiration tracking
+      tokenManager.setTokens(data.accessToken, data.refreshToken || '');
     }
-    
+
     return {
       user: data.user,
       accessToken: data.accessToken,
@@ -59,7 +66,7 @@ export class AuthService {
   async signUp(userData: SignUpData): Promise<AuthResponse> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { confirmPassword, ...signUpData } = userData;
-    
+
     const response = await apiClient("/auth/register", {
       method: "POST",
       body: JSON.stringify(signUpData),
@@ -67,17 +74,18 @@ export class AuthService {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || "Registration failed");
+      throw new Error(errorData.message || errorData.error || "Registration failed");
     }
 
     const data = await response.json();
-    
-    // Store tokens
-    if (data.accessToken && data.refreshToken) {
-      console.log('🔐 Storing tokens after registration');
+
+    // Store tokens only if not using httpOnly cookies
+    if (!useHttpOnlyCookies() && data.accessToken && data.refreshToken) {
       tokenManager.setTokens(data.accessToken, data.refreshToken);
+    } else if (useHttpOnlyCookies() && data.accessToken) {
+      tokenManager.setTokens(data.accessToken, data.refreshToken || '');
     }
-    
+
     return {
       user: data.user,
       accessToken: data.accessToken,
@@ -93,7 +101,7 @@ export class AuthService {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to get current user");
+      throw new Error(errorData.message || errorData.error || "Failed to get current user");
     }
 
     const data = await response.json();
@@ -102,6 +110,7 @@ export class AuthService {
 
   /**
    * Logout user
+   * Server clears httpOnly cookies automatically
    */
   async logout(): Promise<void> {
     try {
@@ -116,8 +125,7 @@ export class AuthService {
     } catch (error) {
       console.warn('Logout API error:', error);
     } finally {
-      // Always clear tokens, even if API call fails
-      console.log('🔐 Clearing tokens after logout');
+      // Clear local token data (server clears httpOnly cookies)
       tokenManager.clearTokens();
     }
   }
@@ -133,7 +141,22 @@ export class AuthService {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to send reset email");
+      throw new Error(errorData.message || errorData.error || "Failed to send reset email");
+    }
+  }
+
+  /**
+   * Reset password with token
+   */
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const response = await apiClient("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, password: newPassword }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || errorData.error || "Failed to reset password");
     }
   }
 
@@ -148,7 +171,7 @@ export class AuthService {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to send verification email");
+      throw new Error(errorData.message || errorData.error || "Failed to send verification email");
     }
 
     return response.status;
@@ -164,11 +187,11 @@ export class AuthService {
   /**
    * Update user profile
    */
-  async updateProfile(profileData: { 
-    name?: string; 
-    avatar?: string; 
-    primaryRole?: string; 
-    email?: string; 
+  async updateProfile(profileData: {
+    name?: string;
+    avatar?: string;
+    primaryRole?: string;
+    email?: string;
     password?: string;
   }): Promise<AuthUser> {
     const response = await apiClient("/auth/profile", {
@@ -178,7 +201,7 @@ export class AuthService {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || "Profile update failed");
+      throw new Error(errorData.message || errorData.error || "Profile update failed");
     }
 
     const data = await response.json();
@@ -187,19 +210,30 @@ export class AuthService {
 
   /**
    * Refresh access token
+   * For httpOnly cookies, server reads refresh token from cookie
+   * For Bearer tokens, we send refresh token in body
    */
-  async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+  async refreshToken(refreshToken?: string): Promise<{ accessToken: string; refreshToken: string }> {
+    const body = useHttpOnlyCookies() ? {} : { refreshToken };
+
     const response = await apiClient("/auth/refresh", {
       method: "POST",
-      body: JSON.stringify({ refreshToken }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || "Token refresh failed");
+      throw new Error(errorData.message || errorData.error || "Token refresh failed");
     }
 
-    return await response.json();
+    const data = await response.json();
+
+    // Update stored tokens if not using httpOnly cookies
+    if (!useHttpOnlyCookies() && data.accessToken && data.refreshToken) {
+      tokenManager.setTokens(data.accessToken, data.refreshToken);
+    }
+
+    return data;
   }
 }
 

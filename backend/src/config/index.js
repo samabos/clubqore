@@ -45,6 +45,15 @@ export const getConfig = () => ({
 
   // Logging
   logLevel: process.env.LOG_LEVEL || 'info',
+
+  // Cookie settings for httpOnly auth
+  cookies: {
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    httpOnly: true,
+    sameSite: 'lax', // 'strict' can cause issues with redirects, 'lax' is good balance
+    path: '/',
+    domain: process.env.COOKIE_DOMAIN || undefined,
+  },
 });
 
 // Backwards compatibility - use getter for config
