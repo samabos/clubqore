@@ -22,6 +22,9 @@ import {
   Lock,
   Boxes,
   ShieldCheck,
+  Layers,
+  Repeat,
+  Wallet,
 } from "lucide-react";
 import { MenuItem } from "../types/user";
 import { UserRole } from "../types/auth";
@@ -71,6 +74,8 @@ export const menuItemsByRole: Record<UserRole, MenuItem[]> = {
       label: "Financials",
       icon: DollarSign,
       children: [
+        { id: "membership-tiers", label: "Membership Tiers", icon: Layers, link: "/app/membership-tiers", resource: "membership-tiers" },
+        { id: "subscriptions", label: "Subscriptions", icon: Repeat, link: "/app/subscriptions", resource: "subscriptions" },
         { id: "billing", label: "Billing & Invoices", icon: Receipt, link: "/app/billing", resource: "billing" },
         { id: "billing-settings", label: "Billing Settings", icon: Settings, link: "/app/billing/settings", resource: "billing-settings" },
       ]
@@ -90,7 +95,16 @@ export const menuItemsByRole: Record<UserRole, MenuItem[]> = {
     { id: "children", label: "My Children", icon: Users, link: "/app/parent/children", resource: "parent-children" },
     { id: "schedule", label: "Schedules", icon: Calendar, link: "/app/parent/schedule", resource: "parent-schedule" },
     { id: "communication", label: "Messages", icon: MessageSquare, link: "/communication", resource: "communication" },
-    { id: "billing", label: "Bills & Invoices", icon: Receipt, link: "/app/parent/billing", resource: "parent-billing" },
+    {
+      id: "billing",
+      label: "Billing",
+      icon: DollarSign,
+      children: [
+        { id: "subscriptions", label: "Subscriptions", icon: Repeat, link: "/app/parent/subscriptions", resource: "parent-subscriptions" },
+        { id: "payment-methods", label: "Payment Methods", icon: Wallet, link: "/app/parent/payment-methods", resource: "parent-payment-methods" },
+        { id: "invoices", label: "Bills & Invoices", icon: Receipt, link: "/app/parent/billing", resource: "parent-billing" },
+      ]
+    },
     { id: "profile", label: "Profile", icon: User, link: "/app/profile", resource: "profile" },
   ],
   staff: [

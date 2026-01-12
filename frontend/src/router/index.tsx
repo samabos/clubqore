@@ -31,6 +31,14 @@ import {
   AdminBillingSettingsPage,
 } from "../modules/billing/pages";
 import {
+  MembershipTierManagementPage,
+  SubscriptionManagementPage,
+} from "../modules/subscription/pages";
+import {
+  PaymentMethodsPage,
+  ParentSubscriptionManagementPage,
+} from "../modules/parent-billing/pages";
+import {
   ResourceManagementPage,
   PermissionManagementPage,
 } from "../modules/admin";
@@ -298,6 +306,22 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: "membership-tiers",
+        element: (
+          <ScopeProtectedRoute resource="membership-tiers">
+            <MembershipTierManagementPage />
+          </ScopeProtectedRoute>
+        ),
+      },
+      {
+        path: "subscriptions",
+        element: (
+          <ScopeProtectedRoute resource="subscriptions">
+            <SubscriptionManagementPage />
+          </ScopeProtectedRoute>
+        ),
+      },
+      {
         path: "parent/billing",
         element: (
           <ScopeProtectedRoute resource="parent-billing">
@@ -310,6 +334,22 @@ export const router = createBrowserRouter([
         element: (
           <ScopeProtectedRoute resource="parent-billing">
             <ParentInvoiceDetailPage />
+          </ScopeProtectedRoute>
+        ),
+      },
+      {
+        path: "parent/subscriptions",
+        element: (
+          <ScopeProtectedRoute resource="parent-subscriptions">
+            <ParentSubscriptionManagementPage />
+          </ScopeProtectedRoute>
+        ),
+      },
+      {
+        path: "parent/payment-methods",
+        element: (
+          <ScopeProtectedRoute resource="parent-payment-methods">
+            <PaymentMethodsPage />
           </ScopeProtectedRoute>
         ),
       },

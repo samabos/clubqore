@@ -114,6 +114,16 @@
 
 ## Other Future Enhancements
 
+### Form Validation Standardization
+- [ ] **Migrate forms to use Zod validation**
+  - [ ] Club setup forms (contact-location-form, etc.)
+  - [ ] Member registration forms
+  - [ ] Profile forms
+  - [ ] Authentication forms
+  - [ ] Team management forms
+  - [ ] Season/schedule forms
+  - Note: Use react-hook-form + zod + @hookform/resolvers pattern (see membership-tier-form.tsx as reference)
+
 ### General Platform
 - [ ] Implement proper toast notification system (replace placeholder)
 - [ ] Add comprehensive error handling

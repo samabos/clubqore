@@ -35,8 +35,10 @@ export async function seed(knex) {
     { name: 'schedule', display_name: 'Schedule', type: 'page', path: '/app/schedule', icon: 'CalendarDays', sort_order: 8 },
 
     // Financials
-    { name: 'billing', display_name: 'Billing & Invoices', type: 'page', path: '/app/billing', icon: 'Receipt', sort_order: 9 },
-    { name: 'billing-settings', display_name: 'Billing Settings', type: 'page', path: '/app/billing/settings', icon: 'Settings', sort_order: 10 },
+    { name: 'membership-tiers', display_name: 'Membership Tiers', type: 'page', path: '/app/membership-tiers', icon: 'Layers', sort_order: 9 },
+    { name: 'subscriptions', display_name: 'Subscriptions', type: 'page', path: '/app/subscriptions', icon: 'Repeat', sort_order: 10 },
+    { name: 'billing', display_name: 'Billing & Invoices', type: 'page', path: '/app/billing', icon: 'Receipt', sort_order: 11 },
+    { name: 'billing-settings', display_name: 'Billing Settings', type: 'page', path: '/app/billing/settings', icon: 'Settings', sort_order: 12 },
 
     // Member features
     { name: 'my-schedule', display_name: 'My Schedule', type: 'page', path: '/calendar', icon: 'Calendar', sort_order: 2 },
@@ -45,7 +47,9 @@ export async function seed(knex) {
     // Parent features
     { name: 'parent-children', display_name: 'My Children', type: 'page', path: '/app/parent/children', icon: 'Users', sort_order: 2 },
     { name: 'parent-schedule', display_name: 'Schedules', type: 'page', path: '/app/parent/schedule', icon: 'Calendar', sort_order: 3 },
-    { name: 'parent-billing', display_name: 'Bills & Invoices', type: 'page', path: '/app/parent/billing', icon: 'Receipt', sort_order: 4 },
+    { name: 'parent-subscriptions', display_name: 'Subscriptions', type: 'page', path: '/app/parent/subscriptions', icon: 'Repeat', sort_order: 4 },
+    { name: 'parent-payment-methods', display_name: 'Payment Methods', type: 'page', path: '/app/parent/payment-methods', icon: 'Wallet', sort_order: 5 },
+    { name: 'parent-billing', display_name: 'Bills & Invoices', type: 'page', path: '/app/parent/billing', icon: 'Receipt', sort_order: 6 },
 
     // Super admin features
     { name: 'admin-clubs', display_name: 'All Clubs', type: 'page', path: '/app/admin/clubs', icon: 'Building2', sort_order: 2 },
@@ -88,15 +92,16 @@ export async function seed(knex) {
     ],
     club_manager: [
       'club-manager-dashboard', 'club-setup', 'club-personnel', 'club-members',
-      'teams', 'seasons', 'schedule', 'billing', 'billing-settings',
-      'communication', 'profile'
+      'teams', 'seasons', 'schedule', 'membership-tiers', 'subscriptions',
+      'billing', 'billing-settings', 'communication', 'profile'
     ],
     member: [
       'member-dashboard', 'my-schedule', 'my-attendance', 'communication', 'profile'
     ],
     parent: [
       'parent-dashboard', 'parent-children', 'parent-schedule',
-      'parent-billing', 'communication', 'profile'
+      'parent-subscriptions', 'parent-payment-methods', 'parent-billing',
+      'communication', 'profile'
     ],
     staff: [
       'staff-dashboard', 'communication', 'profile'
