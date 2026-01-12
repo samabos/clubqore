@@ -68,8 +68,26 @@ class SecureTokenManager {
     }
   }
 
+  // Get storage strategy
+  getStorageStrategy(): StorageStrategy {
+    return this.strategy;
+  }
+
   // Set tokens with automatic expiration from JWT
   setTokens(accessToken: string, refreshToken: string): void {
+    // For httpOnly cookies, server handles storage - we just track metadata
+    if (this.strategy === 'httpOnly') {
+      // Store only metadata for UI purposes (expiration tracking)
+      const expiresAt = this.getTokenExpiration(accessToken);
+      this.memoryStore = {
+        accessToken: '', // Don't store actual token
+        refreshToken: '', // Don't store actual token
+        expiresAt,
+        issuedAt: Date.now()
+      };
+      return;
+    }
+
     const now = Date.now();
     const expiresAt = this.getTokenExpiration(accessToken);
     const tokenData: TokenData = {
@@ -79,53 +97,25 @@ class SecureTokenManager {
       issuedAt: now
     };
 
-    console.log('🔐 Setting tokens:', {
-      strategy: this.strategy,
-      expiresAt: new Date(expiresAt).toISOString(),
-      timeUntilExpiry: Math.round((expiresAt - now) / 1000 / 60) + ' minutes',
-      tokenLength: accessToken.length
-    });
-
     if (this.strategy === 'memory') {
       this.memoryStore = tokenData;
-    } else if (this.strategy === 'httpOnly') {
-      // For httpOnly cookies, we'd set a flag and let the server handle tokens
-      // This is just a placeholder - actual implementation would differ
-      console.warn('HttpOnly cookie strategy requires server-side implementation');
     } else {
       const storage = this.getStorage();
       if (storage) {
         storage.setItem(this.TOKEN_DATA_KEY, JSON.stringify(tokenData));
-        console.log('🔐 Tokens stored in', this.strategy);
       }
     }
   }
 
   // Get access token with expiration check
   getAccessToken(): string | null {
-    const tokenData = this.getTokenData();
-    if (!tokenData) {
-      // Don't log this as it's normal when user is not authenticated
+    // For httpOnly cookies, browser handles tokens - return null to let cookies work
+    if (this.strategy === 'httpOnly') {
       return null;
     }
 
-    // Check if token is expired (with configurable buffer)
-    const now = Date.now();
-    const expiresAt = tokenData.expiresAt;
-    const timeUntilExpiry = expiresAt - now;
-
-    console.log('🔐 Token check:', {
-      now: new Date(now).toISOString(),
-      expiresAt: new Date(expiresAt).toISOString(),
-      timeUntilExpiry: Math.round(timeUntilExpiry / 1000 / 60) + ' minutes',
-      isExpired: now > expiresAt,
-      isExpiringSoon: timeUntilExpiry > 0 && timeUntilExpiry <= this.EXPIRY_WARNING
-    });
-
-    // Only treat as expired after the actual expiration time
-    if (now > expiresAt) {
-      console.log('🔐 Token expired, clearing tokens');
-      this.clearTokens();
+    const tokenData = this.getTokenData();
+    if (!tokenData) {
       return null;
     }
 
@@ -134,13 +124,18 @@ class SecureTokenManager {
 
   // Get refresh token
   getRefreshToken(): string | null {
+    // For httpOnly cookies, browser handles tokens - return null to let cookies work
+    if (this.strategy === 'httpOnly') {
+      return null;
+    }
+
     const tokenData = this.getTokenData();
     return tokenData?.refreshToken || null;
   }
 
   // Get token data
   private getTokenData(): TokenData | null {
-    if (this.strategy === 'memory') {
+    if (this.strategy === 'memory' || this.strategy === 'httpOnly') {
       return this.memoryStore;
     }
 
@@ -159,6 +154,11 @@ class SecureTokenManager {
 
   // Check if tokens are valid
   isTokenValid(): boolean {
+    // For httpOnly, we assume valid if we have metadata (server handles actual validation)
+    if (this.strategy === 'httpOnly') {
+      return this.memoryStore !== null && Date.now() < (this.memoryStore?.expiresAt || 0);
+    }
+
     const tokenData = this.getTokenData();
     if (!tokenData) return false;
 
@@ -167,16 +167,20 @@ class SecureTokenManager {
 
   // Clear all tokens
   clearTokens(): void {
-    if (this.strategy === 'memory') {
-      this.memoryStore = null;
-    } else {
-      const storage = this.getStorage();
-      if (storage) {
-        storage.removeItem(this.TOKEN_DATA_KEY);
-        // Also clear legacy storage if exists
-        storage.removeItem(this.ACCESS_TOKEN_KEY);
-        storage.removeItem(this.REFRESH_TOKEN_KEY);
-      }
+    // Clear memory store (used by memory and httpOnly strategies)
+    this.memoryStore = null;
+
+    if (this.strategy === 'memory' || this.strategy === 'httpOnly') {
+      // For httpOnly, server clears cookies via logout endpoint
+      return;
+    }
+
+    const storage = this.getStorage();
+    if (storage) {
+      storage.removeItem(this.TOKEN_DATA_KEY);
+      // Also clear legacy storage if exists
+      storage.removeItem(this.ACCESS_TOKEN_KEY);
+      storage.removeItem(this.REFRESH_TOKEN_KEY);
     }
   }
 
@@ -328,6 +332,68 @@ export const legacyTokenManager = {
     return token ? securityUtils.getJWTTimeToExpiry(token) : 0;
   }
 };
+
+// Scope extraction utilities for RBAC
+export interface TokenScopes {
+  roles: string[];
+  scopes: string[];
+}
+
+/**
+ * Extract roles and scopes from a JWT token
+ * @param token - The JWT access token
+ * @returns Object with roles and scopes arrays
+ */
+export const getScopesFromToken = (token: string): TokenScopes => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    const payload = JSON.parse(jsonPayload);
+    return {
+      roles: payload.roles || [],
+      scopes: payload.scopes || []
+    };
+  } catch (error) {
+    console.error('Failed to extract scopes from token:', error);
+    return { roles: [], scopes: [] };
+  }
+};
+
+/**
+ * Check if a specific scope is present in scopes array
+ * @param scopes - Array of scope strings
+ * @param resource - Resource name (e.g., 'parent-dashboard')
+ * @param action - Action type ('view', 'create', 'edit', 'delete')
+ */
+export const hasScope = (scopes: string[], resource: string, action: 'view' | 'create' | 'edit' | 'delete'): boolean => {
+  return scopes.includes(`${resource}:${action}`);
+};
+
+/**
+ * Check if user has view permission for a resource
+ */
+export const canView = (scopes: string[], resource: string): boolean => hasScope(scopes, resource, 'view');
+
+/**
+ * Check if user has create permission for a resource
+ */
+export const canCreate = (scopes: string[], resource: string): boolean => hasScope(scopes, resource, 'create');
+
+/**
+ * Check if user has edit permission for a resource
+ */
+export const canEdit = (scopes: string[], resource: string): boolean => hasScope(scopes, resource, 'edit');
+
+/**
+ * Check if user has delete permission for a resource
+ */
+export const canDelete = (scopes: string[], resource: string): boolean => hasScope(scopes, resource, 'delete');
 
 // Security utility functions
 export const securityUtils = {

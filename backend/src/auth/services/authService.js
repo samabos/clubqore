@@ -1,7 +1,7 @@
 import { hashPassword, verifyPassword } from '../password.js';
 import { createAccessToken, createRefreshToken, verifyToken } from '../jwt.js';
 import { TokenService } from './tokenService.js';
-import { config, getJwtExpiration } from '../../config/index.js';
+import { config } from '../../config/index.js';
 import { emailService } from '../../services/emailService.js';
 import { EmailOutboxService } from '../../services/emailOutboxService.js';
 import { RoleService } from '../../onboarding/services/RoleService.js';
@@ -14,6 +14,61 @@ export class AuthService {
     this.db = db;
     this.tokenService = new TokenService(db);
     this.roleService = new RoleService(db);
+  }
+
+  /**
+   * Get permission scopes for a list of role IDs
+   * Scopes are in format: "resource-name:action" (e.g., "parent-dashboard:view")
+   * @param {number[]} roleIds - Array of role IDs
+   * @returns {Promise<string[]>} Array of scope strings
+   */
+  async getScopesForRoles(roleIds) {
+    if (!roleIds || roleIds.length === 0) {
+      return [];
+    }
+
+    try {
+      const permissions = await this.db('role_permissions')
+        .join('resources', 'role_permissions.resource_id', 'resources.id')
+        .whereIn('role_permissions.role_id', roleIds)
+        .where('role_permissions.is_active', true)
+        .where('resources.is_active', true)
+        .select(
+          'resources.name',
+          'role_permissions.can_view',
+          'role_permissions.can_create',
+          'role_permissions.can_edit',
+          'role_permissions.can_delete'
+        );
+
+      // Convert to scope strings: "resource-name:action"
+      const scopes = [];
+      for (const p of permissions) {
+        if (p.can_view) scopes.push(`${p.name}:view`);
+        if (p.can_create) scopes.push(`${p.name}:create`);
+        if (p.can_edit) scopes.push(`${p.name}:edit`);
+        if (p.can_delete) scopes.push(`${p.name}:delete`);
+      }
+
+      // Remove duplicates (in case of overlapping role permissions)
+      return [...new Set(scopes)];
+    } catch (error) {
+      // If tables don't exist yet (migration not run), return empty array
+      console.warn('Could not fetch scopes (RBAC tables may not exist yet):', error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get role IDs for a user
+   * @param {number} userId
+   * @returns {Promise<number[]>} Array of role IDs
+   */
+  async getUserRoleIds(userId) {
+    const userRoles = await this.db('user_roles')
+      .where({ user_id: userId, is_active: true })
+      .select('role_id');
+    return userRoles.map(r => r.role_id);
   }
 
   async registerUser(email, password) {
@@ -53,17 +108,29 @@ export class AuthService {
       });
     }
 
+    // Get user profile to include avatar
+    const profile = await this.db('user_profiles')
+      .where({ user_id: user.id })
+      .first();
+
+    // Use profile avatar if available, otherwise fall back to users table avatar
+    const avatarUrl = profile?.avatar || user.avatar;
+
     // Get user roles from user_roles table
     const userRoles = await this.db('user_roles')
       .join('roles', 'user_roles.role_id', 'roles.id')
       .where({ 'user_roles.user_id': user.id })
-      .select('roles.name');
+      .select('roles.name', 'roles.id as role_id');
 
     const roleNames = userRoles.length > 0 ? userRoles.map(r => r.name) : [];
+    const roleIds = userRoles.map(r => r.role_id);
 
-    // Create tokens
+    // Get scopes for user's roles
+    const scopes = await this.getScopesForRoles(roleIds);
+
+    // Create tokens with roles and scopes embedded
     const { accessTokenId, refreshTokenId } = await this.tokenService.createTokens(user.id);
-    const accessToken = createAccessToken(accessTokenId, user.id);
+    const accessToken = createAccessToken(accessTokenId, user.id, roleNames, scopes);
     const refreshToken = createRefreshToken(refreshTokenId, user.id);
 
     return {
@@ -71,7 +138,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        avatar: user.avatar,
+        avatar: avatarUrl,
         roles: roleNames,
         accountType: user.account_type,
         isOnboarded: user.is_onboarded || false,
@@ -101,17 +168,29 @@ export class AuthService {
       throw new InvalidCredentialsError();
     }
 
+    // Get user profile to include avatar
+    const profile = await this.db('user_profiles')
+      .where({ user_id: user.id })
+      .first();
+
+    // Use profile avatar if available, otherwise fall back to users table avatar
+    const avatarUrl = profile?.avatar || user.avatar;
+
     // Get user roles from user_roles table
     const userRoles = await this.db('user_roles')
       .join('roles', 'user_roles.role_id', 'roles.id')
       .where({ 'user_roles.user_id': user.id, 'user_roles.is_active': true })
-      .select('roles.name');
+      .select('roles.name', 'roles.id as role_id');
 
     const roleNames = userRoles.length > 0 ? userRoles.map(r => r.name) : [];
+    const roleIds = userRoles.map(r => r.role_id);
 
-    // Create tokens
+    // Get scopes for user's roles
+    const scopes = await this.getScopesForRoles(roleIds);
+
+    // Create tokens with roles and scopes embedded
     const { accessTokenId, refreshTokenId } = await this.tokenService.createTokens(user.id);
-    const accessToken = createAccessToken(accessTokenId, user.id);
+    const accessToken = createAccessToken(accessTokenId, user.id, roleNames, scopes);
     const refreshToken = createRefreshToken(refreshTokenId, user.id);
 
     return {
@@ -119,7 +198,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        avatar: user.avatar,
+        avatar: avatarUrl,
         roles: roleNames,
         accountType: user.account_type,
         isOnboarded: user.is_onboarded || false,
@@ -152,9 +231,17 @@ export class AuthService {
     // Revoke old token
     await this.tokenService.revokeToken(payload.tokenId);
 
-    // Create new tokens
+    // Get user's roles and scopes for the new token
+    const roleIds = await this.getUserRoleIds(tokenRecord.userId);
+    const roles = await this.db('roles')
+      .whereIn('id', roleIds)
+      .select('name');
+    const roleNames = roles.map(r => r.name);
+    const scopes = await this.getScopesForRoles(roleIds);
+
+    // Create new tokens with roles and scopes
     const { accessTokenId, refreshTokenId } = await this.tokenService.createTokens(tokenRecord.userId);
-    const newAccessToken = createAccessToken(accessTokenId, tokenRecord.userId);
+    const newAccessToken = createAccessToken(accessTokenId, tokenRecord.userId, roleNames, scopes);
     const newRefreshToken = createRefreshToken(refreshTokenId, tokenRecord.userId);
 
     return {
@@ -192,9 +279,9 @@ export class AuthService {
       throw new Error('Email is already verified');
     }
 
-    // Generate verification token (24 hour expiry)
+    // Generate verification token (24 hour expiry) - no roles/scopes needed for verification
     const tokenId = await this.tokenService.createEmailVerificationToken(userId, email);
-    const verificationToken = createAccessToken(tokenId, userId, getJwtExpiration('emailVerification'));
+    const verificationToken = createAccessToken(tokenId, userId, [], []);
 
     // Send verification email using database template
     try {
@@ -276,9 +363,9 @@ export class AuthService {
       return { success: true };
     }
 
-    // Generate password reset token (1 hour expiry)
+    // Generate password reset token (1 hour expiry) - no roles/scopes needed for reset
     const tokenId = await this.tokenService.createPasswordResetToken(user.id, normalizedEmail);
-    const resetToken = createAccessToken(tokenId, user.id, getJwtExpiration('passwordReset'));
+    const resetToken = createAccessToken(tokenId, user.id, [], []);
 
     // Send password reset email using database template
     try {
@@ -347,5 +434,39 @@ export class AuthService {
     } catch (error) {
       throw new Error('Invalid or expired reset token');
     }
+  }
+
+  /**
+   * Change password for logged-in user
+   * @param {number} userId - The user's ID
+   * @param {string} currentPassword - The user's current password
+   * @param {string} newPassword - The new password
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  async changePassword(userId, currentPassword, newPassword) {
+    // Get user with current password
+    const user = await this.db('users').where({ id: userId }).first();
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Verify current password
+    const isValid = await verifyPassword(currentPassword, user.password);
+    if (!isValid) {
+      throw new Error('Current password is incorrect');
+    }
+
+    // Hash new password
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Update password
+    await this.db('users')
+      .where({ id: userId })
+      .update({
+        password: hashedPassword,
+        updated_at: new Date()
+      });
+
+    return { success: true, message: 'Password changed successfully' };
   }
 }

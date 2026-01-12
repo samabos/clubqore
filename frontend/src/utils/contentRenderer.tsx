@@ -1,8 +1,12 @@
 import { UserRole } from "../types/user";
-import { Dashboard } from "../components/Dashboard";
-import { ClubManagerDashboard } from "../components/ClubManagerDashboard";
-import { MemberDashboard } from "../components/MemberDashboard";
-import { ParentDashboard } from "../components/ParentDashboard";
+import {
+  Dashboard,
+  AdminDashboard,
+  SuperAdminDashboard,
+  MemberDashboard,
+  ParentDashboard,
+} from "../modules/dashboard";
+import { ClubManagerDashboard } from "../modules/club/pages/club-manager-dashboard.page";
 import { MemberRegistration } from "../components/MemberRegistration";
 import { ClubManagement } from "../components/ClubManagement";
 import { BillingPayments } from "../components/BillingPayments";
@@ -17,6 +21,8 @@ export const renderContent = (activeView: string, userRole: UserRole) => {
   // Role-specific dashboard rendering
   if (activeView === "dashboard") {
     switch (userRole) {
+      case 'super_admin':
+        return <SuperAdminDashboard />;
       case 'admin':
         return <Dashboard />;
       case 'club_manager':
@@ -82,9 +88,10 @@ export const renderContent = (activeView: string, userRole: UserRole) => {
     case "profile":
       return <ProfileManagement />;
     default:
-      return userRole === 'admin' ? <Dashboard /> : 
-             userRole === 'club_manager' ? <ClubManagerDashboard /> : 
-             userRole === 'member' ? <MemberDashboard /> : 
+      return userRole === 'super_admin' ? <SuperAdminDashboard /> :
+             userRole === 'admin' ? <Dashboard /> :
+             userRole === 'club_manager' ? <ClubManagerDashboard /> :
+             userRole === 'member' ? <MemberDashboard /> :
              <ParentDashboard />;
   }
 };

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/stores/authStore';
-import { SignInData, SignUpData } from '@/services/authService';
+import { SignInData, SignUpData, authService } from '@/services/authService';
 import { authToasts } from '@/utils/toast';
 import { AuthUser } from '@/types/auth';
 
@@ -132,10 +132,10 @@ export function useSimpleAuthentication(props: UseSimpleAuthenticationProps = {}
     auth.clearError();
 
     try {
-      // TODO: Implement forgot password through authService
-      console.log('Forgot password for:', forgotEmail);
+      await authService.requestPasswordReset(forgotEmail);
       authToasts.passwordResetSent();
       setAuthMode('signin');
+      setForgotEmail(''); // Clear email field
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to send reset email';
       authToasts.passwordResetError(message);

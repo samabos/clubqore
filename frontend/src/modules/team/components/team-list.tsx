@@ -21,7 +21,7 @@ export function TeamList({
 }: TeamListProps) {
   if (isLoading) {
     return (
-      <Card className="border-0 shadow-lg rounded-xl">
+      <Card className="border-0">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
             <Users className="w-5 h-5" />
@@ -37,7 +37,7 @@ export function TeamList({
 
   if (teams.length === 0) {
     return (
-      <Card className="border-0 shadow-lg rounded-xl">
+      <Card className="border-0">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
             <Users className="w-5 h-5" />
@@ -60,7 +60,7 @@ export function TeamList({
   }
 
   return (
-    <Card className="border-0 shadow-lg rounded-xl">
+    <Card className="border-0">
       <CardHeader>
         <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
           <Users className="w-5 h-5" />

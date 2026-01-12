@@ -1,3 +1,5 @@
+import { Address } from './common';
+
 export interface Club {
   id: number;
   name: string;
@@ -5,7 +7,7 @@ export interface Club {
   clubType: string;
   email?: string;
   phone?: string;
-  address?: string;
+  address?: Address | string; // Support both new Address object and legacy string
   website?: string;
   social_media?: {
     facebook?: string;

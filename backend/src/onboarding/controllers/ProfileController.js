@@ -1,8 +1,11 @@
 import { OnboardingService } from '../services/index.js';
+import { AuthService } from '../../auth/services/authService.js';
 
 export class ProfileController {
   constructor(db) {
+    this.db = db;
     this.onboardingService = new OnboardingService(db);
+    this.authService = new AuthService(db);
   }
 
   /**
@@ -164,13 +167,34 @@ export class ProfileController {
       const childData = request.body;
 
       const result = await this.onboardingService.addUserChild(userId, childData);
-      
+
       reply.code(201).send(result);
     } catch (error) {
       request.log.error('Error adding user child:', error);
       reply.code(400).send({
         success: false,
         message: error.message || 'Failed to add child'
+      });
+    }
+  }
+
+  /**
+   * PUT /api/profile/change-password
+   * Change password for logged-in user
+   */
+  async changePassword(request, reply) {
+    try {
+      const userId = request.user.id;
+      const { currentPassword, newPassword } = request.body;
+
+      const result = await this.authService.changePassword(userId, currentPassword, newPassword);
+
+      reply.code(200).send(result);
+    } catch (error) {
+      request.log.error('Error changing password:', error);
+      reply.code(400).send({
+        success: false,
+        message: error.message || 'Failed to change password'
       });
     }
   }

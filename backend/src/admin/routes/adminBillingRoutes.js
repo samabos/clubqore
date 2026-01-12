@@ -1,0 +1,100 @@
+import { requireRole } from '../../auth/permissionMiddleware.js';
+
+export async function adminBillingRoutes(fastify, options) {
+  const { adminBillingController, authenticate } = options;
+
+  // Apply authentication middleware to all routes
+  if (authenticate) {
+    fastify.addHook('onRequest', authenticate);
+  }
+
+  // Super admin role check for all admin routes
+  const requireSuperAdmin = requireRole(['super_admin']);
+
+  // Get all clubs (for dropdown)
+  fastify.get('/admin/clubs', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Billing'],
+      summary: 'Get all clubs (super admin only)',
+      description: 'Fetch all active clubs for super admin billing settings management',
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            clubs: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'integer' },
+                  name: { type: 'string' },
+                  club_type: { type: 'string' },
+                  verified: { type: 'boolean' },
+                  created_at: { type: 'string' }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }, adminBillingController.getAllClubs.bind(adminBillingController));
+
+  // Get billing settings for specific club
+  fastify.get('/admin/clubs/:clubId/billing/settings', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Billing'],
+      summary: 'Get billing settings for any club (super admin only)',
+      params: {
+        type: 'object',
+        properties: {
+          clubId: { type: 'integer' }
+        },
+        required: ['clubId']
+      }
+    }
+  }, adminBillingController.getClubBillingSettings.bind(adminBillingController));
+
+  // Update billing settings for specific club
+  fastify.put('/admin/clubs/:clubId/billing/settings', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Billing'],
+      summary: 'Update billing settings for any club (super admin only)',
+      params: {
+        type: 'object',
+        properties: {
+          clubId: { type: 'integer' }
+        },
+        required: ['clubId']
+      },
+      body: {
+        type: 'object',
+        properties: {
+          service_charge_enabled: { type: 'boolean' },
+          service_charge_type: { type: 'string', enum: ['percentage', 'fixed'] },
+          service_charge_value: { type: 'number', minimum: 0 },
+          service_charge_description: { type: 'string', maxLength: 255 },
+          auto_generation_enabled: { type: 'boolean' },
+          days_before_season: { type: 'integer', minimum: 0, maximum: 90 },
+          default_invoice_items: {
+            type: ['array', 'null'],
+            items: {
+              type: 'object',
+              required: ['description', 'unit_price'],
+              properties: {
+                description: { type: 'string', maxLength: 255 },
+                category: { type: 'string', enum: ['membership', 'training', 'equipment', 'tournament', 'other'] },
+                quantity: { type: 'integer', minimum: 1, default: 1 },
+                unit_price: { type: 'number', minimum: 0 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }, adminBillingController.updateClubBillingSettings.bind(adminBillingController));
+}

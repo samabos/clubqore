@@ -10,8 +10,11 @@ import {
 import { MenuItem } from "../../types/user";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthUser } from "../../types/auth";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { getRoleDisplayName } from "../../utils/roleHelpers";
+import { useAuth } from "../../stores/authStore";
+import { canView } from "../../api/secureAuth";
 
 interface AppSidebarProps {
   currentUser: AuthUser;
@@ -19,9 +22,40 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ currentUser, menuItems }: AppSidebarProps) {
+  const { currentRole, scopes } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
+
+  // Filter menu items based on user scopes
+  const filteredMenuItems = useMemo(() => {
+    const filterItem = (item: MenuItem): MenuItem | null => {
+      // If item has a resource, check if user has view permission
+      if (item.resource && !canView(scopes, item.resource)) {
+        return null;
+      }
+
+      // If item has children, filter them recursively
+      if (item.children) {
+        const filteredChildren = item.children
+          .map(filterItem)
+          .filter((child): child is MenuItem => child !== null);
+
+        // If no children remain after filtering, hide the parent menu
+        if (filteredChildren.length === 0) {
+          return null;
+        }
+
+        return { ...item, children: filteredChildren };
+      }
+
+      return item;
+    };
+
+    return menuItems
+      .map(filterItem)
+      .filter((item): item is MenuItem => item !== null);
+  }, [menuItems, scopes]);
 
   const toggleMenu = (menuId: string) => {
     setExpandedMenus((prev) => {
@@ -74,9 +108,9 @@ export function AppSidebar({ currentUser, menuItems }: AppSidebarProps) {
               <ChevronRight className="w-4 h-4" />
             )}
           </SidebarMenuButton>
-          {isExpanded && (
+          {isExpanded && item.children && (
             <div className="ml-4 mt-1 space-y-1">
-              {item.children!.map((child) => {
+              {item.children.map((child) => {
                 const isChildActive = location.pathname === child.link;
                 return (
                   <SidebarMenuItem key={child.id}>
@@ -134,16 +168,18 @@ export function AppSidebar({ currentUser, menuItems }: AppSidebarProps) {
           </div>
           <div className="text-left">
             <h2 className="text-white font-semibold text-lg">ClubQore</h2>
-            <p className="text-sidebar-foreground text-sm truncate">
-              {currentUser.primaryRole}
-            </p>
+            {currentRole && (
+              <p className="text-sidebar-foreground text-sm truncate">
+                {getRoleDisplayName(currentRole)}
+              </p>
+            )}
           </div>
         </Button>
       </SidebarHeader>
 
       <SidebarContent className="p-4">
         <SidebarMenu className="space-y-2">
-          {menuItems.map(renderMenuItem)}
+          {filteredMenuItems.map(renderMenuItem)}
         </SidebarMenu>
       </SidebarContent>
     </Sidebar>

@@ -27,7 +27,7 @@ export function MemberList({ members, onEdit, onAddMember }: MemberListProps) {
 
   if (parentMembers.length === 0) {
     return (
-      <Card className="border-0 shadow-lg rounded-xl">
+      <Card className="border-0">
         <CardHeader className="pb-6">
           <div className="flex justify-between items-start">
             <div>
@@ -56,7 +56,7 @@ export function MemberList({ members, onEdit, onAddMember }: MemberListProps) {
   }
 
   return (
-    <Card className="border-0 shadow-lg rounded-xl">
+    <Card className="border-0">
       <CardHeader className="pb-6">
         <div className="flex justify-between items-start">
           <div>

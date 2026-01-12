@@ -149,9 +149,9 @@ export const profileRoutes = async function (fastify, options) {
       summary: 'Upload and set user avatar',
       body: {
         type: 'object',
-        required: ['avatarUrl'],
+        required: ['avatarData'],
         properties: {
-          avatarUrl: { type: 'string', format: 'uri' }
+          avatarData: { type: 'string' }
         }
       }
     }
@@ -185,4 +185,36 @@ export const profileRoutes = async function (fastify, options) {
       }
     }
   }, profileController.addUserChild.bind(profileController));
+
+  // Change password for logged-in user
+  fastify.put('/change-password', {
+    schema: {
+      tags: ['Profile'],
+      summary: 'Change password for logged-in user',
+      body: {
+        type: 'object',
+        required: ['currentPassword', 'newPassword'],
+        properties: {
+          currentPassword: { type: 'string', minLength: 1 },
+          newPassword: { type: 'string', minLength: 6 }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' }
+          }
+        },
+        400: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' }
+          }
+        }
+      }
+    }
+  }, profileController.changePassword.bind(profileController));
 };

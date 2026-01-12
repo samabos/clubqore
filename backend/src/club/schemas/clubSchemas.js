@@ -26,10 +26,40 @@ export const clubSchemas = {
         enum: ['public', 'private', 'semi_private'],
         description: 'Club visibility and membership type'
       },
-      location: { 
-        type: 'string', 
-        maxLength: 255,
-        description: 'Physical location or address'
+      location: {
+        oneOf: [
+          // Legacy string format
+          {
+            type: 'string',
+            maxLength: 255,
+            description: 'Physical location or address (legacy)'
+          },
+          // New structured format
+          {
+            type: 'object',
+            properties: {
+              street: { type: 'string', maxLength: 255 },
+              city: { type: 'string', maxLength: 100 },
+              county: { type: 'string', maxLength: 100 },
+              postcode: {
+                type: 'string',
+                pattern: '^[A-Z]{1,2}[0-9]{1,2}[A-Z]?\\s?[0-9][A-Z]{2}$',
+                description: 'UK postcode format'
+              },
+              country: {
+                type: 'string',
+                enum: ['England', 'Scotland', 'Wales', 'Northern Ireland']
+              }
+            },
+            required: ['postcode', 'country'],
+            additionalProperties: false,
+            description: 'Structured UK address'
+          },
+          // Null value
+          {
+            type: 'null'
+          }
+        ]
       },
       contactEmail: { 
         type: 'string', 

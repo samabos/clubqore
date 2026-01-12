@@ -45,6 +45,43 @@ export const getConfig = () => ({
 
   // Logging
   logLevel: process.env.LOG_LEVEL || 'info',
+
+  // Cookie settings for httpOnly auth
+  cookies: {
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    httpOnly: true,
+    sameSite: 'lax', // 'strict' can cause issues with redirects, 'lax' is good balance
+    path: '/',
+    domain: process.env.COOKIE_DOMAIN || undefined,
+  },
+
+  // GoCardless payment provider settings
+  gocardless: {
+    accessToken: process.env.GOCARDLESS_ACCESS_TOKEN,
+    environment: process.env.GOCARDLESS_ENVIRONMENT || 'sandbox', // 'sandbox' or 'live'
+    webhookSecret: process.env.GOCARDLESS_WEBHOOK_SECRET,
+  },
+
+  // Stripe payment provider settings (future use)
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY,
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+  },
+
+  // Payment and billing settings
+  payment: {
+    defaultProvider: process.env.DEFAULT_PAYMENT_PROVIDER || 'gocardless',
+    encryptionKey: process.env.PAYMENT_ENCRYPTION_KEY, // 32-byte hex string for AES-256
+    hashSalt: process.env.PAYMENT_HASH_SALT,
+  },
+
+  // Billing configuration
+  billing: {
+    retryMaxAttempts: parseInt(process.env.BILLING_RETRY_MAX_ATTEMPTS) || 3,
+    retryDays: (process.env.BILLING_RETRY_DAYS || '3,5,7').split(',').map(d => parseInt(d)),
+    reminderDaysBefore: parseInt(process.env.BILLING_REMINDER_DAYS_BEFORE) || 3,
+  },
 });
 
 // Backwards compatibility - use getter for config

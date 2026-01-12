@@ -21,15 +21,17 @@ export function verifyToken(token) {
   }
 }
 
-// Create tokens with embedded token IDs
-export function createAccessToken(tokenId, userId) {
+// Create tokens with embedded token IDs, roles, and scopes
+export function createAccessToken(tokenId, userId, roles = [], scopes = []) {
   return jwt.sign(
-    { 
-      tokenId, 
-      userId, 
-      type: 'access' 
-    }, 
-    getJwtSecret(), 
+    {
+      tokenId,
+      userId,
+      type: 'access',
+      roles,   // User's roles array, e.g., ['parent', 'member']
+      scopes   // Permission scopes, e.g., ['parent-dashboard:view', 'parent-billing:view']
+    },
+    getJwtSecret(),
     { expiresIn: getJwtExpiration('accessToken') }
   );
 }

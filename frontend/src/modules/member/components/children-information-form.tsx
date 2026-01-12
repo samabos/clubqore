@@ -20,6 +20,7 @@ import { User, UserPlus } from "lucide-react";
 
 export interface ChildData {
   id: number;
+  childUserId?: number; // The actual child_user_id from the database (used for updates)
   firstName: string;
   lastName: string;
   dateOfBirth: string;

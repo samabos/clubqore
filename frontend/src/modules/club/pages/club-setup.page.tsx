@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader } from "../../../components/ui/card";
+import { Card, CardContent } from "../../../components/ui/card";
 import { CreateClubRequest } from "../types/component-types";
 import { Club } from "../../../types/club";
 import { toast } from "sonner";
@@ -222,28 +222,26 @@ export function ClubSetupPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="max-w-3xl mx-auto space-y-6">
       <ClubSetupHeader isUpdateMode={isUpdateMode} />
 
-      <Card className="border-0">
-        <CardHeader className="text-center"></CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-8">
+      <Card className="border-0 shadow-sm">
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <ClubLogoUpload
               clubLogo={clubLogo}
               onLogoUpload={handleLogoUpload}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <BasicInformationForm
-                clubData={clubData}
-                updateField={updateField}
-              />
-              <ContactLocationForm
-                clubData={clubData}
-                updateField={updateField}
-              />
-            </div>
+            <BasicInformationForm
+              clubData={clubData}
+              updateField={updateField}
+            />
+
+            <ContactLocationForm
+              clubData={clubData}
+              updateField={updateField}
+            />
 
             <ClubSetupActions
               isUpdateMode={isUpdateMode}

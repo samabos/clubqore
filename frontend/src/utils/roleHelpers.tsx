@@ -1,8 +1,10 @@
 import { UserRole } from "../types/user";
-import { Shield, Building2, Trophy, User, Baby } from "lucide-react";
+import { Shield, Building2, Trophy, User, Baby, ShieldCheck } from "lucide-react";
 
 export const getRoleIcon = (role: UserRole) => {
   switch (role) {
+    case 'super_admin':
+      return <ShieldCheck className="w-4 h-4" />;
     case 'admin':
       return <Shield className="w-4 h-4" />;
     case 'club_manager':
@@ -18,6 +20,8 @@ export const getRoleIcon = (role: UserRole) => {
 
 export const getRoleColor = (role: UserRole) => {
   switch (role) {
+    case 'super_admin':
+      return 'bg-purple-100 text-purple-800 border-purple-200';
     case 'admin':
       return 'bg-red-50 text-red-600 border-red-200';
     case 'club_manager':
@@ -33,6 +37,8 @@ export const getRoleColor = (role: UserRole) => {
 
 export const getRoleDisplayName = (role: UserRole) => {
   switch (role) {
+    case 'super_admin':
+      return 'Super Administrator';
     case 'admin':
       return 'Admin';
     case 'club_manager':

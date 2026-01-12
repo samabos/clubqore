@@ -10,8 +10,8 @@ export function passwordResetRoutes(fastify, controller) {
         type: 'object',
         required: ['email'],
         properties: {
-          email: { 
-            type: 'string', 
+          email: {
+            type: 'string',
             format: 'email',
             description: 'Email address to send password reset link'
           }
@@ -25,7 +25,22 @@ export function passwordResetRoutes(fastify, controller) {
           }
         },
         400: errorResponse,
-        404: errorResponse
+        404: errorResponse,
+        429: {
+          type: 'object',
+          properties: {
+            statusCode: { type: 'number' },
+            error: { type: 'string' },
+            message: { type: 'string' },
+            retryAfter: { type: 'number' }
+          }
+        }
+      }
+    },
+    config: {
+      rateLimit: {
+        max: 3, // 3 password reset requests per minute
+        timeWindow: '1 minute'
       }
     }
   }, controller.forgotPassword.bind(controller));
@@ -58,7 +73,22 @@ export function passwordResetRoutes(fastify, controller) {
           }
         },
         400: errorResponse,
-        404: errorResponse
+        404: errorResponse,
+        429: {
+          type: 'object',
+          properties: {
+            statusCode: { type: 'number' },
+            error: { type: 'string' },
+            message: { type: 'string' },
+            retryAfter: { type: 'number' }
+          }
+        }
+      }
+    },
+    config: {
+      rateLimit: {
+        max: 5, // 5 reset attempts per minute
+        timeWindow: '1 minute'
       }
     }
   }, controller.resetPassword.bind(controller));

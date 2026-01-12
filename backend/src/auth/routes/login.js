@@ -8,7 +8,22 @@ export function loginRoutes(fastify, controller) {
       body: authRequest,
       response: {
         200: authResponse,
-        401: errorResponse
+        401: errorResponse,
+        429: {
+          type: 'object',
+          properties: {
+            statusCode: { type: 'number' },
+            error: { type: 'string' },
+            message: { type: 'string' },
+            retryAfter: { type: 'number' }
+          }
+        }
+      }
+    },
+    config: {
+      rateLimit: {
+        max: 5, // 5 login attempts per minute
+        timeWindow: '1 minute'
       }
     }
   }, controller.login.bind(controller));

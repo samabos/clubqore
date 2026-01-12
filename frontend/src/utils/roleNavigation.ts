@@ -4,6 +4,8 @@
 export const getDefaultRouteByRole = (roles: string[]): string => {
   for (const role of roles) {
     switch (role) {
+      case "super_admin":
+        return "/app/super-admin-dashboard";
       case "admin":
         return "/app/admin-dashboard";
       case "club_manager":

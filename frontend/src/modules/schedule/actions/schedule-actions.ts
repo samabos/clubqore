@@ -1,0 +1,100 @@
+import {
+  fetchTrainingSessions,
+  createTrainingSession,
+  updateTrainingSession,
+  deleteTrainingSession,
+  publishTrainingSession,
+} from "@/modules/training-session/actions/training-session-actions";
+import {
+  fetchMatches,
+  createMatch,
+  updateMatch,
+  deleteMatch,
+  publishMatch,
+} from "@/modules/match/actions/match-actions";
+import type { TrainingSession, CreateTrainingSessionRequest } from "@/types/training-session";
+import type { Match, CreateMatchRequest } from "@/types/match";
+import type { ScheduleItem, ScheduleFilters } from "../types/schedule-types";
+import { trainingToScheduleItem, matchToScheduleItem } from "../utils/schedule-utils";
+
+/**
+ * Fetch all schedule items (training sessions + matches) in parallel
+ * and return as a unified, sorted array
+ */
+export async function fetchScheduleItems(
+  filters?: ScheduleFilters
+): Promise<ScheduleItem[]> {
+  try {
+    // Fetch both in parallel
+    const [sessions, matches] = await Promise.all([
+      fetchTrainingSessions(filters),
+      fetchMatches(filters),
+    ]);
+
+    // Transform to unified type
+    const sessionItems = sessions.map(trainingToScheduleItem);
+    const matchItems = matches.map(matchToScheduleItem);
+
+    // Combine and sort by date, then time
+    const combined = [...sessionItems, ...matchItems];
+    combined.sort((a, b) => {
+      if (a.date !== b.date) {
+        return a.date.localeCompare(b.date);
+      }
+      return a.start_time.localeCompare(b.start_time);
+    });
+
+    return combined;
+  } catch (error) {
+    console.error("Error fetching schedule items:", error);
+    throw error;
+  }
+}
+
+// Training session CRUD operations (re-export for convenience)
+export async function createScheduleTrainingSession(
+  data: CreateTrainingSessionRequest
+): Promise<number> {
+  return createTrainingSession(data);
+}
+
+export async function updateScheduleTrainingSession(
+  sessionId: number,
+  data: CreateTrainingSessionRequest
+): Promise<void> {
+  return updateTrainingSession(sessionId, data);
+}
+
+export async function deleteScheduleTrainingSession(
+  sessionId: number
+): Promise<void> {
+  return deleteTrainingSession(sessionId);
+}
+
+export async function publishScheduleTrainingSession(
+  sessionId: number
+): Promise<void> {
+  return publishTrainingSession(sessionId);
+}
+
+// Match CRUD operations (re-export for convenience)
+export async function createScheduleMatch(
+  data: CreateMatchRequest
+): Promise<number> {
+  return createMatch(data);
+}
+
+export async function updateScheduleMatch(
+  matchId: number,
+  data: CreateMatchRequest
+): Promise<void> {
+  return updateMatch(matchId, data);
+}
+
+export async function deleteScheduleMatch(matchId: number): Promise<void> {
+  return deleteMatch(matchId);
+}
+
+export async function publishScheduleMatch(matchId: number): Promise<void> {
+  return publishMatch(matchId);
+}

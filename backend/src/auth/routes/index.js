@@ -1,5 +1,6 @@
 import { AuthController } from '../controllers/authController.js';
 import { UserController } from '../controllers/userController.js';
+import { PermissionController } from '../controllers/permissionController.js';
 import { createAuthMiddleware } from '../middleware.js';
 import { registerRoutes } from './register.js';
 import { loginRoutes } from './login.js';
@@ -10,10 +11,12 @@ import { emailVerificationRoutes } from './emailVerification.js';
 import { passwordResetRoutes } from './passwordReset.js';
 import { emailAvailabilityRoutes } from './emailAvailability.js';
 import { roleManagementRoutes } from './roleManagement.js';
+import { permissionRoutes } from './permissionRoutes.js';
 
 export async function authRoutes(fastify, options) {
   const authController = new AuthController(fastify.db);
   const userController = new UserController(fastify.db);
+  const permissionController = new PermissionController(fastify.db);
   const authenticate = createAuthMiddleware(fastify.db);
 
   // Register all route modules
@@ -26,4 +29,5 @@ export async function authRoutes(fastify, options) {
   passwordResetRoutes(fastify, authController);
   roleManagementRoutes(fastify, userController, authenticate);
   emailAvailabilityRoutes(fastify, authController);
+  permissionRoutes(fastify, permissionController, authenticate);
 }
