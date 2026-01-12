@@ -71,6 +71,11 @@ export default {
       extension: 'js',
       loadExtensions: ['.js']
     },
+    seeds: {
+      directory: './src/db/seeds',
+      extension: 'js',
+      loadExtensions: ['.js']
+    },
   },
   production: {
     client: 'pg',
