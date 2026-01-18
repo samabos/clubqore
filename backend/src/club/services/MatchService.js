@@ -184,13 +184,13 @@ export class MatchService {
     }
   }
 
-  // Publish a match (change status from draft to published)
+  // Publish a match (change status from draft to scheduled)
   async publishMatch(matchId) {
     try {
       const updated = await this.db('matches')
         .where({ id: matchId })
         .update({
-          status: 'published',
+          status: 'scheduled',
           updated_at: new Date()
         });
 
@@ -304,7 +304,7 @@ export class MatchService {
     }
   }
 
-  // Get upcoming matches (published/scheduled, future dates)
+  // Get upcoming matches (non-draft, future dates)
   async getUpcomingMatches(clubId, limit = 10) {
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -320,7 +320,7 @@ export class MatchService {
           'away_team.color as away_team_color'
         )
         .where({ 'matches.club_id': clubId })
-        .whereIn('matches.status', ['published', 'scheduled'])
+        .where('matches.status', '!=', 'draft')
         .where('matches.date', '>=', today)
         .orderBy('matches.date', 'asc')
         .orderBy('matches.start_time', 'asc')
@@ -330,6 +330,154 @@ export class MatchService {
     } catch (error) {
       console.error('Error fetching upcoming matches:', error);
       throw new Error('Failed to fetch upcoming matches');
+    }
+  }
+
+  // ============================================================================
+  // VIRTUAL RECURRENCE WITH EXCEPTIONS (Option B Architecture)
+  // ============================================================================
+
+  /**
+   * Generate virtual occurrences for a recurring match with exceptions applied
+   * Note: Matches don't have recurrence currently, but this maintains consistency
+   * with training sessions for future recurring match support
+   */
+  async generateOccurrences(parentMatch, fromDate, toDate) {
+    // For now, matches are not recurring - return single occurrence if in range
+    const matchDate = new Date(parentMatch.date);
+    if (matchDate >= fromDate && matchDate <= toDate) {
+      return [{
+        ...parentMatch,
+        occurrence_date: parentMatch.date,
+        is_exception: false,
+        exception_id: null,
+        exception_type: null
+      }];
+    }
+    return [];
+  }
+
+  // ============================================================================
+  // EXCEPTION MANAGEMENT (Future-proofing for recurring matches)
+  // ============================================================================
+
+  /**
+   * Cancel a single occurrence of a recurring match
+   */
+  async cancelOccurrence(matchId, occurrenceDate, userId) {
+    try {
+      await this.db('match_exceptions')
+        .insert({
+          match_id: matchId,
+          occurrence_date: occurrenceDate,
+          exception_type: 'cancelled',
+          created_by: userId,
+          created_at: new Date(),
+          updated_at: new Date()
+        })
+        .onConflict(['match_id', 'occurrence_date'])
+        .merge();
+
+      return {
+        success: true,
+        message: 'Match occurrence cancelled successfully'
+      };
+    } catch (error) {
+      console.error('Error cancelling match occurrence:', error);
+      throw new Error(`Failed to cancel match occurrence: ${error.message}`);
+    }
+  }
+
+  /**
+   * Reschedule a single occurrence
+   */
+  async rescheduleOccurrence(matchId, occurrenceDate, newDate, newStartTime, newEndTime, userId) {
+    try {
+      await this.db('match_exceptions')
+        .insert({
+          match_id: matchId,
+          occurrence_date: occurrenceDate,
+          exception_type: 'rescheduled',
+          override_date: newDate,
+          override_start_time: newStartTime,
+          override_end_time: newEndTime,
+          created_by: userId,
+          created_at: new Date(),
+          updated_at: new Date()
+        })
+        .onConflict(['match_id', 'occurrence_date'])
+        .merge();
+
+      return {
+        success: true,
+        message: 'Match occurrence rescheduled successfully'
+      };
+    } catch (error) {
+      console.error('Error rescheduling match occurrence:', error);
+      throw new Error(`Failed to reschedule match occurrence: ${error.message}`);
+    }
+  }
+
+  /**
+   * Modify a single occurrence
+   */
+  async modifyOccurrence(matchId, occurrenceDate, overrides, userId) {
+    try {
+      const exceptionData = {
+        match_id: matchId,
+        occurrence_date: occurrenceDate,
+        exception_type: 'modified',
+        created_by: userId,
+        created_at: new Date(),
+        updated_at: new Date()
+      };
+
+      // Add overrides with 'override_' prefix
+      const allowedFields = [
+        'date', 'start_time', 'end_time', 'venue',
+        'opponent_name', 'is_home', 'home_score', 'away_score', 'status'
+      ];
+
+      allowedFields.forEach(field => {
+        if (overrides[field] !== undefined) {
+          exceptionData[`override_${field}`] = overrides[field];
+        }
+      });
+
+      await this.db('match_exceptions')
+        .insert(exceptionData)
+        .onConflict(['match_id', 'occurrence_date'])
+        .merge();
+
+      return {
+        success: true,
+        message: 'Match occurrence modified successfully'
+      };
+    } catch (error) {
+      console.error('Error modifying match occurrence:', error);
+      throw new Error(`Failed to modify match occurrence: ${error.message}`);
+    }
+  }
+
+  /**
+   * Delete an exception (restore occurrence to parent values)
+   */
+  async deleteException(matchId, occurrenceDate) {
+    try {
+      await this.db('match_exceptions')
+        .where({
+          match_id: matchId,
+          occurrence_date: occurrenceDate
+        })
+        .delete();
+
+      return {
+        success: true,
+        message: 'Match exception removed successfully'
+      };
+    } catch (error) {
+      console.error('Error deleting match exception:', error);
+      throw new Error(`Failed to delete match exception: ${error.message}`);
     }
   }
 }

@@ -4,14 +4,11 @@ import { useAuth } from "../stores/authStore";
 import { getDefaultRouteByRole } from "../utils/roleNavigation";
 import { onboardingAPI } from "../api/onboarding";
 import {
-  UserRole,
   UserProfile,
   UserPreferences
 } from "../types/auth";
 import {
     CreateClubRequest,
-    JoinClubAsMemberRequest,
-    SetupParentAccountRequest,
     OnboardingStep
 } from "../types/membership";
 
@@ -20,14 +17,10 @@ interface OnboardingData {
   profile: Partial<UserProfile>;
   // Preferences data (goes to user_preferences table)
   preferences: Partial<UserPreferences>;
-  // Role-specific setup data
-  selectedRole: UserRole | null;
+  // Role-specific setup data - only club_manager supported
+  selectedRole: 'club_manager' | null;
   // Club creation (for club_manager role)
   clubData: Partial<CreateClubRequest>;
-  // Member setup (for member role)
-  memberData: Partial<JoinClubAsMemberRequest>;
-  // Parent setup (for parent role)
-  parentData: Partial<SetupParentAccountRequest>;
 }
 
 export function useOnboarding() {
@@ -54,20 +47,12 @@ export function useOnboarding() {
       theme: "auto",
       language: "en",
     },
-    selectedRole: null,
+    selectedRole: 'club_manager', // Always club_manager, no selection needed
     clubData: {},
-    memberData: {},
-    parentData: { children: [] },
   });
 
-  // Universal onboarding steps - matches new backend flow
+  // Simplified 4-step onboarding flow (club_manager only)
   const universalSteps: OnboardingStep[] = [
-    {
-      id: "role-selection",
-      title: "Choose Your Role",
-      description: "How will you be using ClubQore?",
-      completed: false,
-    },
     {
       id: "profile-setup",
       title: "Profile Information",
@@ -75,9 +60,9 @@ export function useOnboarding() {
       completed: false,
     },
     {
-      id: "role-specific-setup",
-      title: "Role Setup",
-      description: "Complete your role-specific information",
+      id: "club-setup",
+      title: "Club Setup",
+      description: "Create your football club",
       completed: false,
     },
     {
@@ -98,13 +83,6 @@ export function useOnboarding() {
   const progress = ((currentStep + 1) / steps.length) * 100;
 
   const handleNext = () => {
-    // Skip role-specific setup for club managers since they'll set up their club later
-    if (onboardingData.selectedRole === "club_manager" && steps[currentStep].id === "role-specific-setup") {
-      // Skip to preferences setup
-      setCurrentStep(currentStep + 2);
-      return;
-    }
-    
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -135,33 +113,7 @@ export function useOnboarding() {
           address: { ...onboardingData.profile.address },
           profileImage: onboardingData.profile.profileImage,
         },
-        clubData: undefined, // Club managers will set up their club later in the dashboard
-        memberData:
-          onboardingData.selectedRole === "member"
-            ? {
-                clubInviteCode: onboardingData.memberData.clubInviteCode,
-                position: onboardingData.memberData.position,
-                medicalInfo: onboardingData.memberData.medicalInfo,
-                emergencyContactName: onboardingData.memberData.emergencyContactName,
-                emergencyContactPhone: onboardingData.memberData.emergencyContactPhone,
-                emergencyContactRelation: onboardingData.memberData.emergencyContactRelation,
-                notes: onboardingData.memberData.notes,
-              }
-            : undefined,
-        parentData:
-          onboardingData.selectedRole === "parent"
-            ? {
-                children: (onboardingData.parentData.children || []).map(
-                  (child) => ({
-                    firstName: child.firstName || "",
-                    lastName: child.lastName || "",
-                    dateOfBirth: child.dateOfBirth || "",
-                    clubId: child.clubId,
-                    membershipCode: child.membershipCode,
-                  })
-                ),
-              }
-            : undefined,
+        clubData: onboardingData.clubData, // Club setup is part of onboarding flow
         preferences: {
           notifications: {
             email_notifications:
@@ -224,24 +176,17 @@ export function useOnboarding() {
     const stepId = steps[currentStep].id;
 
     switch (stepId) {
-      case "role-selection":
-        return onboardingData.selectedRole !== null;
       case "profile-setup":
         return (
           onboardingData.profile.firstName &&
           onboardingData.profile.lastName &&
           onboardingData.profile.dateOfBirth
         );
-      case "role-specific-setup":
-        // Club managers skip this step, so always return true
-        if (onboardingData.selectedRole === "club_manager") {
-          return true;
-        } else if (onboardingData.selectedRole === "member") {
-          return onboardingData.memberData.clubInviteCode;
-        } else if (onboardingData.selectedRole === "parent") {
-          return (onboardingData.parentData.children?.length || 0) > 0;
-        }
-        return true;
+      case "club-setup":
+        return (
+          onboardingData.clubData.name &&
+          onboardingData.clubData.clubType
+        );
       case "preferences-setup":
       case "setup-complete":
         return true;
@@ -259,20 +204,8 @@ export function useOnboarding() {
     setOnboardingData((prev) => ({ ...prev, preferences }));
   };
 
-  const updateRole = (role: UserRole | null) => {
-    setOnboardingData((prev) => ({ ...prev, selectedRole: role }));
-  };
-
   const updateClubData = (clubData: Partial<CreateClubRequest>) => {
     setOnboardingData((prev) => ({ ...prev, clubData }));
-  };
-
-  const updateMemberData = (memberData: Partial<JoinClubAsMemberRequest>) => {
-    setOnboardingData((prev) => ({ ...prev, memberData }));
-  };
-
-  const updateParentData = (parentData: Partial<SetupParentAccountRequest>) => {
-    setOnboardingData((prev) => ({ ...prev, parentData }));
   };
 
   return {
@@ -284,19 +217,16 @@ export function useOnboarding() {
     error,
     onboardingData,
     user,
-    
+
     // Actions
     handleNext,
     handleBack,
     canProceed,
     setError,
-    
+
     // Data updates
     updateProfile,
     updatePreferences,
-    updateRole,
     updateClubData,
-    updateMemberData,
-    updateParentData,
   };
 }

@@ -92,7 +92,8 @@ export class TrainingSessionController {
         season_id: request.query.season_id ? parseInt(request.query.season_id) : undefined,
         team_id: request.query.team_id ? parseInt(request.query.team_id) : undefined,
         from_date: request.query.from_date,
-        to_date: request.query.to_date
+        to_date: request.query.to_date,
+        expand: request.query.expand === 'true' // Default false (table view shows DB rows only)
       };
 
       const sessions = await this.trainingSessionService.getSessionsByClub(clubId, filters);
@@ -245,6 +246,23 @@ export class TrainingSessionController {
     }
   }
 
+  async cancelSession(request, reply) {
+    try {
+      const userId = request.user.id;
+      const clubId = await this.clubService.getManagersClubId(userId);
+      const { sessionId } = request.params;
+
+      const result = await this.trainingSessionService.cancelSession(sessionId, clubId);
+      reply.code(200).send(result);
+    } catch (error) {
+      request.log.error('Error cancelling training session:', error);
+      reply.code(400).send({
+        success: false,
+        message: error.message || 'Failed to cancel training session'
+      });
+    }
+  }
+
   // Get upcoming sessions
   async getUpcomingSessions(request, reply) {
     try {
@@ -270,6 +288,143 @@ export class TrainingSessionController {
       reply.code(500).send({
         success: false,
         message: error.message || 'Failed to fetch upcoming sessions'
+      });
+    }
+  }
+
+  // ============================================================================
+  // RECURRING EVENT EXCEPTION HANDLERS (Option B Architecture)
+  // ============================================================================
+
+  async cancelOccurrence(request, reply) {
+    try {
+      const { sessionId, date } = request.params;
+      const userId = request.user.id;
+
+      const result = await this.trainingSessionService.cancelOccurrence(
+        parseInt(sessionId),
+        date,
+        userId
+      );
+
+      reply.code(200).send(result);
+    } catch (error) {
+      request.log.error('Error cancelling occurrence:', error);
+      reply.code(500).send({
+        success: false,
+        message: error.message || 'Failed to cancel occurrence'
+      });
+    }
+  }
+
+  async rescheduleOccurrence(request, reply) {
+    try {
+      const { sessionId, date } = request.params;
+      const { newDate, newStartTime, newEndTime } = request.body;
+      const userId = request.user.id;
+
+      const result = await this.trainingSessionService.rescheduleOccurrence(
+        parseInt(sessionId),
+        date,
+        newDate,
+        newStartTime,
+        newEndTime,
+        userId
+      );
+
+      reply.code(200).send(result);
+    } catch (error) {
+      request.log.error('Error rescheduling occurrence:', error);
+      reply.code(500).send({
+        success: false,
+        message: error.message || 'Failed to reschedule occurrence'
+      });
+    }
+  }
+
+  async modifyOccurrence(request, reply) {
+    try {
+      const { sessionId, date } = request.params;
+      const overrides = request.body;
+      const userId = request.user.id;
+
+      const result = await this.trainingSessionService.modifyOccurrence(
+        parseInt(sessionId),
+        date,
+        overrides,
+        userId
+      );
+
+      reply.code(200).send(result);
+    } catch (error) {
+      request.log.error('Error modifying occurrence:', error);
+      reply.code(500).send({
+        success: false,
+        message: error.message || 'Failed to modify occurrence'
+      });
+    }
+  }
+
+  async editFutureOccurrences(request, reply) {
+    try {
+      const { sessionId, date } = request.params;
+      const updates = request.body;
+      const userId = request.user.id;
+
+      const result = await this.trainingSessionService.editFutureOccurrences(
+        parseInt(sessionId),
+        date,
+        updates,
+        userId
+      );
+
+      reply.code(200).send(result);
+    } catch (error) {
+      request.log.error('Error editing future occurrences:', error);
+      reply.code(500).send({
+        success: false,
+        message: error.message || 'Failed to edit future occurrences'
+      });
+    }
+  }
+
+  async editAllOccurrences(request, reply) {
+    try {
+      const { sessionId } = request.params;
+      const updates = request.body;
+      const userId = request.user.id;
+
+      const result = await this.trainingSessionService.editAllOccurrences(
+        parseInt(sessionId),
+        updates,
+        userId
+      );
+
+      reply.code(200).send(result);
+    } catch (error) {
+      request.log.error('Error editing all occurrences:', error);
+      reply.code(500).send({
+        success: false,
+        message: error.message || 'Failed to edit all occurrences'
+      });
+    }
+  }
+
+  async deleteException(request, reply) {
+    try {
+      const { sessionId, date } = request.params;
+
+      const result = await this.trainingSessionService.deleteException(
+        parseInt(sessionId),
+        date
+      );
+
+      reply.code(200).send(result);
+    } catch (error) {
+      request.log.error('Error deleting exception:', error);
+      reply.code(500).send({
+        success: false,
+        message: error.message || 'Failed to delete exception'
       });
     }
   }

@@ -4,6 +4,8 @@ export { MemberFilters } from "./member-filters";
 export { MemberList } from "./member-list";
 export { RelationshipInfo } from "./relationship-info";
 export { MemberLoading } from "./member-loading";
+export { InviteParentDialog } from "./invite-parent-dialog";
+export { ParentInvitesList } from "./parent-invites-list";
 
 // Manage Member Components
 export { ManageMemberHeader } from "./manage-member-header";

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormItem } from "@/components/ui/form";
+import { DateOfBirthInput } from "@/components/ui/date-of-birth-input";
 import {
   Select,
   SelectContent,
@@ -115,15 +116,10 @@ export default function ChildrenInformationForm({
                 />
               </FormItem>
               <FormItem>
-                <Label htmlFor={`child-${child.id}-dateOfBirth`}>
-                  Date of Birth *
-                </Label>
-                <Input
-                  id={`child-${child.id}-dateOfBirth`}
-                  type="date"
+                <DateOfBirthInput
                   value={child.dateOfBirth}
-                  onChange={(e) =>
-                    updateChildField(child.id, "dateOfBirth", e.target.value)
+                  onChange={(value) =>
+                    updateChildField(child.id, "dateOfBirth", value)
                   }
                   required
                 />

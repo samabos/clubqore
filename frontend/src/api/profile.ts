@@ -67,21 +67,17 @@ export interface UserChild {
   firstName: string;
   lastName: string;
   dateOfBirth: string;
-  relationship: string;
   childUserId?: string;
   clubId?: string;
   clubName?: string;
-  membershipCode?: string;
 }
 
 export interface AddChildRequest {
   firstName: string;
   lastName: string;
   dateOfBirth: string;
-  relationship: string;
   childUserId?: string;
   clubId?: string;
-  membershipCode?: string;
 }
 
 // Profile API functions

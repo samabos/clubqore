@@ -51,16 +51,30 @@ export async function seed(knex) {
     { name: 'parent-payment-methods', display_name: 'Payment Methods', type: 'page', path: '/app/parent/payment-methods', icon: 'Wallet', sort_order: 5 },
     { name: 'parent-billing', display_name: 'Bills & Invoices', type: 'page', path: '/app/parent/billing', icon: 'Receipt', sort_order: 6 },
 
-    // Super admin features
-    { name: 'admin-clubs', display_name: 'All Clubs', type: 'page', path: '/app/admin/clubs', icon: 'Building2', sort_order: 2 },
-    { name: 'admin-club-approvals', display_name: 'Club Approvals', type: 'page', path: '/app/admin/clubs/approvals', icon: 'CheckCircle', sort_order: 3 },
-    { name: 'admin-billing-settings', display_name: 'Club Billing Settings', type: 'page', path: '/app/admin/billing/settings', icon: 'Settings', sort_order: 4 },
-    { name: 'admin-billing-jobs', display_name: 'Scheduled Invoice Jobs', type: 'page', path: '/app/admin/billing/jobs', icon: 'Calendar', sort_order: 5 },
-    { name: 'admin-analytics', display_name: 'Analytics', type: 'page', path: '/app/admin/analytics', icon: 'BarChart3', sort_order: 6 },
-    { name: 'admin-audit-logs', display_name: 'Audit Logs', type: 'page', path: '/app/admin/audit-logs', icon: 'FileText', sort_order: 7 },
-    { name: 'admin-settings', display_name: 'Platform Settings', type: 'page', path: '/app/admin/settings', icon: 'Settings', sort_order: 8 },
-    { name: 'admin-resources', display_name: 'Resource Management', type: 'page', path: '/app/admin/resources', icon: 'Boxes', sort_order: 9 },
-    { name: 'admin-permissions', display_name: 'Permission Management', type: 'page', path: '/app/admin/permissions', icon: 'ShieldCheck', sort_order: 10 },
+    // Super admin features - reorganized with groups
+    // Settings Group (parent)
+    { name: 'super-admin-settings', display_name: 'Settings', type: 'group', path: null, icon: 'Settings', sort_order: 2 },
+    // Settings children (will set parent_id after insert)
+    { name: 'admin-settings', display_name: 'Platform Settings', type: 'page', path: '/app/admin/settings', icon: 'Sliders', sort_order: 1 },
+    { name: 'admin-resources', display_name: 'Resources', type: 'page', path: '/app/admin/resources', icon: 'Boxes', sort_order: 2 },
+    { name: 'admin-permissions', display_name: 'Permissions', type: 'page', path: '/app/admin/permissions', icon: 'ShieldCheck', sort_order: 3 },
+
+    // Reports Group (parent)
+    { name: 'super-admin-reports', display_name: 'Reports', type: 'group', path: null, icon: 'BarChart3', sort_order: 3 },
+    // Reports children
+    { name: 'admin-analytics', display_name: 'Analytics', type: 'page', path: '/app/admin/analytics', icon: 'TrendingUp', sort_order: 1 },
+    { name: 'admin-audit-logs', display_name: 'Audit Logs', type: 'page', path: '/app/admin/audit-logs', icon: 'FileText', sort_order: 2 },
+
+    // Operations Group (parent)
+    { name: 'super-admin-operations', display_name: 'Operations', type: 'group', path: null, icon: 'Briefcase', sort_order: 4 },
+    // Club Management subgroup
+    { name: 'super-admin-club-management', display_name: 'Club Management', type: 'group', path: null, icon: 'Building2', sort_order: 1 },
+    { name: 'admin-clubs', display_name: 'All Clubs', type: 'page', path: '/app/admin/clubs', icon: 'Building2', sort_order: 1 },
+    { name: 'admin-club-approvals', display_name: 'Club Approvals', type: 'page', path: '/app/admin/clubs/approvals', icon: 'CheckCircle', sort_order: 2 },
+    // Billing Management subgroup
+    { name: 'super-admin-billing-management', display_name: 'Billing Management', type: 'group', path: null, icon: 'Receipt', sort_order: 2 },
+    { name: 'admin-billing-settings', display_name: 'Club Billing Settings', type: 'page', path: '/app/admin/billing/settings', icon: 'Settings', sort_order: 1 },
+    { name: 'admin-billing-jobs', display_name: 'Scheduled Invoice Jobs', type: 'page', path: '/app/admin/billing/jobs', icon: 'Calendar', sort_order: 2 },
 
     // Shared
     { name: 'communication', display_name: 'Messages', type: 'page', path: '/communication', icon: 'MessageSquare', sort_order: 90 },
@@ -75,6 +89,34 @@ export async function seed(knex) {
   insertedResources.forEach(r => {
     resourceMap[r.name] = r.id;
   });
+
+  // Set parent_id relationships for super admin menu hierarchy
+  const parentRelationships = [
+    // Settings group children
+    { child: 'admin-settings', parent: 'super-admin-settings' },
+    { child: 'admin-resources', parent: 'super-admin-settings' },
+    { child: 'admin-permissions', parent: 'super-admin-settings' },
+    // Reports group children
+    { child: 'admin-analytics', parent: 'super-admin-reports' },
+    { child: 'admin-audit-logs', parent: 'super-admin-reports' },
+    // Operations group children (subgroups)
+    { child: 'super-admin-club-management', parent: 'super-admin-operations' },
+    { child: 'super-admin-billing-management', parent: 'super-admin-operations' },
+    // Club Management subgroup children
+    { child: 'admin-clubs', parent: 'super-admin-club-management' },
+    { child: 'admin-club-approvals', parent: 'super-admin-club-management' },
+    // Billing Management subgroup children
+    { child: 'admin-billing-settings', parent: 'super-admin-billing-management' },
+    { child: 'admin-billing-jobs', parent: 'super-admin-billing-management' },
+  ];
+
+  for (const { child, parent } of parentRelationships) {
+    const childId = resourceMap[child];
+    const parentId = resourceMap[parent];
+    if (childId && parentId) {
+      await knex('resources').where({ id: childId }).update({ parent_id: parentId });
+    }
+  }
 
   // Get roles for ID lookup
   const roles = await knex('roles').select('id', 'name');
@@ -110,9 +152,16 @@ export async function seed(knex) {
       'team-manager-dashboard', 'teams', 'schedule', 'communication', 'profile'
     ],
     super_admin: [
-      'super-admin-dashboard', 'admin-clubs', 'admin-club-approvals',
-      'admin-billing-settings', 'admin-billing-jobs', 'admin-analytics',
-      'admin-audit-logs', 'admin-settings', 'admin-resources', 'admin-permissions',
+      'super-admin-dashboard',
+      // Settings group and children
+      'super-admin-settings', 'admin-settings', 'admin-resources', 'admin-permissions',
+      // Reports group and children
+      'super-admin-reports', 'admin-analytics', 'admin-audit-logs',
+      // Operations group, subgroups, and children
+      'super-admin-operations',
+      'super-admin-club-management', 'admin-clubs', 'admin-club-approvals',
+      'super-admin-billing-management', 'admin-billing-settings', 'admin-billing-jobs',
+      // Shared
       'communication', 'profile'
     ],
   };

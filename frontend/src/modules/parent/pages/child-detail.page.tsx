@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, AlertCircle, User, Users, Calendar, Receipt } from "lucide-react";
+import { ArrowLeft, AlertCircle, User, Users, Calendar, Receipt, Pencil } from "lucide-react";
 import {
   ChildProfileSection,
   ChildScheduleSection,
   ChildInvoicesSection,
   ChildTeamsSection,
+  EditChildDialog,
 } from "../components";
 import { fetchChildDetails } from "../actions";
 import type { ChildDetailData } from "../types";
@@ -26,6 +27,7 @@ export function ChildDetailPage() {
   const [child, setChild] = useState<ChildDetailData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   const activeTab = (searchParams.get("tab") as TabValue) || "profile";
 
@@ -59,6 +61,11 @@ export function ChildDetailPage() {
 
   const handleBack = () => {
     navigate("/app/parent/children");
+  };
+
+  const handleEditSuccess = () => {
+    setShowEditDialog(false);
+    loadChildDetails(); // Refresh data after successful edit
   };
 
   const calculateAge = (dateOfBirth: string) => {
@@ -143,6 +150,16 @@ export function ChildDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Edit Button */}
+        <Button
+          variant="outline"
+          onClick={() => setShowEditDialog(true)}
+          className="gap-2"
+        >
+          <Pencil className="h-4 w-4" />
+          Edit Profile
+        </Button>
       </div>
 
       {/* Quick Stats */}
@@ -250,6 +267,14 @@ export function ChildDetailPage() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Edit Child Dialog */}
+      <EditChildDialog
+        open={showEditDialog}
+        onClose={() => setShowEditDialog(false)}
+        onSuccess={handleEditSuccess}
+        child={child}
+      />
     </div>
   );
 }

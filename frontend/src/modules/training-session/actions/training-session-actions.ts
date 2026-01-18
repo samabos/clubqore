@@ -18,6 +18,11 @@ export async function fetchTrainingSessions(filters?: TrainingSessionFilters): P
   if (filters?.from_date) params.append('from_date', filters.from_date);
   if (filters?.to_date) params.append('to_date', filters.to_date);
 
+  // Always explicitly send expand parameter to avoid backend default behavior
+  if (filters?.expand !== undefined) {
+    params.append('expand', filters.expand ? 'true' : 'false');
+  }
+
   const url = params.toString() ? `${BASE_URL}?${params.toString()}` : BASE_URL;
   const response = await apiClient(url);
 
@@ -128,5 +133,16 @@ export async function publishTrainingSession(sessionId: number): Promise<void> {
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || 'Failed to publish training session');
+  }
+}
+
+export async function cancelTrainingSession(sessionId: number): Promise<void> {
+  const response = await apiClient(`${BASE_URL}/${sessionId}/cancel`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to cancel training session');
   }
 }

@@ -25,6 +25,9 @@ import {
   Layers,
   Repeat,
   Wallet,
+  Sliders,
+  Briefcase,
+  TrendingUp,
 } from "lucide-react";
 import { MenuItem } from "../types/user";
 import { UserRole } from "../types/auth";
@@ -128,73 +131,18 @@ export const menuItemsByRole: Record<UserRole, MenuItem[]> = {
       resource: "super-admin-dashboard",
     },
     {
-      id: "club-management",
-      label: "Club Management",
-      icon: Building2,
-      children: [
-        {
-          id: "clubs",
-          label: "All Clubs",
-          icon: Building2,
-          link: "/app/admin/clubs",
-          resource: "admin-clubs",
-        },
-        {
-          id: "club-approvals",
-          label: "Club Approvals",
-          icon: CheckCircle,
-          link: "/app/admin/clubs/approvals",
-          resource: "admin-club-approvals",
-        },
-      ],
-    },
-    {
-      id: "billing-management",
-      label: "Billing Management",
-      icon: DollarSign,
-      children: [
-        {
-          id: "club-billing-settings",
-          label: "Club Billing Settings",
-          icon: Settings,
-          link: "/app/admin/billing/settings",
-          resource: "admin-billing-settings",
-        },
-        {
-          id: "scheduled-jobs",
-          label: "Scheduled Invoice Jobs",
-          icon: Calendar,
-          link: "/app/admin/billing/jobs",
-          resource: "admin-billing-jobs",
-        },
-      ],
-    },
-    {
-      id: "platform-analytics",
-      label: "Analytics",
-      icon: BarChart3,
-      link: "/app/admin/analytics",
-      resource: "admin-analytics",
-    },
-    {
-      id: "audit-logs",
-      label: "Audit Logs",
-      icon: FileText,
-      link: "/app/admin/audit-logs",
-      resource: "admin-audit-logs",
-    },
-    {
-      id: "platform-settings",
-      label: "Platform Settings",
+      id: "settings",
+      label: "Settings",
       icon: Settings,
-      link: "/app/admin/settings",
-      resource: "admin-settings",
-    },
-    {
-      id: "permissions",
-      label: "Permissions",
-      icon: Lock,
+      resource: "super-admin-settings",
       children: [
+        {
+          id: "platform-settings",
+          label: "Platform Settings",
+          icon: Sliders,
+          link: "/app/admin/settings",
+          resource: "admin-settings",
+        },
         {
           id: "resources",
           label: "Resources",
@@ -204,10 +152,84 @@ export const menuItemsByRole: Record<UserRole, MenuItem[]> = {
         },
         {
           id: "role-permissions",
-          label: "Role Permissions",
+          label: "Permissions",
           icon: ShieldCheck,
           link: "/app/admin/permissions",
           resource: "admin-permissions",
+        },
+      ],
+    },
+    {
+      id: "reports",
+      label: "Reports",
+      icon: BarChart3,
+      resource: "super-admin-reports",
+      children: [
+        {
+          id: "analytics",
+          label: "Analytics",
+          icon: TrendingUp,
+          link: "/app/admin/analytics",
+          resource: "admin-analytics",
+        },
+        {
+          id: "audit-logs",
+          label: "Audit Logs",
+          icon: FileText,
+          link: "/app/admin/audit-logs",
+          resource: "admin-audit-logs",
+        },
+      ],
+    },
+    {
+      id: "operations",
+      label: "Operations",
+      icon: Briefcase,
+      resource: "super-admin-operations",
+      children: [
+        {
+          id: "club-management",
+          label: "Club Management",
+          icon: Building2,
+          resource: "super-admin-club-management",
+          children: [
+            {
+              id: "clubs",
+              label: "All Clubs",
+              icon: Building2,
+              link: "/app/admin/clubs",
+              resource: "admin-clubs",
+            },
+            {
+              id: "club-approvals",
+              label: "Club Approvals",
+              icon: CheckCircle,
+              link: "/app/admin/clubs/approvals",
+              resource: "admin-club-approvals",
+            },
+          ],
+        },
+        {
+          id: "billing-management",
+          label: "Billing Management",
+          icon: Receipt,
+          resource: "super-admin-billing-management",
+          children: [
+            {
+              id: "club-billing-settings",
+              label: "Club Billing Settings",
+              icon: Settings,
+              link: "/app/admin/billing/settings",
+              resource: "admin-billing-settings",
+            },
+            {
+              id: "scheduled-jobs",
+              label: "Scheduled Invoice Jobs",
+              icon: Calendar,
+              link: "/app/admin/billing/jobs",
+              resource: "admin-billing-jobs",
+            },
+          ],
         },
       ],
     },

@@ -7,6 +7,8 @@ import {
   MemberFilters,
   MemberList,
   MemberLoading,
+  InviteParentDialog,
+  ParentInvitesList,
 } from "../components";
 import { useTeams } from "@/stores/teamsStore";
 import { fetchTeamMembers } from "../../team/actions";
@@ -23,6 +25,8 @@ export function ClubMemberPage() {
   const [filterTeam, setFilterTeam] = useState("all");
   const [members, setMembers] = useState<ClubMember[]>([]);
   const [isMembersLoading, setIsMembersLoading] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [inviteRefreshTrigger, setInviteRefreshTrigger] = useState(0);
   const teamsHook = useTeams() as unknown as {
     teams: Array<{ id: number; name: string; color?: string }>;
     loadTeams: (forceRefresh?: boolean) => Promise<void>;
@@ -165,13 +169,28 @@ export function ClubMemberPage() {
     navigate("/app/club/member/manage");
   };
 
+  const handleInviteParent = () => {
+    setShowInviteDialog(true);
+  };
+
+  const handleInviteSuccess = () => {
+    setShowInviteDialog(false);
+    toast.success("Invitation sent successfully!");
+    // Trigger refresh of invites list
+    setInviteRefreshTrigger(prev => prev + 1);
+  };
+
   if (isLoading || isMembersLoading || isTeamsLoading) {
     return <MemberLoading />;
   }
 
   return (
     <div className="space-y-6">
-      <MemberHeader clubName={userClub?.name} onAddMember={handleAddMember} />
+      <MemberHeader
+        clubName={userClub?.name}
+        onAddMember={handleAddMember}
+        onInviteParent={handleInviteParent}
+      />
 
       <MemberFilters
         searchTerm={searchTerm}
@@ -184,6 +203,21 @@ export function ClubMemberPage() {
       />
 
       <MemberList members={organizedMembers} onEdit={handleEdit} onAddMember={handleAddMember} />
+
+      {/* Parent Invites Section */}
+      {userClub?.id && (
+        <ParentInvitesList
+          clubId={userClub.id}
+          refreshTrigger={inviteRefreshTrigger}
+        />
+      )}
+
+      <InviteParentDialog
+        open={showInviteDialog}
+        onClose={() => setShowInviteDialog(false)}
+        onSuccess={handleInviteSuccess}
+        clubId={userClub?.id}
+      />
     </div>
   );
 }

@@ -25,9 +25,7 @@ export class ChildUtils {
     await trx('user_children').insert({
       parent_user_id: parentUserId,
       child_user_id: childUser.id,
-      relationship: childData.relationship || 'parent',
       club_id: childData.clubId || null,
-      membership_code: childData.membershipCode || null,
       created_at: new Date(),
       updated_at: new Date()
     });
@@ -49,9 +47,7 @@ export class ChildUtils {
       await trx('user_children').insert({
         parent_user_id: parentUserId,
         child_user_id: child.childUserId,
-        relationship: child.relationship || 'parent',
         club_id: child.clubId || null,
-        membership_code: child.membershipCode || null,
         created_at: new Date(),
         updated_at: new Date()
       });
@@ -81,9 +77,7 @@ export class ChildUtils {
     await trx('user_children')
       .where({ id: childId })
       .update({
-        relationship: relationshipData.relationship || 'parent',
         club_id: relationshipData.clubId || null,
-        membership_code: relationshipData.membershipCode || null,
         updated_at: new Date()
       });
   }
@@ -109,7 +103,6 @@ export class ChildUtils {
     return children.map(child => ({
       id: child.id.toString(),
       childUserId: child.child_user_id?.toString(),
-      relationship: child.relationship,
       firstName: child.profile_first_name,
       lastName: child.profile_last_name,
       dateOfBirth: child.profile_dob,
@@ -118,7 +111,6 @@ export class ChildUtils {
       isRegistered: !!child.child_user_id,
       clubId: child.club_id?.toString(),
       clubName: child.club_name,
-      membershipCode: child.membership_code,
       createdAt: child.created_at.toISOString()
     }));
   }

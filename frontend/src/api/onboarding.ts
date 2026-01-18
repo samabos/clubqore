@@ -7,25 +7,9 @@ import { Club } from '@/types/club.ts';
 
 // Types matching the actual backend responses
 export interface OnboardingCompleteRequest {
-  role: 'club_manager' | 'member' | 'parent';
-  personalData?: UserProfile; 
+  role: 'club_manager';
+  personalData?: UserProfile;
   clubData?: Club;
-  memberData?: {
-    clubInviteCode?: string;
-    position?: string;
-    parentPhone?: string;
-  };
-  parentData?: {
-    children: Array<{
-      firstName: string;
-      lastName: string;
-      dateOfBirth: string;
-      relationship: string;
-      childUserId?: string;
-      clubId?: string;
-      membershipCode?: string;
-    }>;
-  };
   preferences?: UserPreferences;
 }
 
@@ -54,7 +38,7 @@ export interface UserStatusResponse {
   };
   accounts: Array<{
     accountNumber: string;
-    role: 'club_manager' | 'member' | 'parent';
+    role: 'club_manager';
     isActive: boolean;
     onboardingCompleted: boolean;
     completedAt?: string;
@@ -63,7 +47,7 @@ export interface UserStatusResponse {
     clubType?: string;
     metadata?: any;
   }>;
-  availableRoles: Array<'club_manager' | 'member' | 'parent'>;
+  availableRoles: Array<'club_manager'>;
 }
 
 export interface ProfileCompletionResponse {
@@ -164,7 +148,7 @@ export const onboardingAPI = {
   },
 
   // Set primary role
-  setPrimaryRole: async (role: 'club_manager' | 'member' | 'parent'): Promise<any> => {
+  setPrimaryRole: async (role: 'club_manager'): Promise<any> => {
     const response = await apiClient('/onboarding/primary-role', {
       method: 'PUT',
       body: JSON.stringify({ role }),
@@ -179,7 +163,7 @@ export const onboardingAPI = {
   },
 
   // Deactivate role
-  deactivateRole: async (role: 'club_manager' | 'member' | 'parent', clubId?: number): Promise<any> => {
+  deactivateRole: async (role: 'club_manager', clubId?: number): Promise<any> => {
     const url = `/onboarding/roles/${role}${clubId ? `?clubId=${clubId}` : ''}`;
     const response = await apiClient(url, {
       method: 'DELETE',

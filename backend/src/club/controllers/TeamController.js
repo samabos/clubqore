@@ -336,11 +336,11 @@ export class TeamController {
     }
   }
 
-  // Assign member to team
+  // Assign member to team (with automatic subscription creation)
   async assignMemberToTeam(request, reply) {
     try {
       const teamId = parseInt(request.params.teamId);
-      const { memberId } = request.body;
+      const { memberId, billingDayOfMonth, billingFrequency } = request.body;
       const currentUserId = request.user.id;
       const clubId = await this.clubService.getManagersClubId(currentUserId);
 
@@ -367,7 +367,12 @@ export class TeamController {
         });
       }
 
-      const result = await this.teamService.assignMemberToTeam(memberId, teamId);
+      // Pass optional billing options
+      const options = {};
+      if (billingDayOfMonth) options.billingDayOfMonth = billingDayOfMonth;
+      if (billingFrequency) options.billingFrequency = billingFrequency;
+
+      const result = await this.teamService.assignMemberToTeam(memberId, teamId, options);
       reply.code(200).send(result);
     } catch (error) {
       request.log.error('Error assigning member to team:', error);
@@ -378,7 +383,7 @@ export class TeamController {
     }
   }
 
-  // Remove member from team
+  // Remove member from team (with subscription cancellation)
   async removeMemberFromTeam(request, reply) {
     try {
       const teamId = parseInt(request.params.teamId);
@@ -402,7 +407,7 @@ export class TeamController {
         });
       }
 
-      const result = await this.teamService.removeMemberFromTeam(memberId);
+      const result = await this.teamService.removeMemberFromTeam(memberId, teamId);
       reply.code(200).send(result);
     } catch (error) {
       request.log.error('Error removing member from team:', error);
@@ -473,6 +478,42 @@ export class TeamController {
       reply.code(400).send({
         success: false,
         message: error.message || 'Failed to fetch assigned players in club'
+      });
+    }
+  }
+
+  // Set team membership tier
+  async setTeamTier(request, reply) {
+    try {
+      const teamId = parseInt(request.params.teamId);
+      const { membershipTierId } = request.body;
+      const currentUserId = request.user.id;
+      const clubId = await this.clubService.getManagersClubId(currentUserId);
+
+      if (!clubId) {
+        return reply.code(400).send({
+          success: false,
+          message: 'User is not associated with a club'
+        });
+      }
+
+      if (!membershipTierId) {
+        return reply.code(400).send({
+          success: false,
+          message: 'Membership tier ID is required'
+        });
+      }
+
+      const result = await this.teamService.setTeamTier(teamId, membershipTierId, clubId);
+      reply.code(200).send({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      request.log.error('Error setting team tier:', error);
+      reply.code(400).send({
+        success: false,
+        message: error.message || 'Failed to set team tier'
       });
     }
   }

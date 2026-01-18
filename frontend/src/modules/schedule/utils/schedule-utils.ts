@@ -8,6 +8,26 @@ import type {
   ScheduleStatus,
 } from "../types/schedule-types";
 
+// Parent API event format (used in dashboard and parent schedule)
+export interface ParentEventData {
+  id: string;
+  type: 'training' | 'match';
+  date: string;
+  start_time: string;
+  end_time?: string | null;
+  location: string;
+  team_name: string;
+  child_first_name?: string | null;
+  child_last_name?: string | null;
+
+  // Training-specific fields
+  title?: string;
+
+  // Match-specific fields
+  opponent?: string | null;
+  is_home?: boolean;
+}
+
 // Type guards
 export function isTrainingItem(
   item: ScheduleItem
@@ -106,35 +126,37 @@ export function getDisplayInfo(item: ScheduleItem): ScheduleItemDisplay {
 }
 
 // Color coding for calendar items (background colors)
+// Training sessions: deep distinct colors
+// Matches: deep distinct colors
 export function getTrainingColor(sessionType: SessionType): string {
   switch (sessionType) {
     case "training":
-      return "bg-blue-500";
+      return "bg-blue-600";
     case "practice":
-      return "bg-green-500";
+      return "bg-indigo-600";
     case "conditioning":
-      return "bg-orange-500";
+      return "bg-purple-600";
     case "tactical":
-      return "bg-purple-500";
+      return "bg-violet-600";
     case "friendly":
-      return "bg-pink-500";
+      return "bg-cyan-600";
     default:
-      return "bg-gray-500";
+      return "bg-gray-600";
   }
 }
 
 export function getMatchColor(matchType: MatchType): string {
   switch (matchType) {
     case "league":
-      return "bg-blue-600";
+      return "bg-emerald-600";
     case "cup":
-      return "bg-purple-600";
+      return "bg-teal-600";
     case "tournament":
-      return "bg-orange-600";
-    case "scrimmage":
       return "bg-green-600";
+    case "scrimmage":
+      return "bg-lime-600";
     case "friendly":
-      return "bg-pink-600";
+      return "bg-amber-600";
     default:
       return "bg-gray-600";
   }
@@ -144,15 +166,15 @@ export function getMatchColor(matchType: MatchType): string {
 export function getTrainingBadgeColor(sessionType: SessionType): string {
   switch (sessionType) {
     case "training":
-      return "bg-blue-100 text-blue-700 border-blue-200";
+      return "bg-blue-100 text-blue-800 border-blue-300";
     case "practice":
-      return "bg-green-100 text-green-700 border-green-200";
+      return "bg-indigo-100 text-indigo-800 border-indigo-300";
     case "conditioning":
-      return "bg-orange-100 text-orange-700 border-orange-200";
+      return "bg-purple-100 text-purple-800 border-purple-300";
     case "tactical":
-      return "bg-purple-100 text-purple-700 border-purple-200";
+      return "bg-violet-100 text-violet-800 border-violet-300";
     case "friendly":
-      return "bg-pink-100 text-pink-700 border-pink-200";
+      return "bg-cyan-100 text-cyan-800 border-cyan-300";
     default:
       return "bg-gray-100 text-gray-700 border-gray-200";
   }
@@ -161,15 +183,15 @@ export function getTrainingBadgeColor(sessionType: SessionType): string {
 export function getMatchBadgeColor(matchType: MatchType): string {
   switch (matchType) {
     case "league":
-      return "bg-blue-100 text-blue-800 border-blue-300";
+      return "bg-emerald-100 text-emerald-800 border-emerald-300";
     case "cup":
-      return "bg-purple-100 text-purple-800 border-purple-300";
+      return "bg-teal-100 text-teal-800 border-teal-300";
     case "tournament":
-      return "bg-orange-100 text-orange-800 border-orange-300";
-    case "scrimmage":
       return "bg-green-100 text-green-800 border-green-300";
+    case "scrimmage":
+      return "bg-lime-100 text-lime-800 border-lime-300";
     case "friendly":
-      return "bg-pink-100 text-pink-800 border-pink-300";
+      return "bg-amber-100 text-amber-800 border-amber-300";
     default:
       return "bg-gray-100 text-gray-800 border-gray-300";
   }
@@ -178,19 +200,103 @@ export function getMatchBadgeColor(matchType: MatchType): string {
 // Status colors (shared between training and matches)
 export function getStatusColor(status: ScheduleStatus): string {
   switch (status) {
-    case "draft":
-      return "bg-gray-100 text-gray-700";
-    case "published":
-      return "bg-green-100 text-green-700";
-    case "scheduled":
-      return "bg-blue-100 text-blue-700";
-    case "in_progress":
-      return "bg-yellow-100 text-yellow-700";
-    case "completed":
-      return "bg-purple-100 text-purple-700";
-    case "cancelled":
-      return "bg-red-100 text-red-700";
+  //  case "draft":
+  //    return "bg-gray-100 text-gray-700";
+  //  case "published":
+  //    return "bg-green-100 text-green-700";
+  //  case "scheduled":
+  //    return "bg-blue-100 text-blue-700";
+  //  case "in_progress":
+  //    return "bg-yellow-100 text-yellow-700";
+  //  case "completed":
+  //    return "bg-purple-100 text-purple-700";
+  //  case "cancelled":
+  //    return "bg-red-100 text-red-700";
     default:
       return "bg-gray-100 text-gray-700";
+  }
+}
+
+// Convert parent API event data to ScheduleItem
+// Used by ParentDashboard and other parent views
+export function parentEventToScheduleItem(event: ParentEventData): ScheduleItem {
+  const childName = event.child_first_name && event.child_last_name
+    ? `${event.child_first_name} ${event.child_last_name}`
+    : undefined;
+
+  const baseItem = {
+    id: parseInt(event.id),
+    date: event.date,
+    start_time: event.start_time,
+    end_time: event.end_time || null,
+    season_id: null,
+    status: 'scheduled' as const,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    childName,
+  };
+
+  if (event.type === 'training') {
+    return {
+      ...baseItem,
+      type: 'training',
+      data: {
+        id: parseInt(event.id),
+        season_id: null,
+        club_id: 0,
+        title: event.title || 'Training Session',
+        description: null,
+        session_type: 'practice' as const,
+        date: event.date,
+        start_time: event.start_time,
+        end_time: event.end_time || '',
+        location: event.location,
+        coach_id: null,
+        max_participants: null,
+        status: 'scheduled' as const,
+        created_by: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_recurring: false,
+        recurrence_pattern: null,
+        recurrence_days: null,
+        recurrence_end_date: null,
+        parent_session_id: null,
+        teams: [{
+          id: 0,
+          name: event.team_name,
+          color: null
+        }]
+      }
+    };
+  } else {
+    return {
+      ...baseItem,
+      type: 'match',
+      status: 'scheduled' as const,
+      data: {
+        id: parseInt(event.id),
+        season_id: null,
+        club_id: 0,
+        match_type: 'league' as const,
+        home_team_id: 0,
+        away_team_id: null,
+        opponent_name: event.opponent || null,
+        is_home: event.is_home || false,
+        venue: event.location,
+        date: event.date,
+        start_time: event.start_time,
+        end_time: null,
+        competition_name: null,
+        home_score: null,
+        away_score: null,
+        status: 'scheduled' as const,
+        created_by: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        home_team_name: event.is_home ? event.team_name : (event.opponent || 'TBD'),
+        away_team_name: event.is_home ? (event.opponent || 'TBD') : event.team_name
+      }
+    };
   }
 }

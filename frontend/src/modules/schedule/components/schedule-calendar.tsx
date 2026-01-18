@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Dumbbell, Trophy } from "lucide-react";
+import { ChevronLeft, ChevronRight, Dumbbell, Trophy, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -9,7 +9,7 @@ import {
 import { cn } from "@/components/ui/utils";
 import type { ScheduleItem } from "../types/schedule-types";
 import { getDisplayInfo } from "../utils/schedule-utils";
-import { ScheduleItemPopover } from "./schedule-item-popover";
+import { ScheduleCard } from "./schedule-card";
 
 interface ScheduleCalendarProps {
   items: ScheduleItem[];
@@ -217,29 +217,33 @@ export function ScheduleCalendar({
                   <div className="space-y-1">
                     {dayItems.slice(0, 2).map((item) => {
                       const display = getDisplayInfo(item);
+                      const isCancelled = item.status === "cancelled";
                       return (
                         <Popover key={`${item.type}-${item.id}`}>
                           <PopoverTrigger asChild>
                             <button
                               className={cn(
                                 "w-full text-left px-2 py-1 rounded text-xs font-medium text-white truncate hover:opacity-80 transition-opacity flex items-center gap-1",
-                                display.color,
+                                isCancelled
+                                  ? "bg-gray-400 opacity-60"
+                                  : display.color,
                                 item.type === "match" &&
                                   "border-2 border-white border-dashed"
                               )}
                             >
-                              {item.type === "match" ? (
+                              {isCancelled && <XCircle className="w-3 h-3 flex-shrink-0" />}
+                              {!isCancelled && (item.type === "match" ? (
                                 <Trophy className="w-3 h-3 flex-shrink-0" />
                               ) : (
                                 <Dumbbell className="w-3 h-3 flex-shrink-0" />
-                              )}
-                              <span className="truncate">
+                              ))}
+                              <span className={cn("truncate", isCancelled && "line-through")}>
                                 {display.start_time} {display.title}
                               </span>
                             </button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-80" align="start">
-                            <ScheduleItemPopover
+                          <PopoverContent className="w-96 p-0" align="start">
+                            <ScheduleCard
                               item={item}
                               onEdit={onEditItem}
                               onDelete={onDeleteItem}
@@ -275,20 +279,24 @@ export function ScheduleCalendar({
             </div>
             <div className="flex flex-wrap gap-2 text-xs">
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                <div className="w-3 h-3 rounded-full bg-blue-600"></div>
                 <span className="text-gray-600">Training</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <div className="w-3 h-3 rounded-full bg-indigo-600"></div>
                 <span className="text-gray-600">Practice</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                <div className="w-3 h-3 rounded-full bg-purple-600"></div>
                 <span className="text-gray-600">Conditioning</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                <div className="w-3 h-3 rounded-full bg-violet-600"></div>
                 <span className="text-gray-600">Tactical</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-cyan-600"></div>
+                <span className="text-gray-600">Friendly</span>
               </div>
             </div>
           </div>
@@ -301,20 +309,24 @@ export function ScheduleCalendar({
             </div>
             <div className="flex flex-wrap gap-2 text-xs">
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-blue-600 border-2 border-white"></div>
+                <div className="w-3 h-3 rounded-full bg-emerald-600 border-2 border-white"></div>
                 <span className="text-gray-600">League</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-purple-600 border-2 border-white"></div>
+                <div className="w-3 h-3 rounded-full bg-teal-600 border-2 border-white"></div>
                 <span className="text-gray-600">Cup</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-orange-600 border-2 border-white"></div>
+                <div className="w-3 h-3 rounded-full bg-green-600 border-2 border-white"></div>
                 <span className="text-gray-600">Tournament</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-green-600 border-2 border-white"></div>
+                <div className="w-3 h-3 rounded-full bg-lime-600 border-2 border-white"></div>
                 <span className="text-gray-600">Scrimmage</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-amber-600 border-2 border-white"></div>
+                <span className="text-gray-600">Friendly</span>
               </div>
             </div>
           </div>

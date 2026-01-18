@@ -21,17 +21,21 @@ import {
   Baby,
   CreditCard,
 } from "lucide-react";
-import type { UserChild } from "@/api/profile";
 import type { Invoice } from "@/types/billing";
 import { format, parseISO } from "date-fns";
-import { EventCard } from "../components/EventCard";
+import { ScheduleCard } from "@/modules/schedule/components/schedule-card";
+import { parentEventToScheduleItem } from "@/modules/schedule/utils/schedule-utils";
 import { fetchParentDashboardData } from "../actions/parent-dashboard-actions";
 import { combineAndSortEvents, getInvoiceStatusVariant } from "../utils/dashboard-utils";
 import type { DashboardEvent } from "../types";
+import { fetchParentChildren } from "@/modules/parent/actions";
+import type { EnrichedChild } from "@/modules/parent/types";
+import { useAuthStore } from "@/stores/authStore";
 
 export function ParentDashboard() {
   const navigate = useNavigate();
-  const [children, setChildren] = useState<UserChild[]>([]);
+  const user = useAuthStore((state) => state.user);
+  const [children, setChildren] = useState<EnrichedChild[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<DashboardEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,13 +45,24 @@ export function ParentDashboard() {
     const loadDashboardData = async () => {
       try {
         setLoading(true);
-        const data = await fetchParentDashboardData();
-        setChildren(data.children);
-        setInvoices(data.invoices);
+
+        // Fetch enriched children data (with teams)
+        const [enrichedChildren, dashboardData] = await Promise.all([
+          fetchParentChildren(),
+          fetchParentDashboardData()
+        ]);
+
+        setChildren(enrichedChildren);
+        setInvoices(dashboardData.invoices);
 
         // Combine and sort events
-        const events = combineAndSortEvents(data.trainingSessions, data.matches);
-        setUpcomingEvents(events);
+        const events = combineAndSortEvents(dashboardData.trainingSessions, dashboardData.matches);
+        // Filter out draft events - parents can see scheduled, in_progress, completed, and cancelled events
+        const visibleEvents = events.filter(event => {
+          const scheduleItem = parentEventToScheduleItem(event);
+          return scheduleItem.status !== 'draft';
+        });
+        setUpcomingEvents(visibleEvents);
       } catch (err: any) {
         console.error('Dashboard load error:', err);
         console.error('Full error details:', {
@@ -175,7 +190,7 @@ export function ParentDashboard() {
       <div className="flex flex-col lg:flex-row lg:flex-row lg:justify-between lg:items-start gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Welcome back, Jane!
+            Welcome back, {user?.profile?.firstName || user?.email?.split('@')[0] || 'Parent'}!
           </h1>
           <p className="text-gray-600">
             Here's what's happening with your children's football activities.
@@ -189,7 +204,8 @@ export function ParentDashboard() {
             <MessageSquare className="w-4 h-4 mr-2" />
             Messages
           </Button>
-          <Button className="rounded-xl gradient-primary text-white hover:opacity-90">
+          <Button className="rounded-xl gradient-primary text-white hover:opacity-90"
+              onClick={() => navigate('/app/parent/schedule')}>
             <Calendar className="w-4 h-4 mr-2" />
             View Calendar
           </Button>
@@ -257,88 +273,71 @@ export function ParentDashboard() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             {children.length > 0 ? (
-              children.map((child) => (
-                <div key={child.id} className="p-4 bg-gray-50 rounded-xl">
-                  <div className="flex items-start justify-between mb-4">
+              children.map((child) => {
+                const calculateAge = (dateOfBirth: string) => {
+                  const today = new Date();
+                  const birthDate = new Date(dateOfBirth);
+                  let age = today.getFullYear() - birthDate.getFullYear();
+                  const monthDiff = today.getMonth() - birthDate.getMonth();
+                  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                  }
+                  return age;
+                };
+
+                return (
+                  <div key={child.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => navigate(`/app/parent/children/${child.id}`)}>
                     <div className="flex items-center gap-3">
-                      <Avatar className="w-12 h-12 rounded-xl">
-                        <AvatarFallback className="rounded-xl bg-primary text-white">
+                      <Avatar className="w-10 h-10">
+                        <AvatarFallback className="bg-primary text-white text-sm">
                           {child.firstName[0]}
                           {child.lastName[0]}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-900">
                           {child.firstName} {child.lastName}
                         </p>
-                        <p className="text-sm text-blue-600">
-                          {child.clubName || "Not enrolled"}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          <span className="text-sm text-gray-600">
+                            {calculateAge(child.dateOfBirth)} years
+                          </span>
+                          <span className="text-gray-400">•</span>
+                          <span className="text-sm text-gray-600">
+                            {child.clubName || "Not enrolled"}
+                          </span>
+                          {child.teams && child.teams.length > 0 && (
+                            <>
+                              <span className="text-gray-400">•</span>
+                              <div className="flex flex-wrap gap-1">
+                                {child.teams.slice(0, 2).map((team) => (
+                                  <Badge key={team.id} variant="secondary" className="text-xs">
+                                    {team.name}
+                                  </Badge>
+                                ))}
+                                {child.teams.length > 2 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{child.teams.length - 2}
+                                  </Badge>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <Badge
-                        variant={child.clubId ? "default" : "secondary"}
-                        className="rounded-lg mb-2"
-                      >
-                        {child.clubId ? "Enrolled" : "Not Enrolled"}
-                      </Badge>
-                      {child.membershipCode && (
-                        <p className="text-xs text-gray-500">
-                          {child.membershipCode}
-                        </p>
-                      )}
-                    </div>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700 mb-1">
-                        Date of Birth
-                      </p>
-                      <p className="text-sm text-gray-900">
-                        {new Date(child.dateOfBirth).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700 mb-1">
-                        Status
-                      </p>
-                      <p className="text-sm text-gray-900">
-                        {child.clubId ? "Active" : "Inactive"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 mt-4">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-lg flex-1"
-                      onClick={() => navigate(`/app/parent/billing?child=${child.id}`)}
-                    >
-                      View Invoices
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-lg flex-1"
-                      disabled
-                      title="Coming soon"
-                    >
-                      View Progress
-                    </Button>
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
-              <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">
-                  No children added yet. Add children in your profile.
-                </CardContent>
-              </Card>
+              <div className="py-8 text-center text-muted-foreground">
+                <p className="mb-2">No children added yet</p>
+                <Button variant="outline" size="sm" onClick={() => navigate("/app/profile")}>
+                  Add children in your profile
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -410,6 +409,7 @@ export function ParentDashboard() {
               variant="outline"
               size="sm"
               className="rounded-lg border-gray-200 hover:border-gray-300"
+              onClick={() => navigate('/app/parent/schedule')}
             >
               <Calendar className="w-4 h-4 mr-2" />
               Full Calendar
@@ -419,8 +419,12 @@ export function ParentDashboard() {
         <CardContent>
           {upcomingEvents.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {upcomingEvents.slice(0, 6).map((event) => (
-                <EventCard key={`${event.type}-${event.id}`} event={event} />
+              {upcomingEvents.slice(0, 3).map((event) => (
+                <ScheduleCard
+                  key={`${event.type}-${event.id}`}
+                  item={parentEventToScheduleItem(event)}
+                  readOnly={true}
+                />
               ))}
             </div>
           ) : (

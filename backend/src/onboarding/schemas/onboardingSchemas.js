@@ -8,8 +8,8 @@ export const onboardingSchemas = {
     properties: {
       role: {
         type: 'string',
-        enum: ['club_manager', 'member', 'parent'],
-        description: 'The role the user wants to onboard as'
+        enum: ['club_manager'],
+        description: 'Only club_manager role is supported for onboarding'
       },
       personalData: {
         type: 'object',
@@ -70,67 +70,6 @@ export const onboardingSchemas = {
           bannerUrl: { type: 'string', format: 'uri' }
         }
       },
-      memberData: {
-        type: 'object',
-        properties: {
-          clubId: { type: 'integer', minimum: 1 },
-          clubInviteCode: { type: 'string', minLength: 6, maxLength: 20 },
-          position: { type: 'string', maxLength: 100 },
-          parentPhone: { type: 'string', pattern: '^[+]?[1-9]\\d{1,14}$' },
-          membershipPreferences: {
-            type: 'object',
-            properties: {
-              newsletter: { type: 'boolean', default: true },
-              eventNotifications: { type: 'boolean', default: true },
-              directMessages: { type: 'boolean', default: true }
-            }
-          }
-        }
-      },
-      parentData: {
-        type: 'object',
-        properties: {
-          children: {
-            type: 'array',
-            minItems: 1,
-            items: {
-              type: 'object',
-              required: ['name', 'dateOfBirth'],
-              properties: {
-                childUserId: { type: 'integer', minimum: 1 },
-                name: { type: 'string', minLength: 1, maxLength: 100 },
-                firstName: { type: 'string', minLength: 1, maxLength: 50 },
-                lastName: { type: 'string', minLength: 1, maxLength: 50 },
-                dateOfBirth: { type: 'string', format: 'date' },
-                relationship: {
-                  type: 'string',
-                  enum: ['parent', 'guardian', 'grandparent', 'sibling', 'other'],
-                  default: 'parent'
-                },
-                gradeLevel: { type: 'string', maxLength: 20 },
-                school: { type: 'string', maxLength: 100 },
-                medicalInfo: { type: 'string', maxLength: 500 },
-                emergencyContact: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string', maxLength: 100 },
-                    relationship: { type: 'string', maxLength: 50 },
-                    phone: { type: 'string', pattern: '^[+]?[1-9]\\d{1,14}$' },
-                    email: { type: 'string', format: 'email' }
-                  }
-                },
-                interests: {
-                  type: 'array',
-                  items: { type: 'string', maxLength: 50 },
-                  maxItems: 10
-                },
-                clubId: { type: 'integer', minimum: 1 },
-                membershipCode: { type: 'string', maxLength: 50 }
-              }
-            }
-          }
-        }
-      },
       preferences: {
         type: 'object',
         properties: {
@@ -188,13 +127,11 @@ export const onboardingSchemas = {
     properties: {
       role: {
         type: 'string',
-        enum: ['club_manager', 'member', 'parent']
+        enum: ['club_manager']
       },
       // Include the same nested schemas as above
       personalData: { $ref: '#/definitions/personalData' },
       clubData: { $ref: '#/definitions/clubData' },
-      memberData: { $ref: '#/definitions/memberData' },
-      parentData: { $ref: '#/definitions/parentData' },
       preferences: { $ref: '#/definitions/preferences' }
     },
     additionalProperties: false
@@ -207,7 +144,7 @@ export const onboardingSchemas = {
     properties: {
       role: {
         type: 'string',
-        enum: ['club_manager', 'member', 'parent']
+        enum: ['club_manager']
       }
     },
     additionalProperties: false
@@ -220,11 +157,11 @@ export const onboardingSchemas = {
     properties: {
       step: {
         type: 'string',
-        enum: ['profile_created', 'role_selected', 'club_joined', 'preferences_set', 'verification_complete']
+        enum: ['profile_created', 'role_selected', 'club_created', 'preferences_set', 'verification_complete']
       },
       role: {
         type: 'string',
-        enum: ['club_manager', 'member', 'parent']
+        enum: ['club_manager']
       }
     },
     additionalProperties: false

@@ -5,9 +5,8 @@ import { Progress } from "../ui/progress";
 import { ArrowRight, X, AlertTriangle } from "lucide-react";
 import { useOnboarding } from "../../hooks/useOnboarding";
 import {
-  RoleSelection,
   ProfileSetup,
-  RoleSpecificSetup,
+  ClubSetup,
   PreferencesSetup,
   OnboardingComplete,
 } from "./index";
@@ -26,23 +25,13 @@ export function OnboardingFlow() {
     setError,
     updateProfile,
     updatePreferences,
-    updateRole,
     updateClubData,
-    updateMemberData,
-    updateParentData,
   } = useOnboarding();
 
   const renderStepContent = () => {
     const stepId = steps[currentStep].id;
 
     switch (stepId) {
-      case "role-selection":
-        return (
-          <RoleSelection
-            selectedRole={onboardingData.selectedRole}
-            onRoleSelect={updateRole}
-          />
-        );
       case "profile-setup":
         return (
           <ProfileSetup
@@ -50,16 +39,11 @@ export function OnboardingFlow() {
             onProfileUpdate={updateProfile}
           />
         );
-      case "role-specific-setup":
+      case "club-setup":
         return (
-          <RoleSpecificSetup
-            selectedRole={onboardingData.selectedRole}
+          <ClubSetup
             clubData={onboardingData.clubData}
-            memberData={onboardingData.memberData}
-            parentData={onboardingData.parentData}
             onClubDataUpdate={updateClubData}
-            onMemberDataUpdate={updateMemberData}
-            onParentDataUpdate={updateParentData}
           />
         );
       case "preferences-setup":
@@ -75,9 +59,9 @@ export function OnboardingFlow() {
         );
       default:
         return (
-          <RoleSelection
-            selectedRole={onboardingData.selectedRole}
-            onRoleSelect={updateRole}
+          <ProfileSetup
+            profile={onboardingData.profile}
+            onProfileUpdate={updateProfile}
           />
         );
     }

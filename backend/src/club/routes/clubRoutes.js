@@ -130,56 +130,6 @@ export const clubRoutes = async function (fastify, options) {
     }
   }, clubController.browseClubs.bind(clubController));
 
-  // Create invite code for club
-  fastify.post('/:clubId/invite-codes', {
-    schema: {
-      tags: ['Clubs'],
-      summary: 'Create invite code for club',
-      params: {
-        type: 'object',
-        properties: {
-          clubId: { type: 'integer' }
-        }
-      },
-      body: {
-        type: 'object',
-        properties: {
-          expires_at: { type: 'string', format: 'date-time' },
-          max_uses: { type: 'integer', minimum: 1 },
-          role: { type: 'string', enum: ['member', 'parent'] }
-        }
-      }
-    }
-  }, clubController.createInviteCode.bind(clubController));
-
-  // Get club invite codes
-  fastify.get('/:clubId/invite-codes', {
-    schema: {
-      tags: ['Clubs'],
-      summary: 'Get club invite codes',
-      params: {
-        type: 'object',
-        properties: {
-          clubId: { type: 'integer' }
-        }
-      }
-    }
-  }, clubController.getClubInviteCodes.bind(clubController));
-
-  // Deactivate invite code
-  fastify.delete('/invite-codes/:codeId', {
-    schema: {
-      tags: ['Clubs'],
-      summary: 'Deactivate invite code',
-      params: {
-        type: 'object',
-        properties: {
-          codeId: { type: 'integer' }
-        }
-      }
-    }
-  }, clubController.deactivateInviteCode.bind(clubController));
-
   // Upload club logo
   fastify.post('/:clubId/logo', {
     schema: {

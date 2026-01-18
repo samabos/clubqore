@@ -22,7 +22,9 @@ import { CreateTeamRequest, UpdateTeamRequest, Team } from "../types";
 import { useAuth } from "@/stores/authStore";
 import { usePersonnel } from "@/stores/personnelStore";
 import { toast } from "sonner";
-import { UserCog } from "lucide-react";
+import { UserCog, Loader2 } from "lucide-react";
+import { fetchMembershipTiers } from "@/modules/subscription/actions/subscription-actions";
+import type { MembershipTier } from "@/types/subscription";
 
 interface TeamFormProps {
   isOpen: boolean;
@@ -53,9 +55,14 @@ export function TeamForm({
     ...("manager_id" in (initialData || {})
       ? { manager_id: (initialData as Team).manager_id ?? null }
       : { manager_id: null }),
+    ...("membership_tier_id" in (initialData || {})
+      ? { membership_tier_id: (initialData as Team).membership_tier_id ?? null }
+      : { membership_tier_id: null }),
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [membershipTiers, setMembershipTiers] = useState<MembershipTier[]>([]);
+  const [isLoadingTiers, setIsLoadingTiers] = useState(false);
 
   // Update form data when initialData changes
   useEffect(() => {
@@ -68,6 +75,9 @@ export function TeamForm({
         ...("manager_id" in initialData
           ? { manager_id: (initialData as Team).manager_id ?? null }
           : { manager_id: null }),
+        ...("membership_tier_id" in initialData
+          ? { membership_tier_id: (initialData as Team).membership_tier_id ?? null }
+          : { membership_tier_id: null }),
       });
     } else {
       setFormData({
@@ -75,6 +85,7 @@ export function TeamForm({
         color: "#3B82F6",
         is_active: true,
         manager_id: null,
+        membership_tier_id: null,
       });
     }
     setErrors({});
@@ -87,9 +98,40 @@ export function TeamForm({
     }
   }, [isOpen, userClub, loadPersonnel]);
 
+  // Load membership tiers when dialog opens
+  useEffect(() => {
+    const loadTiers = async () => {
+      if (isOpen) {
+        setIsLoadingTiers(true);
+        try {
+          const tiers = await fetchMembershipTiers(false); // Only active tiers
+          setMembershipTiers(tiers);
+        } catch (error) {
+          console.error("Failed to load membership tiers:", error);
+          toast.error("Failed to load membership tiers");
+        } finally {
+          setIsLoadingTiers(false);
+        }
+      }
+    };
+    loadTiers();
+  }, [isOpen]);
+
   const handleManagerChange = (managerId: string) => {
     const managerIdNum = managerId === "none" ? null : parseInt(managerId);
     setFormData((prev) => ({ ...prev, manager_id: managerIdNum }));
+  };
+
+  const handleTierChange = (tierId: string) => {
+    const tierIdNum = tierId === "none" ? null : parseInt(tierId);
+    setFormData((prev) => ({ ...prev, membership_tier_id: tierIdNum }));
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
+    }).format(price);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -118,6 +160,8 @@ export function TeamForm({
         name: "",
         color: "#3B82F6",
         is_active: true,
+        manager_id: null,
+        membership_tier_id: null,
       });
       setErrors({});
       onOpenChange(false);
@@ -226,6 +270,48 @@ export function TeamForm({
               <p className="text-xs text-gray-500">
                 Assign a team manager to oversee this team
               </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="membership_tier">Membership Tier</Label>
+            <Select
+              value={
+                ("membership_tier_id" in formData
+                  ? formData.membership_tier_id?.toString()
+                  : "none") || "none"
+              }
+              onValueChange={handleTierChange}
+              disabled={isLoading || isLoadingTiers}
+            >
+              <SelectTrigger>
+                {isLoadingTiers ? (
+                  <span className="flex items-center">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading tiers...
+                  </span>
+                ) : (
+                  <SelectValue placeholder="Select a membership tier" />
+                )}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">
+                  <span className="text-muted-foreground">No tier assigned</span>
+                </SelectItem>
+                {membershipTiers.map((tier) => (
+                  <SelectItem key={tier.id} value={tier.id.toString()}>
+                    <div className="flex items-center gap-2">
+                      <span>{tier.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({formatPrice(tier.monthlyPrice)}/month)
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500">
+              Members assigned to this team will be billed at this tier's rate
+            </p>
           </div>
 
           <div className="flex items-center space-x-2">

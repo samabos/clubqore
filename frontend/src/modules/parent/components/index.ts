@@ -3,3 +3,5 @@ export * from './child-profile-section';
 export * from './child-schedule-section';
 export * from './child-invoices-section';
 export * from './child-teams-section';
+export * from './edit-child-dialog';
+export * from './add-child-dialog';

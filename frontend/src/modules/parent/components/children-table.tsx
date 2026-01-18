@@ -61,15 +61,15 @@ export function ChildrenTable({ children, isLoading }: ChildrenTableProps) {
     return (
       <div className="text-center py-12 border rounded-lg">
         <p className="text-muted-foreground mb-4">No children found</p>
-        <Button onClick={() => navigate("/app/profile")}>
-          Add Child to Profile
-        </Button>
+        <p className="text-sm text-muted-foreground">
+          Click the "Add Child" button above to add your first child.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="border rounded-lg">
+    <div className="border rounded-lg bg-white">
       <Table>
         <TableHeader>
           <TableRow>

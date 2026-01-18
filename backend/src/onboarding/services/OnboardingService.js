@@ -2,7 +2,6 @@ import { UserRoleService } from './UserRoleService.js';
 import { UserProfileService } from './UserProfileService.js';
 import { UserPreferencesService } from './UserPreferencesService.js';
 import { ClubService } from '../../club/services/ClubService.js';
-import { InviteCodeService } from './InviteCodeService.js';
 import { AccountNumberService } from './AccountNumberService.js';
 
 export class OnboardingService {
@@ -12,7 +11,6 @@ export class OnboardingService {
     this.userProfileService = new UserProfileService(db);
     this.userPreferencesService = new UserPreferencesService(db);
     this.clubService = new ClubService(db);
-    this.inviteCodeService = new InviteCodeService(db, this.clubService);
     this.accountNumberService = new AccountNumberService(db);
   }
 
@@ -190,22 +188,6 @@ export class OnboardingService {
     };
   }
 
-  
-
-  /**
-   * Validate invite code
-   */
-  async validateInviteCode(code) {
-    return await this.inviteCodeService.validateInviteCode(code);
-  }
-
-  /**
-   * Preview invite code without using it
-   */
-  async previewInviteCode(code, userId) {
-    return await this.inviteCodeService.previewInviteCode(code, userId);
-  }
-
   /**
    * Generate account number (internal use)
    */
@@ -270,36 +252,14 @@ export class OnboardingService {
   async updateCompletionProgress(userId, step, role = null) {
     // Log the completion step
     // This could be expanded to include detailed tracking
-    
+
     const newCompletion = await this.getProfileCompletion(userId);
-    
+
     return {
       success: true,
       newProgress: newCompletion.overallProgress,
       completedStep: step,
       nextSuggestion: newCompletion.nextSteps[0]?.description
     };
-  }
-
-  /**
-   * Create invite code for club
-   */
-  async createInviteCode(clubId, userId, options = {}) {
-    return await this.inviteCodeService.createInviteCode(clubId, userId, options);
-  }
-
-  /**
-   * Get club invite codes
-   */
-  async getClubInviteCodes(clubId, userId) {
-    const codes = await this.inviteCodeService.getClubInviteCodes(clubId, userId);
-    return { codes };
-  }
-
-  /**
-   * Deactivate invite code
-   */
-  async deactivateInviteCode(codeId, userId) {
-    return await this.inviteCodeService.deactivateInviteCode(codeId, userId);
   }
 }

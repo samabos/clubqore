@@ -17,11 +17,10 @@ src/onboarding/
 
 ## 🎯 Key Features
 
-### Multi-Role Support
+### Club Manager Onboarding
 
-- **Club Manager**: Create and manage clubs
-- **Member**: Join existing clubs via invite codes
-- **Parent**: Manage children's club memberships
+- **Club Manager**: Create and manage clubs during signup
+- **Member & Parent**: Added via the parent invite system (not through general onboarding)
 
 ### Unique Account Numbers
 
@@ -51,7 +50,7 @@ src/onboarding/
 - `user_roles` - Role assignments with club associations
 - `user_accounts` - Account numbers and role-specific metadata
 - `clubs` - Club information and management
-- `club_invite_codes` - Invitation system with usage tracking
+- `club_invites` - Parent invitation system with email-based registration
 - `user_children` - Parent-child relationships
 - `account_sequences` - Account number generation tracking
 
@@ -88,16 +87,17 @@ PUT  /api/clubs/:clubId                # Update club (managers only)
 GET  /api/clubs/user/:userId?          # Get user's clubs
 GET  /api/clubs/search                 # Search clubs
 GET  /api/clubs/browse                 # Browse featured clubs
-POST /api/clubs/:clubId/invite-codes   # Create invite code
-GET  /api/clubs/:clubId/invite-codes   # Get club invite codes
-DELETE /api/clubs/invite-codes/:codeId # Deactivate invite code
 ```
 
-### Invite System
+### Parent Invite System
 
 ```
-POST /api/invites/validate             # Validate invite code
-POST /api/invites/preview              # Preview invite code
+POST   /api/parent-invites                              # Create parent invite
+GET    /api/clubs/:clubId/parent-invites                # Get club invites
+DELETE /api/parent-invites/:inviteCode                  # Cancel invite
+POST   /api/parent-invites/:inviteCode/resend           # Resend invite
+GET    /api/public/parent-invites/:inviteCode           # Get invite details (public)
+POST   /api/public/parent-invites/:inviteCode/complete  # Complete registration (public)
 ```
 
 ### Account Management
@@ -155,55 +155,13 @@ const result = await response.json();
 // Returns: { success: true, accountNumber: "CQ202500001", user: {...}, message: "..." }
 ```
 
-### Join Club as Member
+### Member and Parent Registration
 
-```javascript
-const memberData = {
-  role: "member",
-  personalData: {
-    firstName: "Jane",
-    lastName: "Smith",
-    dateOfBirth: "1995-05-15",
-  },
-  memberData: {
-    clubInviteCode: "SPORT123",
-    position: "Player",
-  },
-};
+Members and parents are NOT registered through the onboarding system. They are added via:
+- **Parents**: Email-based parent invite system (`/api/parent-invites`)
+- **Members**: Created as children during parent registration
 
-const response = await fetch("/api/onboarding/complete", {
-  method: "POST",
-  headers: {
-    Authorization: "Bearer " + token,
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify(memberData),
-});
-```
-
-### Parent with Children
-
-```javascript
-const parentData = {
-  role: "parent",
-  personalData: {
-    firstName: "Mike",
-    lastName: "Johnson",
-    phoneNumber: "+1234567890",
-  },
-  parentData: {
-    children: [
-      {
-        name: "Tommy Johnson",
-        dateOfBirth: "2010-03-15",
-        gradeLevel: "5th Grade",
-        school: "Elementary School",
-        interests: ["soccer", "reading"],
-      },
-    ],
-  },
-};
-```
+See the Parent Invite System documentation for details.
 
 ## 🔧 Service Classes
 
@@ -235,8 +193,8 @@ const additionalRole = await onboardingService.addUserRole(userId, newRoleData);
 - **UserProfileService**: Profile data management
 - **UserPreferencesService**: User preferences
 - **ClubService**: Club operations and search
-- **InviteCodeService**: Invitation system
 - **AccountNumberService**: Unique account generation
+- **ParentInviteService**: Parent invitation and registration system (in `/parent` module)
 
 ## 🧪 Testing
 
@@ -268,8 +226,7 @@ headers: {
 Role-specific access control:
 
 - Club managers can update their clubs
-- Parents can manage their children
-- Members can join clubs with invite codes
+- Parents and members are managed via the parent invite system
 
 ## 📝 Validation
 

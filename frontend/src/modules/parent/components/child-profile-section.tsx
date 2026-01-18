@@ -72,10 +72,6 @@ export function ChildProfileSection({ child }: ChildProfileSectionProps) {
             <label className="text-sm font-medium text-muted-foreground">Position</label>
             <p className="text-base">{child.position || "Not specified"}</p>
           </div>
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">Relationship</label>
-            <p className="text-base capitalize">{child.relationship}</p>
-          </div>
         </CardContent>
       </Card>
 
@@ -91,10 +87,6 @@ export function ChildProfileSection({ child }: ChildProfileSectionProps) {
           <div>
             <label className="text-sm font-medium text-muted-foreground">Club</label>
             <p className="text-base font-semibold">{child.clubName}</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">Membership Code</label>
-            <p className="text-base font-mono">{child.membershipCode || "Not assigned"}</p>
           </div>
           <div>
             <label className="text-sm font-medium text-muted-foreground">Enrollment Status</label>

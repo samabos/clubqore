@@ -9,6 +9,7 @@ import {
   UserCog,
   Eye,
   Volleyball,
+  CreditCard,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -27,6 +28,13 @@ interface TeamCardProps {
 }
 
 export function TeamCard({ team, onEdit, onDelete, onView }: TeamCardProps) {
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
+    }).format(price);
+  };
+
   return (
     <Card
       className={`team-card group border border-gray-200 ${
@@ -148,6 +156,18 @@ export function TeamCard({ team, onEdit, onDelete, onView }: TeamCardProps) {
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* Membership Tier Info */}
+          <div className="flex items-center gap-2 text-sm">
+            <div className="team-card-icon-container">
+              <CreditCard className="w-3.5 h-3.5" />
+            </div>
+            <span className="team-card-text">
+              {team.membership_tier_name
+                ? `${team.membership_tier_name} - ${formatPrice(team.membership_tier_monthly_price || 0)}/mo`
+                : "No tier assigned"}
+            </span>
           </div>
 
           <div className="team-card-separator pt-2">

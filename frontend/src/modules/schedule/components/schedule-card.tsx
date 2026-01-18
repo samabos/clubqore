@@ -10,6 +10,7 @@ import {
   Send,
   Dumbbell,
   Trophy,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,8 +50,8 @@ export function ScheduleCard({
   const display = getDisplayInfo(item);
 
   return (
-    <Card className="border-0 shadow-lg rounded-xl hover:shadow-xl transition-shadow">
-      <CardHeader className="pb-3">
+    <Card className="border-0 shadow-xs bg-gray-100 rounded-xl hover:shadow-xl transition-shadow">
+      <CardHeader className="">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             {/* Type indicator icon */}
@@ -63,6 +64,12 @@ export function ScheduleCard({
               <Badge variant="outline" className={cn("text-xs", display.badgeColor)}>
                 {display.badge}
               </Badge>
+              {item.status === "cancelled" && (
+                <Badge variant="destructive" className="text-xs opacity-60 flex items-center gap-1">
+                  <XCircle className="w-3 h-3" />
+                  Cancelled
+                </Badge>
+              )}
             </div>
 
             {/* Title */}
@@ -72,13 +79,8 @@ export function ScheduleCard({
               </CardTitle>
             </div>
 
-            {/* Date */}
-            <CardDescription className="flex items-center gap-2 text-gray-600">
-              <Calendar className="w-3.5 h-3.5" />
-              {getRelativeDateLabel(item.date)}
-            </CardDescription>
           </div>
-
+          
           {/* Actions Menu */}
           {!readOnly && onEdit && onDelete && (
             <DropdownMenu>
@@ -110,18 +112,18 @@ export function ScheduleCard({
           )}
         </div>
 
-        {/* Status Badge */}
-        <div className="flex gap-2 mt-2">
-          <Badge className={getStatusColor(item.status)}>
-            {item.status}
-          </Badge>
-        </div>
       </CardHeader>
 
       <CardContent>
-        <div className="space-y-3">
-          {/* Time */}
+        <div className="space-y-2">
+          
           <div className="flex items-center gap-2 text-sm text-gray-600">
+            {/* Date */}
+            <CardDescription className="flex items-center gap-2 text-gray-600">
+              <Calendar className="w-3.5 h-3.5" />
+              {getRelativeDateLabel(item.date)}
+            </CardDescription>
+          {/* Time */}
             <Clock className="w-4 h-4" />
             <span>
               {display.start_time}
@@ -137,7 +139,7 @@ export function ScheduleCard({
             </div>
           )}
 
-          {/* Teams */}
+          {/* Teams 
           {display.teams.length > 0 && (
             <div className="pt-2 border-t border-gray-200">
               <div className="flex items-center gap-2 mb-2">
@@ -166,7 +168,7 @@ export function ScheduleCard({
                 </div>
               )}
             </div>
-          )}
+          )}*/}
 
           {/* Child name (for parent view) */}
           {item.childName && (
@@ -219,13 +221,18 @@ export function ScheduleCard({
               )}
             </>
           )}
-
-          {/* Season */}
-          {item.season_name && (
-            <div className="text-xs text-gray-500">
-              Season: {item.season_name}
-            </div>
-          )}
+          <div className="flex item-center justify-between">
+            {/* Season */}
+            {item.season_name && (
+              <div className="text-xs text-gray-500">
+                Season: {item.season_name}
+              </div>
+            )}
+              {/* Status Badge */}
+            <Badge className={getStatusColor(item.status)}>
+              {item.status}
+            </Badge>
+          </div>
         </div>
       </CardContent>
     </Card>

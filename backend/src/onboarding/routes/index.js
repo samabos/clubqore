@@ -1,14 +1,12 @@
 import {
   OnboardingController,
   ProfileController,
-  InviteController,
   AccountController
 } from '../controllers/index.js';
 
 import { createAuthMiddleware } from '../../auth/middleware.js';
 import { onboardingRoutes } from './onboardingRoutes.js';
 import { profileRoutes } from './profileRoutes.js';
-import { inviteRoutes } from './inviteRoutes.js';
 import { accountRoutes } from './accountRoutes.js';
 import { roleRoutes } from './roleRoutes.js';
 
@@ -19,7 +17,6 @@ export async function registerOnboardingRoutes(fastify, options) {
   // Initialize controllers
   const onboardingController = new OnboardingController(fastify.db);
   const profileController = new ProfileController(fastify.db);
-  const inviteController = new InviteController(fastify.db);
   const accountController = new AccountController(fastify.db);
 
   // Register route modules
@@ -36,12 +33,6 @@ export async function registerOnboardingRoutes(fastify, options) {
   });
 
   // Club routes are now registered under /club (see src/club/routes)
-
-  await fastify.register(inviteRoutes, {
-    prefix: '/invites',
-    inviteController,
-    authenticate
-  });
 
   await fastify.register(accountRoutes, {
     prefix: '/accounts',

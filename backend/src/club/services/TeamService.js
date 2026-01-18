@@ -13,6 +13,7 @@ export class TeamService {
           color: teamData.color || null,
           is_active: teamData.is_active !== undefined ? teamData.is_active : true,
           manager_id: teamData.manager_id ?? null,
+          membership_tier_id: teamData.membership_tier_id ?? null,
           created_at: new Date(),
           updated_at: new Date()
         })
@@ -35,13 +36,17 @@ export class TeamService {
       const teams = await this.db('teams')
         .leftJoin('users', 'teams.manager_id', 'users.id')
         .leftJoin('user_profiles', 'users.id', 'user_profiles.user_id')
+        .leftJoin('membership_tiers', 'teams.membership_tier_id', 'membership_tiers.id')
         .select(
           'teams.*',
           'users.id as manager_user_id',
           'users.email as manager_email',
           'user_profiles.first_name as manager_first_name',
           'user_profiles.last_name as manager_last_name',
-          'user_profiles.avatar as manager_avatar'
+          'user_profiles.avatar as manager_avatar',
+          'membership_tiers.name as membership_tier_name',
+          'membership_tiers.monthly_price as membership_tier_monthly_price',
+          'membership_tiers.annual_price as membership_tier_annual_price'
         )
         .where({ 'teams.club_id': clubId })
         .orderBy('teams.created_at', 'desc');
@@ -145,6 +150,7 @@ export class TeamService {
       if (teamData.color !== undefined) updateData.color = teamData.color;
       if (teamData.is_active !== undefined) updateData.is_active = teamData.is_active;
       if (teamData.manager_id !== undefined) updateData.manager_id = teamData.manager_id;
+      if (teamData.membership_tier_id !== undefined) updateData.membership_tier_id = teamData.membership_tier_id;
 
       await this.db('teams')
         .where({ id: teamId })
@@ -283,84 +289,204 @@ export class TeamService {
     }
   }
 
-  // Assign member to team
-  async assignMemberToTeam(memberId, teamId) {
-    try {
-      console.log('🔍 Looking for child with ID:', memberId);
-      
-      // Get team details to verify club
-      const team = await this.db('teams')
-        .where({ id: teamId })
-        .first();
-      
-      if (!team) {
-        throw new Error('Team not found');
+  // Assign member to team (with automatic subscription creation)
+  async assignMemberToTeam(memberId, teamId, options = {}) {
+    return this.db.transaction(async (trx) => {
+      try {
+        console.log('🔍 Looking for child with ID:', memberId);
+
+        // 1. Get team details to verify club
+        const team = await trx('teams')
+          .where({ id: teamId })
+          .first();
+
+        if (!team) {
+          throw new Error('Team not found');
+        }
+
+        // 2. CHECK: Team must have membership tier assigned
+        if (!team.membership_tier_id) {
+          throw new Error('Cannot assign member: Team has no membership tier assigned. Please assign a membership tier to this team first.');
+        }
+
+        // 3. Only allow children to be assigned to teams
+        const childMember = await trx('user_children')
+          .where({ id: memberId })
+          .first();
+
+        console.log('🔍 Child member:', childMember);
+        console.log('🔍 Team club ID:', team.club_id);
+        console.log('🔍 Child club ID:', childMember?.club_id);
+
+        if (!childMember) {
+          throw new Error('Player not found. Only players can be assigned to teams.');
+        }
+
+        // Verify player belongs to the same club as the team
+        if (childMember.club_id !== team.club_id) {
+          throw new Error('Player does not belong to the same club as the team.');
+        }
+
+        // 4. Check if player is already assigned to any team
+        const existingAssignment = await trx('team_members')
+          .where({ user_child_id: memberId })
+          .first();
+
+        if (existingAssignment) {
+          if (existingAssignment.team_id === teamId) {
+            throw new Error('Player is already assigned to this team');
+          }
+          // Remove from old team first
+          console.log('🔄 Removing player from old team:', existingAssignment.team_id);
+          await trx('team_members').where({ id: existingAssignment.id }).delete();
+        }
+
+        // 5. Handle subscription changes
+        await this._handleSubscriptionForTeamChange(
+          trx,
+          childMember.child_user_id,  // The actual user ID
+          childMember.parent_user_id,
+          team,
+          options
+        );
+
+        // 6. Assign player to team using team_members table
+        await trx('team_members').insert({
+          team_id: teamId,
+          user_child_id: memberId,
+          assigned_at: new Date()
+        });
+
+        return {
+          success: true,
+          message: 'Player assigned to team successfully'
+        };
+      } catch (error) {
+        console.error('Error assigning player to team:', error);
+        throw error;
       }
-      
-      // Only allow children to be assigned to teams
-      const childMember = await this.db('user_children')
-        .where({ id: memberId })
-        .first();
-      
-      console.log('🔍 Child member:', childMember);
-      console.log('🔍 Team club ID:', team.club_id);
-      console.log('🔍 Child club ID:', childMember?.club_id);
-      
-      if (!childMember) {
-        throw new Error('Player not found. Only players can be assigned to teams.');
-      }
-
-      // Verify player belongs to the same club as the team
-      if (childMember.club_id !== team.club_id) {
-        throw new Error('Player does not belong to the same club as the team.');
-      }
-
-      // Check if player is already assigned to this team
-      const existingAssignment = await this.db('team_members')
-        .where({ team_id: teamId, user_child_id: memberId })
-        .first();
-
-      if (existingAssignment) {
-        throw new Error('Player is already assigned to this team');
-      }
-
-      // Assign player to team using team_members table
-      await this.db('team_members').insert({
-        team_id: teamId,
-        user_child_id: memberId,
-        assigned_at: new Date()
-      });
-
-      return {
-        success: true,
-        message: 'Player assigned to team successfully'
-      };
-    } catch (error) {
-      console.error('Error assigning player to team:', error);
-      throw new Error('Failed to assign player to team');
-    }
+    });
   }
 
-  // Remove player from team
-  async removeMemberFromTeam(memberId) {
-    try {
-      // Only remove players from team_members table
-      const deleted = await this.db('team_members')
-        .where({ user_child_id: memberId })
-        .del();
+  // Handle subscription creation/cancellation when team changes
+  async _handleSubscriptionForTeamChange(trx, childUserId, parentUserId, newTeam, options = {}) {
+    const clubId = newTeam.club_id;
 
-      if (deleted === 0) {
-        throw new Error('Player not found or not assigned to any team');
-      }
+    // 1. Find existing active subscription for this child in this club
+    const existingSubscription = await trx('subscriptions')
+      .where('child_user_id', childUserId)
+      .where('club_id', clubId)
+      .whereIn('status', ['active', 'pending'])
+      .first();
 
-      return {
-        success: true,
-        message: 'Player removed from team successfully'
-      };
-    } catch (error) {
-      console.error('Error removing player from team:', error);
-      throw new Error('Failed to remove player from team');
+    // 2. If exists and different team, cancel it (immediate for team changes)
+    if (existingSubscription && existingSubscription.team_id !== newTeam.id) {
+      console.log('🔄 Cancelling old subscription:', existingSubscription.id);
+      await trx('subscriptions')
+        .where('id', existingSubscription.id)
+        .update({
+          status: 'cancelled',
+          cancelled_at: new Date(),
+          cancellation_reason: 'Team change - transferred to new team',
+          updated_at: new Date()
+        });
     }
+
+    // 3. Skip if subscription already exists for this team
+    if (existingSubscription && existingSubscription.team_id === newTeam.id) {
+      console.log('✅ Subscription already exists for this team');
+      return existingSubscription;
+    }
+
+    // 4. Get the tier for the new team
+    const tier = await trx('membership_tiers')
+      .where('id', newTeam.membership_tier_id)
+      .first();
+
+    if (!tier) {
+      throw new Error('Membership tier not found for this team');
+    }
+
+    // 5. Create new subscription
+    const billingDay = options.billingDayOfMonth || Math.min(new Date().getDate(), 28);
+    const billingFrequency = options.billingFrequency || tier.billing_frequency || 'monthly';
+    const amount = billingFrequency === 'annual'
+      ? (tier.annual_price || tier.monthly_price * 12)
+      : tier.monthly_price;
+
+    console.log('📝 Creating new subscription with tier:', tier.name, 'amount:', amount);
+
+    const [newSubscription] = await trx('subscriptions')
+      .insert({
+        club_id: clubId,
+        parent_user_id: parentUserId,
+        child_user_id: childUserId,
+        membership_tier_id: newTeam.membership_tier_id,
+        team_id: newTeam.id,
+        status: 'pending', // Will become active when payment method is set
+        billing_frequency: billingFrequency,
+        billing_day_of_month: billingDay,
+        amount: amount,
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+      .returning('*');
+
+    console.log('✅ Created subscription:', newSubscription.id);
+    return newSubscription;
+  }
+
+  // Remove player from team (with subscription cancellation at end of period)
+  async removeMemberFromTeam(memberId, teamId) {
+    return this.db.transaction(async (trx) => {
+      try {
+        // 1. Get the assignment
+        const assignment = await trx('team_members')
+          .where({ user_child_id: memberId })
+          .first();
+
+        if (!assignment) {
+          throw new Error('Player not found or not assigned to any team');
+        }
+
+        // If teamId is provided, verify it matches
+        if (teamId && assignment.team_id !== teamId) {
+          throw new Error('Player is not assigned to the specified team');
+        }
+
+        // 2. Get child info for subscription lookup
+        const child = await trx('user_children').where({ id: memberId }).first();
+
+        // 3. Cancel subscription at end of billing period
+        if (child) {
+          const updatedCount = await trx('subscriptions')
+            .where('child_user_id', child.child_user_id)
+            .where('team_id', assignment.team_id)
+            .whereIn('status', ['active', 'pending'])
+            .update({
+              status: 'cancelled',
+              cancelled_at: new Date(),
+              cancellation_reason: 'Removed from team',
+              updated_at: new Date()
+            });
+
+          if (updatedCount > 0) {
+            console.log('📝 Cancelled subscription for removed player');
+          }
+        }
+
+        // 4. Remove from team
+        await trx('team_members').where({ id: assignment.id }).delete();
+
+        return {
+          success: true,
+          message: 'Player removed from team successfully'
+        };
+      } catch (error) {
+        console.error('Error removing player from team:', error);
+        throw error;
+      }
+    });
   }
 
   // Get all members in a team
@@ -434,6 +560,54 @@ export class TeamService {
     } catch (error) {
       console.error('Error fetching assigned children in club:', error);
       throw new Error('Failed to fetch assigned children in club');
+    }
+  }
+
+  // Set the membership tier for a team
+  async setTeamTier(teamId, membershipTierId, clubId) {
+    try {
+      // Validate tier belongs to club
+      const tier = await this.db('membership_tiers')
+        .where('id', membershipTierId)
+        .where('club_id', clubId)
+        .where('is_active', true)
+        .first();
+
+      if (!tier) {
+        throw new Error('Membership tier not found or inactive');
+      }
+
+      // Validate team belongs to club
+      const team = await this.db('teams')
+        .where('id', teamId)
+        .where('club_id', clubId)
+        .first();
+
+      if (!team) {
+        throw new Error('Team not found');
+      }
+
+      // Update team with new tier
+      await this.db('teams')
+        .where('id', teamId)
+        .update({
+          membership_tier_id: membershipTierId,
+          updated_at: new Date()
+        });
+
+      return {
+        success: true,
+        tier: {
+          id: tier.id,
+          name: tier.name,
+          monthlyPrice: tier.monthly_price,
+          annualPrice: tier.annual_price
+        },
+        message: `Team tier updated to "${tier.name}"`
+      };
+    } catch (error) {
+      console.error('Error setting team tier:', error);
+      throw error;
     }
   }
 }

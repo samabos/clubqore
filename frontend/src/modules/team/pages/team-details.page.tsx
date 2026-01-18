@@ -8,8 +8,9 @@ import {
   removeMemberFromTeam,
   deleteTeam,
   fetchAssignedChildrenInClub,
+  updateTeam,
 } from "../actions";
-import { Team, TeamMember } from "../types";
+import { Team, TeamMember, UpdateTeamRequest } from "../types";
 // Use cached members store instead of direct API calls
 import { useMembers } from "@/stores/membersStore";
 import { ClubMember } from "../../member/types/component-types";
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TeamPlayersTable } from "../components/team-players-table";
+import { TeamForm } from "../components/team-form";
 import {
   Select,
   SelectContent,
@@ -45,6 +47,8 @@ export function TeamDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAssigningMember, setIsAssigningMember] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string>("");
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const loadTeamDetails = useCallback(async () => {
     if (!teamId) return;
@@ -135,7 +139,25 @@ export function TeamDetailsPage() {
 
   const handleEditTeam = () => {
     if (team) {
-      navigate(`/app/teams/${team.id}/edit`);
+      setIsEditDialogOpen(true);
+    }
+  };
+
+  const handleUpdateTeam = async (data: UpdateTeamRequest) => {
+    if (!team) return;
+
+    try {
+      setIsUpdating(true);
+      await updateTeam(team.id, data);
+      toast.success("Team updated successfully");
+      setIsEditDialogOpen(false);
+      loadTeamDetails(); // Refresh data
+    } catch (error) {
+      console.error("Error updating team:", error);
+      toast.error("Failed to update team");
+      throw error;
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -279,6 +301,16 @@ export function TeamDetailsPage() {
           />
         </CardContent>
       </Card>
+
+      {/* Edit Team Dialog */}
+      <TeamForm
+        isOpen={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onSubmit={handleUpdateTeam}
+        isEdit={true}
+        initialData={team}
+        isLoading={isUpdating}
+      />
     </div>
   );
 }

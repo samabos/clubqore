@@ -1,7 +1,7 @@
 import { AuthUser, ChildInfo, UserPreferences, UserProfile, UserRole } from "./auth";
 
 export interface JoinClubAsMemberRequest {
-  clubInviteCode: string;
+  clubId: number;
   position?: 'goalkeeper' | 'defender' | 'midfielder' | 'forward' | 'any';
   experience?: 'beginner' | 'intermediate' | 'advanced' | 'professional';
   notes?: string;
@@ -81,16 +81,6 @@ export interface OnboardingStep {
   title: string;
   description: string;
   completed: boolean;
-}
-
-export interface ClubInviteCode {
-  code: string;
-  clubId: string;
-  clubName: string;
-  expiresAt: string;
-  usageLimit?: number;
-  usedCount: number;
-  isActive: boolean;
 }
 
 // Club information (from clubs table)

@@ -4,7 +4,7 @@
 
 export type MatchType = 'friendly' | 'league' | 'cup' | 'tournament' | 'scrimmage';
 
-export type MatchStatus = 'draft' | 'published' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+export type MatchStatus = 'draft' | 'scheduled' | 'cancelled';
 
 export type MatchEventType = 'goal' | 'yellow_card' | 'red_card' | 'substitution_in' | 'substitution_out';
 
@@ -117,6 +117,7 @@ export interface MatchFilters {
   match_type?: MatchType;
   from_date?: string;
   to_date?: string;
+  expand?: boolean;
 }
 
 export interface MatchResponse {
