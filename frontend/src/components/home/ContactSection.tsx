@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
@@ -8,9 +9,96 @@ import {
   CardHeader,
   CardTitle,
 } from "../ui/card";
-import { Mail, Phone, MapPin, Clock } from "lucide-react";
+import { Mail, Loader2, CheckCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+interface ContactFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  clubName: string;
+  estimatedMembers: string;
+  message: string;
+}
+
+const initialFormData: ContactFormData = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  clubName: "",
+  estimatedMembers: "",
+  message: "",
+};
 
 export function ContactSection() {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState<ContactFormData>(initialFormData);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Basic validation
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.message) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/contact`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          clubName: formData.clubName || undefined,
+          estimatedMembers: formData.estimatedMembers
+            ? parseInt(formData.estimatedMembers)
+            : undefined,
+          message: formData.message,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to submit form");
+      }
+
+      setIsSubmitted(true);
+      setFormData(initialFormData);
+      toast({
+        title: "Message Sent!",
+        description: "Thank you for your message. We'll get back to you within 24 hours.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <section id="contact" className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -34,49 +122,115 @@ export function ContactSection() {
                 hours.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    First Name
-                  </label>
-                  <Input className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20" />
+            <CardContent>
+              {isSubmitted ? (
+                <div className="text-center py-8">
+                  <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    Thank You!
+                  </h3>
+                  <p className="text-gray-600">
+                    Your message has been sent successfully. We'll be in touch soon.
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Last Name
-                  </label>
-                  <Input className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Email
-                </label>
-                <Input
-                  type="email"
-                  className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Club Name
-                </label>
-                <Input className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Message
-                </label>
-                <Textarea
-                  rows={4}
-                  className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
-                  placeholder="Tell us about your club and how we can help..."
-                />
-              </div>
-              <Button className="w-full rounded-xl gradient-primary text-white hover:opacity-90 py-3">
-                Send Message
-              </Button>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        First Name <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        Last Name <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        Club Name
+                      </label>
+                      <Input
+                        name="clubName"
+                        value={formData.clubName}
+                        onChange={handleChange}
+                        className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        Estimated Members
+                      </label>
+                      <Input
+                        type="number"
+                        name="estimatedMembers"
+                        value={formData.estimatedMembers}
+                        onChange={handleChange}
+                        placeholder="e.g., 50"
+                        min="1"
+                        className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Message <span className="text-red-500">*</span>
+                    </label>
+                    <Textarea
+                      name="message"
+                      value={formData.message}
+                      onChange={handleChange}
+                      rows={4}
+                      className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
+                      placeholder="Tell us about your club and how we can help..."
+                      required
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full rounded-xl gradient-primary text-white hover:opacity-90 py-3"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      "Send Message"
+                    )}
+                  </Button>
+                </form>
+              )}
             </CardContent>
           </Card>
 
@@ -92,42 +246,12 @@ export function ContactSection() {
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">Email</p>
-                    <p className="text-gray-600">hello@clubqore.com</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                    <Phone className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">Phone</p>
-                    <p className="text-gray-600">+1 (555) 123-4567</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                    <MapPin className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">Address</p>
-                    <p className="text-gray-600">
-                      123 Sports Complex Drive
-                      <br />
-                      San Francisco, CA 94105
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                    <Clock className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">Business Hours</p>
-                    <p className="text-gray-600">
-                      Monday - Friday: 9:00 AM - 6:00 PM
-                      <br />
-                      Saturday: 10:00 AM - 4:00 PM
-                    </p>
+                    <a
+                      href="mailto:hello@clubqore.com"
+                      className="text-gray-600 hover:text-primary transition-colors"
+                    >
+                      hello@clubqore.com
+                    </a>
                   </div>
                 </div>
               </div>

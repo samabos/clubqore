@@ -12,6 +12,9 @@ interface LandingPageProps {
 
 export function LandingPage({ onGetStarted }: LandingPageProps) {
   const handleGetStarted = () => {
+    // Scroll to contact section
+    document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
+    // Also call the optional callback if provided
     if (onGetStarted) {
       onGetStarted();
     }
