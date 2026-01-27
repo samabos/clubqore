@@ -36,7 +36,7 @@ jobs:
             echo "ENVIRONMENT=staging" >> $GITHUB_ENV
             echo "DEPLOY_PATH=/root/clubqore-staging" >> $GITHUB_ENV
             echo "COMPOSE_FILE=docker-compose.staging.yml" >> $GITHUB_ENV
-            echo "FRONTEND_API_URL=http://87.106.36.252/api" >> $GITHUB_ENV
+            echo "FRONTEND_API_URL=https://www.clubqore.com/api" >> $GITHUB_ENV
           fi
 
       - name: Set up Docker Buildx
@@ -176,8 +176,8 @@ jobs:
             BACKEND_URL="https://api.clubqore.com"
             FRONTEND_URL="https://app.clubqore.com"
           else
-            BACKEND_URL="http://87.106.36.252/api"
-            FRONTEND_URL="https://staging.clubqore.com"
+            BACKEND_URL="https://www.clubqore.com/api"
+            FRONTEND_URL="https://www.clubqore.com"
           fi
 
           echo "🔍 Verifying deployment..."
