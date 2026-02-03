@@ -21,8 +21,6 @@ export class ParentChildrenController {
           'user_children.parent_user_id',
           'user_children.child_user_id',
           'user_children.club_id',
-          'user_children.relationship',
-          'user_children.membership_code',
           'user_profiles.first_name',
           'user_profiles.last_name',
           'user_profiles.date_of_birth',
@@ -50,21 +48,23 @@ export class ParentChildrenController {
           let upcomingEventsCount = 0;
 
           if (teamIds.length > 0) {
-            // Count training sessions
+            // Count training sessions (exclude drafts)
             const trainingCount = await this.db('training_sessions')
               .join('training_session_teams', 'training_sessions.id', 'training_session_teams.training_session_id')
               .whereIn('training_session_teams.team_id', teamIds)
               .where('training_sessions.date', '>=', this.db.fn.now())
+              .where('training_sessions.status', '!=', 'draft')
               .count('* as count')
               .first();
 
-            // Count matches
+            // Count matches (exclude drafts)
             const matchCount = await this.db('matches')
               .where(function() {
                 this.whereIn('matches.home_team_id', teamIds)
                   .orWhereIn('matches.away_team_id', teamIds);
               })
               .where('matches.date', '>=', this.db.fn.now())
+              .where('matches.status', '!=', 'draft')
               .count('* as count')
               .first();
 
@@ -86,11 +86,9 @@ export class ParentChildrenController {
             firstName: child.first_name,
             lastName: child.last_name,
             dateOfBirth: child.date_of_birth,
-            relationship: child.relationship,
             childUserId: child.child_user_id,
             clubId: child.club_id,
             clubName: child.club_name,
-            membershipCode: child.membership_code,
             enrollmentStatus: 'active', // Default value since column doesn't exist
             position: child.position || null,
             profileImage: child.avatar || null,
@@ -137,8 +135,6 @@ export class ParentChildrenController {
           'user_children.parent_user_id',
           'user_children.child_user_id',
           'user_children.club_id',
-          'user_children.relationship',
-          'user_children.membership_code',
           'user_profiles.first_name',
           'user_profiles.last_name',
           'user_profiles.date_of_birth',
@@ -174,21 +170,23 @@ export class ParentChildrenController {
       let upcomingEventsCount = 0;
 
       if (teamIds.length > 0) {
-        // Count training sessions
+        // Count training sessions (exclude drafts)
         const trainingCount = await this.db('training_sessions')
           .join('training_session_teams', 'training_sessions.id', 'training_session_teams.training_session_id')
           .whereIn('training_session_teams.team_id', teamIds)
           .where('training_sessions.date', '>=', this.db.fn.now())
+          .where('training_sessions.status', '!=', 'draft')
           .count('* as count')
           .first();
 
-        // Count matches
+        // Count matches (exclude drafts)
         const matchCount = await this.db('matches')
           .where(function() {
             this.whereIn('matches.home_team_id', teamIds)
               .orWhereIn('matches.away_team_id', teamIds);
           })
           .where('matches.date', '>=', this.db.fn.now())
+          .where('matches.status', '!=', 'draft')
           .count('* as count')
           .first();
 
@@ -210,11 +208,9 @@ export class ParentChildrenController {
         firstName: child.first_name,
         lastName: child.last_name,
         dateOfBirth: child.date_of_birth,
-        relationship: child.relationship,
         childUserId: child.child_user_id,
         clubId: child.club_id,
         clubName: child.club_name,
-        membershipCode: child.membership_code,
         enrollmentStatus: 'active', // Default value since column doesn't exist
         position: child.position || null,
         profileImage: child.avatar || null,
@@ -237,6 +233,66 @@ export class ParentChildrenController {
       request.log.error(error);
       return reply.status(500).send({
         message: 'Failed to fetch child details'
+      });
+    }
+  }
+
+  /**
+   * Create a new child
+   * POST /parent/children
+   */
+  async createChild(request, reply) {
+    const parentUserId = request.user.id;
+
+    try {
+      const newChild = await this.parentChildrenService.createChild(
+        parentUserId,
+        request.body
+      );
+
+      return reply.status(201).send({
+        success: true,
+        child: newChild,
+        message: 'Child added successfully'
+      });
+    } catch (error) {
+      request.log.error(error);
+
+      const statusCode = error.statusCode || 500;
+      return reply.status(statusCode).send({
+        success: false,
+        message: error.message || 'Failed to add child'
+      });
+    }
+  }
+
+  /**
+   * Update child information
+   * PATCH /parent/children/:childId
+   */
+  async updateChild(request, reply) {
+    const parentUserId = request.user.id;
+    const { childId } = request.params;
+
+    try {
+      const updatedChild = await this.parentChildrenService.updateChild(
+        parentUserId,
+        parseInt(childId),
+        request.body
+      );
+
+      return reply.send({
+        success: true,
+        child: updatedChild,
+        message: 'Child information updated successfully'
+      });
+    } catch (error) {
+      request.log.error(error);
+
+      const statusCode = error.statusCode || 500;
+      return reply.status(statusCode).send({
+        success: false,
+        message: error.message || 'Failed to update child information'
       });
     }
   }

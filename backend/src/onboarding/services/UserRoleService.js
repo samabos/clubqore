@@ -2,7 +2,6 @@ import { AccountNumberService } from './AccountNumberService.js';
 import { UserProfileService } from './UserProfileService.js';
 import { UserPreferencesService } from './UserPreferencesService.js';
 import { ClubService } from '../../club/services/ClubService.js';
-import { InviteCodeService } from './InviteCodeService.js';
 import { ValidationUtils, AccountUtils, ChildUtils } from '../utils/index.js';
 
 export class UserRoleService {
@@ -12,7 +11,6 @@ export class UserRoleService {
     this.userProfileService = new UserProfileService(db);
     this.userPreferencesService = new UserPreferencesService(db);
     this.clubService = new ClubService(db);
-    this.inviteCodeService = new InviteCodeService(db, this.clubService);
   }
 
   /**
@@ -45,23 +43,15 @@ export class UserRoleService {
 
         let clubId = null;
 
-        // 5. Handle role-specific logic
+        // 5. Handle role-specific logic - only club_manager supported
         if (roleData.role === 'club_manager' && roleData.clubData) {
           console.log('🔍 Creating club for club_manager...');
           // Create new club first, then reference it
           const club = await this.clubService.createClub(roleData.clubData, userId, trx);
           clubId = parseInt(club.id);
           console.log('🔍 Club created with ID:', clubId);
-        } else if (roleData.role === 'member' && roleData.memberData?.clubInviteCode) {
-          console.log('🔍 Using invite code for member...');
-          // Join existing club using invite code
-          const useResult = await this.inviteCodeService.useInviteCode(
-            roleData.memberData.clubInviteCode,
-            userId,
-            trx
-          );
-          clubId = parseInt(useResult.club.id);
-          console.log('🔍 Member joined club with ID:', clubId);
+        } else {
+          throw new Error('Only club_manager role is supported for onboarding. Members and parents are added via invitations.');
         }
 
         // 6. Generate unique account number for this role/club combination
@@ -76,19 +66,13 @@ export class UserRoleService {
         // 8. Create account record with role-specific data and account number
         console.log('🔍 Inserting user account record...');
         await AccountUtils.createUserAccount(
-          userId, 
-          roleData.role, 
-          clubId, 
-          accountNumber, 
-          trx, 
+          userId,
+          roleData.role,
+          clubId,
+          accountNumber,
+          trx,
           this.extractRoleSpecificData(roleData)
         );
-
-        // 9. For parents, create child records
-        if (roleData.role === 'parent' && roleData.parentData?.children) {
-          console.log('🔍 Creating child records for parent...');
-          await ChildUtils.createMultipleChildren(userId, roleData.parentData.children, trx);
-        }
 
         // 10. Update user record
         //console.log('🔍 Updating user record...');
@@ -366,18 +350,8 @@ export class UserRoleService {
 
 
   extractRoleSpecificData(roleData) {
-    const data = {};
-    
-    if (roleData.role === 'member' && roleData.memberData) {
-      data.position = roleData.memberData.position;
-        data.medical_info = roleData.memberData.medicalInfo;
-        data.emergency_contact_name = roleData.memberData.emergencyContactName;
-        data.emergency_contact_phone = roleData.memberData.emergencyContactPhone;
-        data.emergency_contact_relation = roleData.memberData.emergencyContactRelation;
-        data.notes = roleData.memberData.notes;
-    }
-
-    return data;
+    // Only club_manager is supported - no role-specific data needed
+    return {};
   }
 
   extractAccountMetadata(account) {

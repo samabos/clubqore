@@ -13,6 +13,11 @@ export interface Team {
   manager_last_name?: string;
   manager_email?: string;
   manager_avatar?: string;
+  // Membership tier fields
+  membership_tier_id?: number | null;
+  membership_tier_name?: string | null;
+  membership_tier_monthly_price?: number | null;
+  membership_tier_annual_price?: number | null;
 }
 
 export interface TeamManager {
@@ -52,6 +57,7 @@ export interface CreateTeamRequest {
   color?: string;
   is_active?: boolean;
   manager_id?: number | null;
+  membership_tier_id?: number | null;
 }
 
 export interface UpdateTeamRequest {
@@ -59,6 +65,7 @@ export interface UpdateTeamRequest {
   color?: string;
   is_active?: boolean;
   manager_id?: number | null;
+  membership_tier_id?: number | null;
 }
 
 export interface AssignManagerRequest {
@@ -67,4 +74,10 @@ export interface AssignManagerRequest {
 
 export interface AssignMemberRequest {
   memberId: number;
+  billingDayOfMonth?: number;
+  billingFrequency?: 'monthly' | 'annual';
+}
+
+export interface SetTeamTierRequest {
+  membershipTierId: number;
 }

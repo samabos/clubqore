@@ -16,18 +16,22 @@ import type { TrainingSession, CreateTrainingSessionRequest } from "@/types/trai
 import type { Match, CreateMatchRequest } from "@/types/match";
 import type { ScheduleItem, ScheduleFilters } from "../types/schedule-types";
 import { trainingToScheduleItem, matchToScheduleItem } from "../utils/schedule-utils";
+import { apiClient } from "@/api/base";
 
 /**
  * Fetch all schedule items (training sessions + matches) in parallel
  * and return as a unified, sorted array
+ * @param filters - Optional filters to apply
+ * @param expand - Whether to expand recurring sessions into virtual occurrences (default: false for table view)
  */
 export async function fetchScheduleItems(
-  filters?: ScheduleFilters
+  filters?: ScheduleFilters,
+  expand: boolean = false
 ): Promise<ScheduleItem[]> {
   try {
     // Fetch both in parallel
     const [sessions, matches] = await Promise.all([
-      fetchTrainingSessions(filters),
+      fetchTrainingSessions({ ...filters, expand }),
       fetchMatches(filters),
     ]);
 
@@ -97,4 +101,84 @@ export async function deleteScheduleMatch(matchId: number): Promise<void> {
 
 export async function publishScheduleMatch(matchId: number): Promise<void> {
   return publishMatch(matchId);
+}
+
+export async function cancelScheduleTrainingSession(sessionId: number): Promise<void> {
+  const { cancelTrainingSession } = await import("@/modules/training-session/actions/training-session-actions");
+  return cancelTrainingSession(sessionId);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function cancelScheduleMatch(matchId: number): Promise<void> {
+  // TODO: Implement cancelMatch in match actions when match cancel endpoint is ready
+  throw new Error('Match cancellation not yet implemented');
+}
+
+// ============================================================================
+// RECURRING EVENT EXCEPTION OPERATIONS (Option B Architecture)
+// ============================================================================
+
+/**
+ * Modify a single occurrence of a recurring training session
+ */
+export async function modifyTrainingOccurrence(
+  sessionId: number,
+  occurrenceDate: string,
+  updates: Partial<CreateTrainingSessionRequest>
+): Promise<void> {
+  const response = await apiClient(
+    `/training-sessions/${sessionId}/occurrences/${occurrenceDate}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to modify occurrence');
+  }
+}
+
+/**
+ * Edit this and all future occurrences (splits series)
+ */
+export async function editFutureTrainingOccurrences(
+  sessionId: number,
+  occurrenceDate: string,
+  updates: Partial<CreateTrainingSessionRequest>
+): Promise<void> {
+  const response = await apiClient(
+    `/training-sessions/${sessionId}/occurrences/${occurrenceDate}/future`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to edit future occurrences');
+  }
+}
+
+/**
+ * Edit all occurrences in recurring series
+ */
+export async function editAllTrainingOccurrences(
+  sessionId: number,
+  updates: Partial<CreateTrainingSessionRequest>
+): Promise<void> {
+  const response = await apiClient(
+    `/training-sessions/${sessionId}/all`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to edit all occurrences');
+  }
 }

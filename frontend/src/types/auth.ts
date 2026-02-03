@@ -98,7 +98,6 @@ export interface UserAccount {
   // Member-specific data
   position?: 'goalkeeper' | 'defender' | 'midfielder' | 'forward' | 'any';
   experience?: 'beginner' | 'intermediate' | 'advanced' | 'professional';
-  clubInviteCode?: string;
   parentName?: string;
   parentPhone?: string;
   

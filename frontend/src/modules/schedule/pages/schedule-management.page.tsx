@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Plus, Loader2, LayoutGrid, Calendar as CalendarIcon, Dumbbell, Trophy } from "lucide-react";
+import { Plus, Loader2, LayoutList, Calendar as CalendarIcon, Dumbbell, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -28,13 +28,20 @@ import {
   updateScheduleMatch,
   deleteScheduleMatch,
   publishScheduleMatch,
+  cancelScheduleTrainingSession,
+  cancelScheduleMatch,
+  modifyTrainingOccurrence,
+  editFutureTrainingOccurrences,
+  editAllTrainingOccurrences,
 } from "../actions/schedule-actions";
 import {
   ScheduleFiltersBar,
   ScheduleCalendar,
-  ScheduleCard,
+  ScheduleTable,
   MatchForm,
+  RecurringEditDialog,
 } from "../components";
+import type { EditScope } from "../components/recurring-edit-dialog";
 
 export function ScheduleManagementPage() {
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
@@ -42,32 +49,32 @@ export function ScheduleManagementPage() {
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"grid" | "calendar">("calendar");
+  const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
 
   // Form states
   const [createType, setCreateType] = useState<"training" | "match" | null>(null);
   const [editingItem, setEditingItem] = useState<ScheduleItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Recurring edit dialog state
+  const [showRecurringDialog, setShowRecurringDialog] = useState(false);
+  const [pendingEditItem, setPendingEditItem] = useState<ScheduleItem | null>(null);
+  const [editScope, setEditScope] = useState<EditScope | null>(null);
+
   // Filter state
   const [filters, setFilters] = useState<ScheduleFilters>({
     type: "all",
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // Apply filters whenever schedule items or filters change
-  useEffect(() => {
-    applyFilters();
-  }, [scheduleItems, filters]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
+      // Table view: expand=false (database rows only)
+      // Calendar view: expand=true (virtual occurrences for recurring sessions)
+      const expand = viewMode === "calendar";
+
       const [items, seasonsData, teamsData] = await Promise.all([
-        fetchScheduleItems(),
+        fetchScheduleItems(undefined, expand),
         fetchSeasons(),
         fetchTeams(),
       ]);
@@ -80,9 +87,13 @@ export function ScheduleManagementPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [viewMode]);
 
-  const applyFilters = () => {
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const applyFilters = useCallback(() => {
     let filtered = [...scheduleItems];
 
     // Type filter
@@ -136,7 +147,12 @@ export function ScheduleManagementPage() {
     }
 
     setFilteredItems(filtered);
-  };
+  }, [scheduleItems, filters]);
+
+  // Apply filters whenever schedule items or filters change
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   // Training Session handlers
   const handleCreateTrainingSession = async (data: CreateTrainingSessionRequest) => {
@@ -160,9 +176,33 @@ export function ScheduleManagementPage() {
 
     try {
       setIsSubmitting(true);
-      await updateScheduleTrainingSession(editingItem.data.id, data);
-      toast.success("Training session updated successfully!");
+
+      // Check if this is a recurring session and we have an edit scope
+      if (editingItem.data.is_recurring && editScope) {
+        const sessionId = editingItem.data.id;
+        const occurrenceDate = editingItem.date;
+
+        if (editScope === "this") {
+          // Modify only this occurrence
+          await modifyTrainingOccurrence(sessionId, occurrenceDate, data);
+          toast.success("This occurrence updated successfully!");
+        } else if (editScope === "future") {
+          // Edit this and future occurrences
+          await editFutureTrainingOccurrences(sessionId, occurrenceDate, data);
+          toast.success("This and future occurrences updated successfully!");
+        } else if (editScope === "all") {
+          // Edit all occurrences
+          await editAllTrainingOccurrences(sessionId, data);
+          toast.success("All occurrences updated successfully!");
+        }
+      } else {
+        // Non-recurring or no scope - regular update
+        await updateScheduleTrainingSession(editingItem.data.id, data);
+        toast.success("Training session updated successfully!");
+      }
+
       setEditingItem(null);
+      setEditScope(null);
       await loadData();
     } catch (error) {
       console.error("Error updating training session:", error);
@@ -250,14 +290,62 @@ export function ScheduleManagementPage() {
     }
   };
 
-  // Edit handler
+  // Cancel handler (works for both types)
+  const handleCancelItem = async (item: ScheduleItem) => {
+    const itemType = item.type === "training" ? "training session" : "match";
+    const title = isTrainingItem(item) ? item.data.title : `${item.data.home_team_name} vs ${item.data.opponent_name || item.data.away_team_name}`;
+
+    if (
+      window.confirm(
+        `Are you sure you want to cancel "${title}"? This action cannot be undone.`
+      )
+    ) {
+      try {
+        if (isTrainingItem(item)) {
+          await cancelScheduleTrainingSession(item.data.id);
+          toast.success(`${item.data.title} has been cancelled`);
+        } else {
+          await cancelScheduleMatch(item.data.id);
+          toast.success("Match has been cancelled");
+        }
+        await loadData();
+      } catch (error) {
+        console.error(`Error cancelling ${itemType}:`, error);
+        toast.error(`Failed to cancel ${itemType}`);
+      }
+    }
+  };
+
+  // Edit handler - check if recurring
   const handleEditItem = (item: ScheduleItem) => {
-    setEditingItem(item);
+    // Check if this is a recurring training session AND not in draft status
+    // Draft sessions should be edited directly without recurring dialog
+    if (isTrainingItem(item) && item.data.is_recurring && item.status !== "draft") {
+      // Show recurring edit dialog first
+      setPendingEditItem(item);
+      setShowRecurringDialog(true);
+    } else {
+      // Non-recurring OR draft - edit directly
+      setEditingItem(item);
+    }
+  };
+
+  // Handle recurring edit scope selection
+  const handleRecurringEditScope = (scope: EditScope) => {
+    setEditScope(scope);
+    setShowRecurringDialog(false);
+
+    // Now open the edit form with the scope
+    if (pendingEditItem) {
+      setEditingItem(pendingEditItem);
+    }
   };
 
   const handleCloseForm = () => {
     setCreateType(null);
     setEditingItem(null);
+    setEditScope(null);
+    setPendingEditItem(null);
   };
 
   return (
@@ -274,12 +362,12 @@ export function ScheduleManagementPage() {
           {/* View Toggle */}
           <Tabs
             value={viewMode}
-            onValueChange={(value) => setViewMode(value as "grid" | "calendar")}
+            onValueChange={(value) => setViewMode(value as "table" | "calendar")}
           >
             <TabsList>
-              <TabsTrigger value="grid" className="gap-2">
-                <LayoutGrid className="w-4 h-4" />
-                Grid
+              <TabsTrigger value="table" className="gap-2">
+                <LayoutList className="w-4 h-4" />
+                Table
               </TabsTrigger>
               <TabsTrigger value="calendar" className="gap-2">
                 <CalendarIcon className="w-4 h-4" />
@@ -366,23 +454,17 @@ export function ScheduleManagementPage() {
         </div>
       ) : viewMode === "calendar" ? (
         <ScheduleCalendar
-          items={filteredItems}
-          onEditItem={handleEditItem}
-          onDeleteItem={handleDeleteItem}
-          onPublishItem={handlePublishItem}
+          items={filteredItems.filter(item => item.status !== 'draft')}
+          readOnly={true}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredItems.map((item) => (
-            <ScheduleCard
-              key={`${item.type}-${item.id}`}
-              item={item}
-              onEdit={handleEditItem}
-              onDelete={handleDeleteItem}
-              onPublish={handlePublishItem}
-            />
-          ))}
-        </div>
+        <ScheduleTable
+          items={filteredItems}
+          onEdit={handleEditItem}
+          onDelete={handleDeleteItem}
+          onPublish={handlePublishItem}
+          onCancel={handleCancelItem}
+        />
       )}
 
       {/* Training Session Form */}
@@ -414,6 +496,21 @@ export function ScheduleManagementPage() {
         }
         isSubmitting={isSubmitting}
       />
+
+      {/* Recurring Edit Dialog */}
+      {pendingEditItem && isTrainingItem(pendingEditItem) && (
+        <RecurringEditDialog
+          open={showRecurringDialog}
+          onClose={() => {
+            setShowRecurringDialog(false);
+            setPendingEditItem(null);
+          }}
+          onEditScope={handleRecurringEditScope}
+          eventTitle={pendingEditItem.data.title}
+          occurrenceDate={pendingEditItem.date}
+          eventType="training"
+        />
+      )}
     </div>
   );
 }

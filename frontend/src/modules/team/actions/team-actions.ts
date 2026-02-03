@@ -9,6 +9,7 @@ import {
   UpdateTeamRequest,
   AssignManagerRequest,
   AssignMemberRequest,
+  SetTeamTierRequest,
   TeamManagerPersonnel
 } from "../types";
 
@@ -241,12 +242,28 @@ export const fetchTeamMembers = async (teamId: number): Promise<TeamMember[]> =>
 // Get assigned players in club
 export const fetchAssignedChildrenInClub = async (): Promise<number[]> => {
   const response = await apiClient('/teams/assigned-children');
-  
+
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to fetch assigned players in club');
   }
-  
+
   const data = await response.json();
   return data.data || [];
+};
+
+// Set team membership tier
+export const setTeamTier = async (teamId: number, request: SetTeamTierRequest): Promise<{ success: boolean; tier: { id: number; name: string; monthlyPrice: number; annualPrice: number } }> => {
+  const response = await apiClient(`/teams/${teamId}/tier`, {
+    method: 'PUT',
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to set team tier');
+  }
+
+  const data = await response.json();
+  return data.data;
 };

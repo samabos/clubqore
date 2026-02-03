@@ -9,7 +9,8 @@
       "Bash(taskkill //F //PID 166160)",
       "Bash(ls -la \"c:\\\\Projects\\\\clubqore\\\\frontend\\\\src\\\\modules\"\" | grep -E \"^d \")",
       "Bash(tree:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

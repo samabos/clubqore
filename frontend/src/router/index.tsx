@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { LandingPage } from "../components/home";
 import { Authentication } from "../modules/authentication";
+import { ParentRegistrationPage } from "../modules/authentication/pages/parent-registration.page";
 import { OnboardingWrapper } from "../components/onboarding/OnboardingWrapper";
 import { EmailVerificationCallback } from "../components/EmailVerificationCallback";
 import { ResetPasswordPage } from "../pages/ResetPasswordPage";
@@ -16,7 +17,6 @@ import { ClubManagerDashboard, ClubSetupPage } from "../modules/club/pages";
 import {
   TeamManagementPage,
   TeamDetailsPage,
-  TeamEditPage,
 } from "../modules/team";
 import { PersonnelManagementPage } from "../modules/personnel/pages";
 import { ClubMemberPage, ManageMemberPage } from "../modules/member/pages";
@@ -41,6 +41,7 @@ import {
 import {
   ResourceManagementPage,
   PermissionManagementPage,
+  SystemSettingsPage,
 } from "../modules/admin";
 import { MyChildrenPage, ChildDetailPage, ParentSchedulePage } from "../modules/parent/pages";
 import { ProfileSettingsPage } from "../modules/profile";
@@ -67,6 +68,10 @@ export const router = createBrowserRouter([
   {
     path: "/reset-password",
     element: <ResetPasswordPage />,
+  },
+  {
+    path: "/register/parent/:inviteCode",
+    element: <ParentRegistrationPage />,
   },
   {
     path: "/onboarding",
@@ -203,7 +208,7 @@ export const router = createBrowserRouter([
             path: "settings",
             element: (
               <ScopeProtectedRoute resource="admin-settings">
-                <div className="p-6"><h1 className="text-2xl font-bold">Platform Settings</h1><p className="text-gray-500 mt-4">Coming Soon...</p></div>
+                <SystemSettingsPage />
               </ScopeProtectedRoute>
             ),
           },
@@ -390,14 +395,6 @@ export const router = createBrowserRouter([
         element: (
           <ScopeProtectedRoute resource="teams">
             <TeamDetailsPage />
-          </ScopeProtectedRoute>
-        ),
-      },
-      {
-        path: "teams/:teamId/edit",
-        element: (
-          <ScopeProtectedRoute resource="teams" action="edit">
-            <TeamEditPage />
           </ScopeProtectedRoute>
         ),
       },

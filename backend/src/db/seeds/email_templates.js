@@ -1496,6 +1496,157 @@ The ClubQore Team
       is_active: true
     },
 
+    // Parent Invite Template
+    {
+      template_key: 'parent_invite',
+      name: 'Parent Invite',
+      description: 'Sent when a club manager invites a parent to register and create their children accounts',
+      subject: 'You\'re Invited to Join {{clubName}}',
+      body_text: `
+Hello{{#parentName}} {{parentName}}{{/parentName}},
+
+{{managerName}} from {{clubName}} has invited you to join as a parent member.
+
+You can complete your registration and add your children by clicking the link below:
+{{registrationUrl}}
+
+This invitation will expire in 7 days.
+
+What happens next?
+1. Click the registration link above
+2. Complete your account information
+3. Add your children's details
+4. Start managing your family's membership
+
+If you have any questions or didn't expect this invitation, please contact {{clubName}}.
+
+Best regards,
+The ClubQore Team
+      `.trim(),
+      body_html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          background-color: #f5f5f5;
+        }
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 20px;
+          background-color: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+          padding: 20px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 8px;
+          color: white;
+        }
+        .button {
+          display: inline-block;
+          padding: 14px 28px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          text-decoration: none;
+          border-radius: 6px;
+          margin: 20px 0;
+          font-weight: 600;
+        }
+        .steps-box {
+          background: #f8f9fa;
+          border-left: 4px solid #667eea;
+          padding: 20px;
+          margin: 20px 0;
+          border-radius: 4px;
+        }
+        .steps-box ol {
+          margin: 10px 0;
+          padding-left: 20px;
+        }
+        .steps-box li {
+          margin: 8px 0;
+        }
+        .expiry-notice {
+          background: #fff3cd;
+          border: 1px solid #ffeaa7;
+          border-radius: 6px;
+          padding: 15px;
+          margin: 20px 0;
+        }
+        .footer {
+          margin-top: 30px;
+          padding-top: 20px;
+          border-top: 1px solid #dee2e6;
+          font-size: 14px;
+          color: #6c757d;
+          text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="margin: 0;">You're Invited!</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Join {{clubName}}</p>
+        </div>
+
+        <p>Hello{{#parentName}} <strong>{{parentName}}</strong>{{/parentName}},</p>
+
+        <p><strong>{{managerName}}</strong> from <strong>{{clubName}}</strong> has invited you to join as a parent member.</p>
+
+        <p>Complete your registration and add your children to get started:</p>
+
+        <div style="text-align: center;">
+            <a href="{{registrationUrl}}" class="button">Complete Registration</a>
+        </div>
+
+        <p style="word-break: break-all; background: #f5f5f5; padding: 10px; border-radius: 3px; font-size: 12px;">
+            Or copy and paste this link into your browser:<br>
+            {{registrationUrl}}
+        </p>
+
+        <div class="expiry-notice">
+            <p style="margin: 0;"><strong>⏰ Important:</strong> This invitation will expire in 7 days.</p>
+        </div>
+
+        <div class="steps-box">
+            <h3 style="margin-top: 0;">What Happens Next?</h3>
+            <ol>
+                <li>Click the registration link above</li>
+                <li>Complete your account information</li>
+                <li>Add your children's details</li>
+                <li>Start managing your family's membership</li>
+            </ol>
+        </div>
+
+        <p style="background: #f8f9fa; padding: 15px; border-radius: 6px;">
+            <strong>Questions?</strong><br>
+            If you have any questions or didn't expect this invitation, please contact <strong>{{clubName}}</strong>.
+        </p>
+
+        <div class="footer">
+            <p>Best regards,<br><strong>The ClubQore Team</strong></p>
+            <p style="font-size: 12px; color: #adb5bd; margin-top: 10px;">
+                This is an automated email. Please do not reply to this message.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+      `.trim(),
+      variables: JSON.stringify(['parentName', 'managerName', 'clubName', 'registrationUrl']),
+      is_active: true
+    },
+
     // Subscription Tier Changed Template
     {
       template_key: 'subscription_tier_changed',

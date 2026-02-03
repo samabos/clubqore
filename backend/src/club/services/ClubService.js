@@ -502,9 +502,7 @@ export class ClubService {
         'uc.id',
         'uc.parent_user_id',
         'uc.child_user_id',
-        'uc.relationship',
         'uc.club_id',
-        'uc.membership_code',
         this.db.raw('uc.created_at as child_join_date'),
         'cup.position as child_position',
         'cup.first_name as child_first_name',
@@ -555,10 +553,8 @@ export class ClubService {
           firstName: rel.child_first_name,
           lastName: rel.child_last_name,
           dateOfBirth: rel.child_date_of_birth,
-          relationship: rel.relationship,
           position: rel.child_position || null,
-          isRegistered: true, // All children now have user accounts
-          membershipCode: rel.membership_code
+          isRegistered: true // All children now have user accounts
         });
       }
     }
@@ -575,7 +571,6 @@ export class ClubService {
         memberParents.push(...parentRelations.map(p => ({
           id: p.parent_user_id,
           name: `${p.parent_first_name || ''} ${p.parent_last_name || ''}`.trim(),
-          relationship: p.relationship,
           phone: p.parent_phone || ''
         })));
       }
@@ -627,7 +622,6 @@ export class ClubService {
         parents: [{
           id: child.parent_user_id,
           name: `${child.parent_first_name || ''} ${child.parent_last_name || ''}`.trim(),
-          relationship: child.relationship,
           phone: child.parent_phone || ''
         }],
         hasChildren: false,
@@ -691,7 +685,6 @@ export class ClubService {
         await trx('user_children').insert({
           parent_user_id: parent.id,
           child_user_id: childUser.id,
-          relationship: 'parent',
           club_id: clubId,
           created_at: new Date(),
           updated_at: new Date()
@@ -805,9 +798,7 @@ export class ClubService {
               await trx('user_children')
                 .where({ id: existingChild.id })
                 .update({
-                  relationship: child.relationship || 'parent',
                   club_id: child.clubId || clubId,
-                  membership_code: child.membershipCode || null,
                   updated_at: new Date()
                 });
             } else {
@@ -825,9 +816,7 @@ export class ClubService {
                 lastName: child.lastName,
                 dateOfBirth: child.dateOfBirth,
                 position: child.position,
-                relationship: child.relationship || 'parent',
-                clubId: clubId, // Use the clubId from the method parameter
-                membershipCode: child.membershipCode || null
+                clubId: clubId // Use the clubId from the method parameter
               },
               trx
             );

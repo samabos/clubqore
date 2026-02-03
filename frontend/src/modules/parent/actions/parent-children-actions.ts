@@ -40,3 +40,67 @@ export async function fetchChildDetails(childId: string): Promise<ChildDetailDat
   const data = await response.json();
   return data.child;
 }
+
+export async function createChild(
+  childData: {
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    position: string | null;
+    medicalInfo: string | null;
+    emergencyContact: string | null;
+    phone: string | null;
+    address: string | null;
+  }
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/parent/children`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
+    },
+    credentials: 'include',
+    body: JSON.stringify(childData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to add child');
+  }
+
+  return await response.json();
+}
+
+export async function updateChildDetails(
+  childId: string,
+  updateData: {
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    position: string | null;
+    medicalInfo: string | null;
+    emergencyContact: string | null;
+    phone: string | null;
+    address: string | null;
+  }
+): Promise<void> {
+  const response = await fetch(
+    `${API_BASE_URL}/parent/children/${childId}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenManager.getAccessToken()}`,
+      },
+      credentials: 'include',
+      body: JSON.stringify(updateData),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to update child information');
+  }
+
+  return await response.json();
+}

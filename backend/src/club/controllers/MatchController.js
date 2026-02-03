@@ -90,7 +90,8 @@ export class MatchController {
         team_id: request.query.team_id ? parseInt(request.query.team_id) : undefined,
         match_type: request.query.match_type,
         from_date: request.query.from_date,
-        to_date: request.query.to_date
+        to_date: request.query.to_date,
+        expand: request.query.expand === 'true' // Default false (table view shows DB rows only)
       };
 
       const matches = await this.matchService.getMatchesByClub(clubId, filters);

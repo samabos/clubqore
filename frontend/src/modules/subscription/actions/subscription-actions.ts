@@ -14,6 +14,42 @@ import { tokenManager } from "@/api/secureAuth";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapSubscriptionFromBackend(sub: any): Subscription {
+  return {
+    id: sub.id,
+    club_id: sub.clubId ?? sub.club_id,
+    parent_user_id: sub.parentUserId ?? sub.parent_user_id,
+    child_user_id: sub.childUserId ?? sub.child_user_id,
+    membership_tier_id: sub.membershipTierId ?? sub.membership_tier_id,
+    payment_mandate_id: sub.paymentMandateId ?? sub.payment_mandate_id,
+    status: sub.status,
+    billing_frequency: sub.billingFrequency ?? sub.billing_frequency,
+    billing_day_of_month: sub.billingDayOfMonth ?? sub.billing_day_of_month,
+    amount: sub.amount,
+    current_period_start: sub.currentPeriodStart ?? sub.current_period_start,
+    current_period_end: sub.currentPeriodEnd ?? sub.current_period_end,
+    next_billing_date: sub.nextBillingDate ?? sub.next_billing_date,
+    failed_payment_count: sub.failedPaymentCount ?? sub.failed_payment_count ?? 0,
+    last_failed_payment_date: sub.lastFailedPaymentDate ?? sub.last_failed_payment_date,
+    paused_at: sub.pausedAt ?? sub.paused_at,
+    resume_date: sub.resumeDate ?? sub.resume_date,
+    cancelled_at: sub.cancelledAt ?? sub.cancelled_at,
+    cancellation_reason: sub.cancellationReason ?? sub.cancellation_reason,
+    created_at: sub.createdAt ?? sub.created_at,
+    updated_at: sub.updatedAt ?? sub.updated_at,
+    // Flatten nested objects
+    tier_name: sub.tier?.name ?? sub.tier_name,
+    child_first_name: sub.child?.firstName ?? sub.child_first_name,
+    child_last_name: sub.child?.lastName ?? sub.child_last_name,
+    child_email: sub.child?.email ?? sub.child_email,
+    parent_first_name: sub.parent?.firstName ?? sub.parent_first_name,
+    parent_last_name: sub.parent?.lastName ?? sub.parent_last_name,
+    parent_email: sub.parent?.email ?? sub.parent_email,
+    club_name: sub.club?.name ?? sub.club_name,
+  };
+}
+
 // ==================== MEMBERSHIP TIER ACTIONS (Club Manager) ====================
 
 /**
@@ -206,7 +242,8 @@ export async function fetchSubscriptions(filters?: SubscriptionFilters): Promise
   }
 
   const data = await response.json();
-  return data.data || [];
+  const subscriptions = data.data || [];
+  return subscriptions.map(mapSubscriptionFromBackend);
 }
 
 /**
@@ -373,7 +410,8 @@ export async function fetchParentSubscriptions(filters?: SubscriptionFilters): P
   }
 
   const data = await response.json();
-  return data.data || [];
+  const subscriptions = data.data || [];
+  return subscriptions.map(mapSubscriptionFromBackend);
 }
 
 /**

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, CreditCard, Building2, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PaymentMethodList, MandateSetupFlow } from "../components";
 import {
@@ -10,15 +11,11 @@ import {
   initiateMandateSetup,
 } from "@/modules/subscription/actions/subscription-actions";
 import type { PaymentMethodsResponse } from "@/types/subscription";
-
-// TODO: Fetch actual clubs from the backend
-const mockClubs = [
-  { id: 1, name: "Football Academy" },
-  { id: 2, name: "Tennis Club" },
-];
+import { useAuth } from "@/stores/authStore";
 
 export function PaymentMethodsPage() {
   const { toast } = useToast();
+  const { userClub } = useAuth();
 
   const [data, setData] = useState<PaymentMethodsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,12 +76,14 @@ export function PaymentMethodsPage() {
     }
   };
 
-  const handleMandateSetup = async (
-    clubId: number,
-    scheme: "bacs" | "sepa_core" | "ach"
-  ) => {
+  const handleMandateSetup = async (scheme: "bacs" | "sepa_core" | "ach") => {
     try {
       setIsSettingUp(true);
+      // Use the user's club ID
+      const clubId = userClub?.id;
+      if (!clubId) {
+        throw new Error("No club found. Please contact support.");
+      }
       const response = await initiateMandateSetup(clubId, "gocardless", scheme);
       // Redirect to authorization URL
       window.location.href = response.authorisationUrl;
@@ -110,6 +109,36 @@ export function PaymentMethodsPage() {
     );
   }
 
+  const statItems = [
+    {
+      title: "Total Methods",
+      value: String(data.total),
+      change: data.hasDefault ? "Default set" : "No default",
+      changeType: data.hasDefault ? ("increase" as const) : ("neutral" as const),
+      icon: CreditCard,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+    },
+    {
+      title: "Direct Debits",
+      value: String(data.directDebits),
+      change: "Bank accounts",
+      changeType: "neutral" as const,
+      icon: Building2,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+    },
+    {
+      title: "Cards",
+      value: String(data.cards),
+      change: "Credit/Debit cards",
+      changeType: "neutral" as const,
+      icon: CreditCard,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+    },
+  ];
+
   return (
     <div className="container mx-auto py-8 space-y-8">
       {/* Header */}
@@ -126,21 +155,47 @@ export function PaymentMethodsPage() {
         </Button>
       </div>
 
-      {/* Summary */}
+      {/* Stats */}
       {data.total > 0 && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="p-4 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground">Total Methods</p>
-            <p className="text-2xl font-bold">{data.total}</p>
-          </div>
-          <div className="p-4 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground">Direct Debits</p>
-            <p className="text-2xl font-bold">{data.directDebits}</p>
-          </div>
-          <div className="p-4 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground">Cards</p>
-            <p className="text-2xl font-bold">{data.cards}</p>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {statItems.map((stat, index) => (
+            <Card
+              key={index}
+              className="border-0 shadow-lg rounded-xl hover:shadow-xl transition-shadow"
+            >
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
+                      {stat.title}
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                    <div className="flex items-center gap-1 mt-2">
+                      <span
+                        className={`text-sm font-medium ${
+                          stat.changeType === "increase"
+                            ? "text-green-600"
+                            : stat.changeType === "decrease"
+                            ? "text-red-600"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        {stat.change}
+                      </span>
+                      {stat.changeType === "increase" && (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      )}
+                    </div>
+                  </div>
+                  <div
+                    className={`w-12 h-12 ${stat.bgColor} rounded-xl flex items-center justify-center`}
+                  >
+                    <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 
@@ -157,7 +212,6 @@ export function PaymentMethodsPage() {
         open={setupDialogOpen}
         onOpenChange={setSetupDialogOpen}
         onSetup={handleMandateSetup}
-        clubs={mockClubs}
         isLoading={isSettingUp}
       />
     </div>

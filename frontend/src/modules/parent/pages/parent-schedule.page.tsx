@@ -9,114 +9,18 @@ import {
 } from "@/components/ui/select";
 import { LayoutGrid, Calendar as CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { parentAPI, type ParentScheduleResponse } from "@/api/parent";
+import { parentAPI } from "@/api/parent";
 import { ScheduleCard } from "@/modules/schedule/components/schedule-card";
 import { ScheduleCalendar } from "@/modules/schedule/components/schedule-calendar";
-import type { ScheduleItem, ScheduleStatus } from "@/modules/schedule/types/schedule-types";
-import type { TrainingSession } from "@/types/training-session";
-import type { Match } from "@/types/match";
+import type { ScheduleItem } from "@/modules/schedule/types/schedule-types";
+import { parentEventToScheduleItem, type ParentEventData } from "@/modules/schedule/utils/schedule-utils";
 
 type ViewMode = "grid" | "calendar";
 type FilterType = "all" | "training" | "match";
 
-// Transform parent API training session to club manager format
-function transformTrainingSession(session: ParentScheduleResponse["trainingSessions"][0]): TrainingSession {
-  return {
-    id: parseInt(session.id),
-    season_id: null,
-    club_id: 0,
-    title: session.title,
-    description: session.description || null,
-    session_type: session.session_type as TrainingSession["session_type"],
-    date: session.date,
-    start_time: session.start_time,
-    end_time: session.end_time,
-    location: session.location,
-    coach_id: null,
-    max_participants: null,
-    status: session.status as TrainingSession["status"],
-    created_by: 0,
-    created_at: session.created_at,
-    updated_at: session.updated_at,
-    is_recurring: false,
-    recurrence_pattern: null,
-    recurrence_days: null,
-    recurrence_end_date: null,
-    parent_session_id: null,
-    teams: [{ id: parseInt(session.team_id), name: session.team_name, color: null }],
-  };
-}
-
-// Transform parent API match to club manager format
-function transformMatch(match: ParentScheduleResponse["matches"][0]): Match {
-  return {
-    id: parseInt(match.id),
-    season_id: null,
-    club_id: 0,
-    match_type: match.match_type as Match["match_type"],
-    home_team_id: parseInt(match.home_team_id),
-    away_team_id: match.away_team_id ? parseInt(match.away_team_id) : null,
-    opponent_name: match.opponent || null,
-    is_home: match.is_home,
-    venue: match.location,
-    date: match.date,
-    start_time: match.start_time,
-    end_time: match.end_time || null,
-    competition_name: match.competition || null,
-    home_score: match.home_score ?? null,
-    away_score: match.away_score ?? null,
-    status: match.status as Match["status"],
-    created_by: 0,
-    created_at: match.created_at,
-    updated_at: match.updated_at,
-    home_team_name: match.team_name,
-  };
-}
-
-// Transform to ScheduleItem format
-function toScheduleItem(
-  type: "training" | "match",
-  data: TrainingSession | Match,
-  childName?: string
-): ScheduleItem {
-  if (type === "training") {
-    const session = data as TrainingSession;
-    return {
-      type: "training",
-      id: session.id,
-      date: session.date,
-      start_time: session.start_time,
-      end_time: session.end_time,
-      season_id: session.season_id,
-      status: session.status as ScheduleStatus,
-      created_at: session.created_at,
-      updated_at: session.updated_at,
-      season_name: session.season_name,
-      childName,
-      data: session,
-    };
-  } else {
-    const match = data as Match;
-    return {
-      type: "match",
-      id: match.id,
-      date: match.date,
-      start_time: match.start_time,
-      end_time: match.end_time,
-      season_id: match.season_id,
-      status: match.status as ScheduleStatus,
-      created_at: match.created_at,
-      updated_at: match.updated_at,
-      season_name: match.season_name,
-      childName,
-      data: match,
-    };
-  }
-}
-
 export function ParentSchedulePage() {
   const { toast } = useToast();
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [viewMode, setViewMode] = useState<ViewMode>("calendar");
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [items, setItems] = useState<ScheduleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -130,25 +34,42 @@ export function ParentSchedulePage() {
       setIsLoading(true);
       const data = await parentAPI.getChildrenSchedule();
 
-      // Transform and combine all items
+      // Transform and combine all items using shared utility
       const scheduleItems: ScheduleItem[] = [];
 
       // Transform training sessions
       data.trainingSessions.forEach((session) => {
-        const childName = session.child_first_name && session.child_last_name
-          ? `${session.child_first_name} ${session.child_last_name}`
-          : undefined;
-        const transformed = transformTrainingSession(session);
-        scheduleItems.push(toScheduleItem("training", transformed, childName));
+        const eventData: ParentEventData = {
+          id: session.id,
+          type: 'training',
+          date: session.date,
+          start_time: session.start_time,
+          end_time: session.end_time,
+          location: session.location,
+          team_name: session.team_name,
+          child_first_name: session.child_first_name,
+          child_last_name: session.child_last_name,
+          title: session.title,
+        };
+        scheduleItems.push(parentEventToScheduleItem(eventData));
       });
 
       // Transform matches
       data.matches.forEach((match) => {
-        const childName = match.child_first_name && match.child_last_name
-          ? `${match.child_first_name} ${match.child_last_name}`
-          : undefined;
-        const transformed = transformMatch(match);
-        scheduleItems.push(toScheduleItem("match", transformed, childName));
+        const eventData: ParentEventData = {
+          id: match.id,
+          type: 'match',
+          date: match.date,
+          start_time: match.start_time,
+          end_time: match.end_time || null,
+          location: match.location,
+          team_name: match.team_name,
+          child_first_name: match.child_first_name,
+          child_last_name: match.child_last_name,
+          opponent: match.opponent,
+          is_home: match.is_home,
+        };
+        scheduleItems.push(parentEventToScheduleItem(eventData));
       });
 
       // Sort by date
@@ -170,8 +91,11 @@ export function ParentSchedulePage() {
     }
   };
 
-  // Filter items
+  // Filter items (exclude draft status - draft is for club management only)
   const filteredItems = items.filter((item) => {
+    // Exclude draft items - parents can see scheduled, in_progress, completed, and cancelled events
+    if (item.status === "draft") return false;
+
     if (filterType === "all") return true;
     return item.type === filterType;
   });

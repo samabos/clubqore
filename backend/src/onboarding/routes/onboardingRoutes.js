@@ -16,7 +16,7 @@ export const onboardingRoutes = async function (fastify, options) {
         type: 'object',
         required: ['role'],
         properties: {
-          role: { type: 'string', enum: ['club_manager', 'member', 'parent'] },
+          role: { type: 'string', enum: ['club_manager'] },
           personalData: {
             type: 'object',
             properties: {
@@ -42,34 +42,6 @@ export const onboardingRoutes = async function (fastify, options) {
               contactPhone: { type: 'string' },
               website: { type: 'string' },
               socialMedia: { type: 'object' }
-            }
-          },
-          memberData: {
-            type: 'object',
-            properties: {
-              clubInviteCode: { type: 'string' },
-              position: { type: 'string' },
-              parentPhone: { type: 'string' }
-            }
-          },
-          parentData: {
-            type: 'object',
-            properties: {
-              children: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    firstName: { type: 'string' },
-                    lastName: { type: 'string' },
-                    dateOfBirth: { type: 'string', format: 'date' },
-                    relationship: { type: 'string' },
-                    childUserId: { type: 'string' },
-                    clubId: { type: 'string' },
-                    membershipCode: { type: 'string' }
-                  }
-                }
-              }
             }
           },
           preferences: {

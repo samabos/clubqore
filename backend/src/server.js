@@ -26,6 +26,7 @@ import { registerClubRoutes } from './club/routes/index.js';
 import { registerParentRoutes } from './parent/routes/index.js';
 import { registerAdminRoutes } from './admin/index.js';
 import { postcodeRoutes } from './services/postcodeRoutes.js';
+import { registerContactRoutes } from './contact/contactRoutes.js';
 import { startInvoiceScheduler } from './workers/invoice-scheduler.js';
 import { registerPaymentRoutes } from './payment/routes/index.js';
 import { startSubscriptionBillingWorker } from './workers/subscription-billing-worker.js';
@@ -188,6 +189,9 @@ async function createServer() {
 
   fastify.log.info('📮 Registering postcode routes...');
   await fastify.register(postcodeRoutes);
+
+  fastify.log.info('📧 Registering contact routes...');
+  await fastify.register(registerContactRoutes);
 
   fastify.log.info('💳 Registering payment routes...');
   const authMiddleware = createAuthMiddleware(fastify.db);

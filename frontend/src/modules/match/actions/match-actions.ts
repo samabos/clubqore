@@ -23,6 +23,11 @@ export async function fetchMatches(filters?: MatchFilters): Promise<Match[]> {
   if (filters?.from_date) params.append('from_date', filters.from_date);
   if (filters?.to_date) params.append('to_date', filters.to_date);
 
+  // Always explicitly send expand parameter to avoid backend default behavior
+  if (filters?.expand !== undefined) {
+    params.append('expand', filters.expand ? 'true' : 'false');
+  }
+
   const url = params.toString() ? `${BASE_URL}?${params.toString()}` : BASE_URL;
   const response = await apiClient(url);
 

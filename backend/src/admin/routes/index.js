@@ -1,5 +1,6 @@
 import { AdminBillingController } from '../controllers/AdminBillingController.js';
 import { adminBillingRoutes } from './adminBillingRoutes.js';
+import { registerSystemConfigRoutes } from './systemConfigRoutes.js';
 import { createAuthMiddleware } from '../../auth/middleware.js';
 
 export async function registerAdminRoutes(fastify, options) {
@@ -14,6 +15,9 @@ export async function registerAdminRoutes(fastify, options) {
     adminBillingController,
     authenticate
   });
+
+  // Register system configuration routes
+  fastify.register(registerSystemConfigRoutes);
 
   fastify.log.info('Admin routes registered');
 }

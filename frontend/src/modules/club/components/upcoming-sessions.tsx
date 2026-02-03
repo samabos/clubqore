@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -14,6 +15,7 @@ import type { TrainingSession } from "@/types/training-session";
 import { format, isToday, isTomorrow, parseISO } from "date-fns";
 
 export function UpcomingSessions() {
+  const navigate = useNavigate();
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -58,6 +60,7 @@ export function UpcomingSessions() {
             variant="outline"
             size="sm"
             className="rounded-lg border-gray-200 hover:border-gray-300"
+            onClick={() => navigate('/app/schedule')}
           >
             <Calendar className="w-4 h-4 mr-2" />
             View Calendar

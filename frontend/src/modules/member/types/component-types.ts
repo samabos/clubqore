@@ -85,6 +85,7 @@ export interface MemberStats {
 export interface MemberHeaderProps {
   clubName?: string;
   onAddMember: () => void;
+  onInviteParent?: () => void;
 }
 
 export interface MemberStatsProps {

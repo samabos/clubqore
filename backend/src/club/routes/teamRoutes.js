@@ -107,17 +107,50 @@ export async function teamRoutes(fastify, options) {
     }
   }, teamController.getTeamManagers.bind(teamController));
 
-  // Team member routes
-  fastify.post('/:teamId/members', {
+  // Set team membership tier
+  fastify.put('/:teamId/tier', {
     schema: {
       tags: ['Teams'],
-      summary: 'Assign member to team',
+      summary: 'Set membership tier for a team',
+      description: 'Assigns a membership tier to a team. Members assigned to this team will be billed at this tier rate.',
       params: {
         type: 'object',
         properties: {
           teamId: { type: 'integer' }
         },
         required: ['teamId']
+      },
+      body: {
+        type: 'object',
+        required: ['membershipTierId'],
+        properties: {
+          membershipTierId: { type: 'integer', description: 'The ID of the membership tier to assign' }
+        }
+      }
+    }
+  }, teamController.setTeamTier.bind(teamController));
+
+  // Team member routes
+  fastify.post('/:teamId/members', {
+    schema: {
+      tags: ['Teams'],
+      summary: 'Assign member to team (creates subscription automatically)',
+      description: 'Assigns a player to a team and automatically creates a subscription based on the team\'s membership tier.',
+      params: {
+        type: 'object',
+        properties: {
+          teamId: { type: 'integer' }
+        },
+        required: ['teamId']
+      },
+      body: {
+        type: 'object',
+        required: ['memberId'],
+        properties: {
+          memberId: { type: 'integer', description: 'The user_children.id of the player to assign' },
+          billingDayOfMonth: { type: 'integer', minimum: 1, maximum: 28, description: 'Optional: Day of month for billing (1-28)' },
+          billingFrequency: { type: 'string', enum: ['monthly', 'annual'], description: 'Optional: Billing frequency' }
+        }
       }
     }
   }, teamController.assignMemberToTeam.bind(teamController));

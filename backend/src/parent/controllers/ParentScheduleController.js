@@ -33,11 +33,13 @@ export class ParentScheduleController {
       }
 
       // Fetch training sessions (through junction table)
+      // Exclude draft status - parents can see scheduled, in_progress, completed, and cancelled events
       const trainingSessions = await this.db('training_sessions')
         .join('training_session_teams', 'training_sessions.id', 'training_session_teams.training_session_id')
         .join('teams', 'training_session_teams.team_id', 'teams.id')
         .whereIn('training_session_teams.team_id', teamIds)
         .where('training_sessions.date', '>=', this.db.fn.now())
+        .where('training_sessions.status', '!=', 'draft')
         .orderBy('training_sessions.date', 'asc')
         .orderBy('training_sessions.start_time', 'asc')
         .select(
@@ -57,6 +59,7 @@ export class ParentScheduleController {
         );
 
       // Fetch matches (check both home and away team)
+      // Exclude draft status - parents can see scheduled, in_progress, completed, and cancelled events
       const matches = await this.db('matches')
         .leftJoin('teams as home_team', 'matches.home_team_id', 'home_team.id')
         .leftJoin('teams as away_team', 'matches.away_team_id', 'away_team.id')
@@ -65,6 +68,7 @@ export class ParentScheduleController {
             .orWhereIn('matches.away_team_id', teamIds);
         })
         .where('matches.date', '>=', this.db.fn.now())
+        .where('matches.status', '!=', 'draft')
         .orderBy('matches.date', 'asc')
         .orderBy('matches.start_time', 'asc')
         .select(
@@ -154,11 +158,13 @@ export class ParentScheduleController {
       }
 
       // Fetch training sessions (through junction table)
+      // Exclude draft status - parents can see scheduled, in_progress, completed, and cancelled events
       const trainingSessions = await this.db('training_sessions')
         .join('training_session_teams', 'training_sessions.id', 'training_session_teams.training_session_id')
         .join('teams', 'training_session_teams.team_id', 'teams.id')
         .whereIn('training_session_teams.team_id', teamIds)
         .where('training_sessions.date', '>=', this.db.fn.now())
+        .where('training_sessions.status', '!=', 'draft')
         .orderBy('training_sessions.date', 'asc')
         .orderBy('training_sessions.start_time', 'asc')
         .select(
@@ -178,6 +184,7 @@ export class ParentScheduleController {
         );
 
       // Fetch matches (check both home and away team)
+      // Exclude draft status - parents can see scheduled, in_progress, completed, and cancelled events
       const matches = await this.db('matches')
         .leftJoin('teams as home_team', 'matches.home_team_id', 'home_team.id')
         .leftJoin('teams as away_team', 'matches.away_team_id', 'away_team.id')
@@ -186,6 +193,7 @@ export class ParentScheduleController {
             .orWhereIn('matches.away_team_id', teamIds);
         })
         .where('matches.date', '>=', this.db.fn.now())
+        .where('matches.status', '!=', 'draft')
         .orderBy('matches.date', 'asc')
         .orderBy('matches.start_time', 'asc')
         .select(

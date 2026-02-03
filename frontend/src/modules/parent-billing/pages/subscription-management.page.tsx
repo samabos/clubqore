@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -17,27 +16,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { SubscriptionCard, CreateParentSubscriptionForm } from "../components";
+import { SubscriptionCard } from "../components";
 import {
   fetchParentSubscriptions,
   pauseSubscription,
   resumeSubscription,
   cancelParentSubscription,
-  createParentSubscription,
-  fetchAvailableTiers,
 } from "@/modules/subscription/actions/subscription-actions";
-import { fetchParentChildren } from "@/modules/parent/actions/parent-children-actions";
-import type { Subscription, SubscriptionStatus, MembershipTier } from "@/types/subscription";
-import type { EnrichedChild } from "@/modules/parent/types";
+import type { Subscription, SubscriptionStatus } from "@/types/subscription";
 
 export function ParentSubscriptionManagementPage() {
   const { toast } = useToast();
@@ -50,16 +37,6 @@ export function ParentSubscriptionManagementPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedSubscriptionId, setSelectedSubscriptionId] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  // New subscription dialog state
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [children, setChildren] = useState<EnrichedChild[]>([]);
-  const [tiers, setTiers] = useState<MembershipTier[]>([]);
-  const [isLoadingChildren, setIsLoadingChildren] = useState(false);
-  const [isLoadingTiers, setIsLoadingTiers] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  // For now, hardcode clubId - in a real app, this would come from context or be selected
-  const [currentClubId] = useState<number | null>(null);
 
   useEffect(() => {
     loadSubscriptions();
@@ -164,92 +141,6 @@ export function ParentSubscriptionManagementPage() {
     });
   };
 
-  const handleOpenCreateDialog = async () => {
-    setShowCreateDialog(true);
-
-    // Load children
-    setIsLoadingChildren(true);
-    try {
-      const childrenData = await fetchParentChildren();
-      setChildren(childrenData);
-
-      // Get club ID from first child's club if available
-      if (childrenData.length > 0 && childrenData[0].clubId) {
-        const clubId = parseInt(childrenData[0].clubId);
-        // Load tiers for the club
-        setIsLoadingTiers(true);
-        try {
-          const tiersData = await fetchAvailableTiers(clubId);
-          setTiers(tiersData);
-        } catch (error: any) {
-          toast({
-            title: "Error",
-            description: error.message || "Failed to load membership tiers",
-            variant: "destructive",
-          });
-        } finally {
-          setIsLoadingTiers(false);
-        }
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to load children",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingChildren(false);
-    }
-  };
-
-  const handleCreateSubscription = async (data: {
-    childId: number;
-    tierId: number;
-    billingFrequency: "monthly" | "annual";
-    billingDayOfMonth: number;
-  }) => {
-    // Find the child's club ID
-    const child = children.find(
-      (c) => c.childUserId?.toString() === data.childId.toString() || c.id.toString() === data.childId.toString()
-    );
-    const clubId = child?.clubId ? parseInt(child.clubId) : currentClubId;
-
-    if (!clubId) {
-      toast({
-        title: "Error",
-        description: "Could not determine the club for this subscription",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsCreating(true);
-      await createParentSubscription(
-        clubId,
-        data.childId,
-        data.tierId,
-        undefined, // paymentMandateId - will be set up later
-        data.billingDayOfMonth,
-        data.billingFrequency
-      );
-      toast({
-        title: "Success",
-        description: "Subscription created successfully. Set up a payment method to activate it.",
-      });
-      setShowCreateDialog(false);
-      loadSubscriptions();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create subscription",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="container mx-auto py-8">
@@ -285,18 +176,22 @@ export function ParentSubscriptionManagementPage() {
               <SelectItem value="suspended">Suspended</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={handleOpenCreateDialog}>
-            <Plus className="mr-2 h-4 w-4" />
-            New Subscription
-          </Button>
         </div>
+      </div>
+
+      {/* Info Banner */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p className="text-sm text-blue-800">
+          Subscriptions are automatically created when your child is assigned to a team by the club manager.
+          Set up a payment method to activate your subscriptions.
+        </p>
       </div>
 
       {/* Subscription List */}
       {subscriptions.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           {statusFilter === "all"
-            ? "No subscriptions found. Create a subscription when joining a club."
+            ? "No subscriptions found. A subscription will be created when your child is assigned to a team."
             : `No ${statusFilter} subscriptions found.`}
         </div>
       ) : (
@@ -355,29 +250,6 @@ export function ParentSubscriptionManagementPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Create Subscription Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>New Subscription</DialogTitle>
-            <DialogDescription>
-              Create a new subscription for your child. The subscription will be
-              created in pending status until you set up a payment method.
-            </DialogDescription>
-          </DialogHeader>
-          <CreateParentSubscriptionForm
-            children={children}
-            tiers={tiers}
-            clubId={currentClubId || 0}
-            onSubmit={handleCreateSubscription}
-            onCancel={() => setShowCreateDialog(false)}
-            isSubmitting={isCreating}
-            isLoadingChildren={isLoadingChildren}
-            isLoadingTiers={isLoadingTiers}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

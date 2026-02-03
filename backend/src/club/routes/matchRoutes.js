@@ -26,7 +26,8 @@ export async function matchRoutes(fastify, options) {
           team_id: { type: 'integer' },
           match_type: { type: 'string' },
           from_date: { type: 'string', format: 'date' },
-          to_date: { type: 'string', format: 'date' }
+          to_date: { type: 'string', format: 'date' },
+          expand: { type: 'string', enum: ['true', 'false'], default: 'false' }
         }
       }
     }

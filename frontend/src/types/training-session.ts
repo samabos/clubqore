@@ -4,7 +4,7 @@
 
 export type SessionType = 'training' | 'practice' | 'conditioning' | 'tactical' | 'friendly' | 'other';
 
-export type SessionStatus = 'draft' | 'published' | 'scheduled' | 'completed' | 'cancelled';
+export type SessionStatus = 'draft' | 'scheduled' | 'cancelled';
 
 export type RecurrencePattern = 'daily' | 'weekly' | 'biweekly' | 'monthly';
 
@@ -93,6 +93,7 @@ export interface TrainingSessionFilters {
   team_id?: number;
   from_date?: string;
   to_date?: string;
+  expand?: boolean;
 }
 
 export interface TrainingSessionResponse {

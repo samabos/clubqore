@@ -267,32 +267,38 @@ export class PersonnelService {
    * @returns {Promise<array>} - List of team managers
    */
   async getTeamManagers(clubId) {
-    const teamManagers = await this.db('user_roles')
-      .join('users', 'user_roles.user_id', 'users.id')
-      .join('user_profiles', 'user_roles.user_id', 'user_profiles.user_id')
-      .leftJoin('user_accounts', function() {
-        this.on('user_roles.user_id', '=', 'user_accounts.user_id')
-            .andOn('user_roles.club_id', '=', 'user_accounts.club_id');
-      })
-      .where('user_roles.club_id', clubId)
-      .whereIn('user_roles.role', ['team_manager', 'staff'])
-      .where('user_roles.is_active', true)
-      .select(
-        'user_roles.user_id',
-        'user_profiles.first_name',
-        'user_profiles.last_name',
-        'user_roles.is_active',
-        'user_roles.created_at'
-      )
-      .orderBy('user_roles.created_at', 'desc');
+    try {
+      const teamManagers = await this.db('user_roles')
+        .join('users', 'user_roles.user_id', 'users.id')
+        .join('roles', 'user_roles.role_id', 'roles.id')
+        .leftJoin('user_profiles', 'user_roles.user_id', 'user_profiles.user_id')
+        .leftJoin('user_accounts', function() {
+          this.on('user_roles.user_id', '=', 'user_accounts.user_id')
+              .andOn('user_roles.club_id', '=', 'user_accounts.club_id');
+        })
+        .where('user_roles.club_id', clubId)
+        .whereIn('roles.name', ['team_manager', 'staff'])
+        .where('user_roles.is_active', true)
+        .select(
+          'user_roles.user_id',
+          'user_profiles.first_name',
+          'user_profiles.last_name',
+          'user_roles.is_active',
+          'user_roles.created_at'
+        )
+        .orderBy('user_roles.created_at', 'desc');
 
-    return teamManagers.map(tm => ({
-      id: tm.user_id.toString(),
-      firstName: tm.first_name,
-      lastName: tm.last_name,
-      fullName: tm.first_name && tm.last_name ? `${tm.first_name} ${tm.last_name}` : null,
-      isActive: tm.is_active,
-      createdAt: tm.created_at?.toISOString()
-    }));
+      return teamManagers.map(tm => ({
+        id: tm.user_id.toString(),
+        firstName: tm.first_name || null,
+        lastName: tm.last_name || null,
+        fullName: tm.first_name && tm.last_name ? `${tm.first_name} ${tm.last_name}` : null,
+        isActive: tm.is_active,
+        createdAt: tm.created_at?.toISOString()
+      }));
+    } catch (error) {
+      console.error('Error in getTeamManagers:', error);
+      throw error;
+    }
   }
 }

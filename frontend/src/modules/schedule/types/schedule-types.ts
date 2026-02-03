@@ -19,13 +19,7 @@ export interface BaseScheduleItem {
 export type ScheduleItemType = "training" | "match";
 
 // Unified status type (union of both)
-export type ScheduleStatus =
-  | "draft"
-  | "published"
-  | "scheduled"
-  | "in_progress"
-  | "completed"
-  | "cancelled";
+export type ScheduleStatus = "draft" | "scheduled" | "cancelled";
 
 // Discriminated union for schedule items
 export interface TrainingScheduleItem extends BaseScheduleItem {

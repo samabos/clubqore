@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { UserPlus, AlertCircle } from "lucide-react";
-import { ChildrenTable } from "../components/children-table";
+import { ChildrenTable, AddChildDialog } from "../components";
 import { fetchParentChildren } from "../actions";
 import type { EnrichedChild } from "../types";
 
 export function MyChildrenPage() {
-  const navigate = useNavigate();
   const [children, setChildren] = useState<EnrichedChild[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   useEffect(() => {
     loadChildren();
@@ -31,8 +30,9 @@ export function MyChildrenPage() {
     }
   };
 
-  const handleAddChild = () => {
-    navigate("/app/profile");
+  const handleAddSuccess = () => {
+    setShowAddDialog(false);
+    loadChildren(); // Refresh the list after adding a child
   };
 
   return (
@@ -45,7 +45,7 @@ export function MyChildrenPage() {
               View and manage your children's information
             </p>
           </div>
-          <Button onClick={handleAddChild}>
+          <Button onClick={() => setShowAddDialog(true)}>
             <UserPlus className="h-4 w-4 mr-2" />
             Add Child
           </Button>
@@ -69,6 +69,12 @@ export function MyChildrenPage() {
       )}
 
       <ChildrenTable children={children} isLoading={isLoading} />
+
+      <AddChildDialog
+        open={showAddDialog}
+        onClose={() => setShowAddDialog(false)}
+        onSuccess={handleAddSuccess}
+      />
     </div>
   );
 }

@@ -1,11 +1,9 @@
 import { ClubService } from '../services/ClubService.js';
-import { InviteCodeService } from '../../onboarding/services/InviteCodeService.js';
 
 export class ClubController {
   constructor(db) {
     this.db = db;
     this.clubService = new ClubService(db);
-    this.inviteCodeService = new InviteCodeService(db, this.clubService);
   }
 
   /**
@@ -178,77 +176,6 @@ export class ClubController {
       reply.code(500).send({
         success: false,
         message: 'Failed to browse clubs'
-      });
-    }
-  }
-
-  /**
-   * POST /api/clubs/:clubId/invite-codes
-   * Create invite code for club
-   */
-  async createInviteCode(request, reply) {
-    try {
-      const { clubId } = request.params;
-      const userId = request.user.id;
-      const options = request.body;
-
-      const result = await this.inviteCodeService.createInviteCode(clubId, userId, options);
-
-      reply.code(201).send({
-        success: true,
-        inviteCode: result,
-        message: 'Invite code created successfully'
-      });
-    } catch (error) {
-      request.log.error('Error creating invite code:', error);
-      reply.code(400).send({
-        success: false,
-        message: error.message || 'Failed to create invite code'
-      });
-    }
-  }
-
-  /**
-   * GET /api/clubs/:clubId/invite-codes
-   * Get club invite codes
-   */
-  async getClubInviteCodes(request, reply) {
-    try {
-      const { clubId } = request.params;
-      const userId = request.user.id;
-
-      const codes = await this.inviteCodeService.getClubInviteCodes(clubId, userId);
-
-      reply.code(200).send({ codes });
-    } catch (error) {
-      request.log.error('Error getting club invite codes:', error);
-      reply.code(500).send({
-        success: false,
-        message: 'Failed to get invite codes'
-      });
-    }
-  }
-
-  /**
-   * DELETE /api/clubs/invite-codes/:codeId
-   * Deactivate invite code
-   */
-  async deactivateInviteCode(request, reply) {
-    try {
-      const { codeId } = request.params;
-      const userId = request.user.id;
-
-      const result = await this.inviteCodeService.deactivateInviteCode(codeId, userId);
-
-      reply.code(200).send({
-        success: true,
-        message: 'Invite code deactivated successfully'
-      });
-    } catch (error) {
-      request.log.error('Error deactivating invite code:', error);
-      reply.code(400).send({
-        success: false,
-        message: error.message || 'Failed to deactivate invite code'
       });
     }
   }

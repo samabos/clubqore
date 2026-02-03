@@ -3,7 +3,6 @@ export { UserRoleService } from './UserRoleService.js';
 export { UserProfileService } from './UserProfileService.js';
 export { UserPreferencesService } from './UserPreferencesService.js';
 export { ClubService } from '../../club/services/ClubService.js';
-export { InviteCodeService } from './InviteCodeService.js';
 export { AccountNumberService } from './AccountNumberService.js';
 export { RoleService } from './RoleService.js';
 export { TeamService } from '../../club/services/TeamService.js';

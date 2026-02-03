@@ -6,16 +6,17 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      # - "traefik.http.routers.frontend.rule=Host(`staging.clubqore.com`)" # commented out for IP access
-      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.frontend.priority=1"
+      # HTTP router
+      - "traefik.http.routers.frontend.rule=Host(`www.clubqore.com`)"
       - "traefik.http.routers.frontend.entrypoints=web"
-      # - "traefik.http.routers.frontend.tls.certresolver=le" # commented out for IP access
+      - "traefik.http.routers.frontend.priority=1"
+      # HTTPS router
+      - "traefik.http.routers.frontend-secure.rule=Host(`www.clubqore.com`)"
+      - "traefik.http.routers.frontend-secure.entrypoints=websecure"
+      - "traefik.http.routers.frontend-secure.priority=1"
+      - "traefik.http.routers.frontend-secure.tls.certresolver=le"
+      # Service
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
-      # Redirect HTTP to HTTPS
-      # - "traefik.http.routers.frontend-http.rule=Host(`staging.clubqore.com`)" # commented out for IP access
-      # - "traefik.http.routers.frontend-http.entrypoints=web" # commented out for IP access
-      # - "traefik.http.routers.frontend-http.middlewares=redirect-to-https" # commented out for IP access
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:80/health"]
       interval: 30s
@@ -41,21 +42,23 @@ services:
       - EMAIL_FROM_EMAIL=${EMAIL_FROM_EMAIL}
     labels:
       - "traefik.enable=true"
-      # - "traefik.http.routers.backend.rule=Host(`api-staging.clubqore.com`)" # commented out for IP access
-      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
-      - "traefik.http.routers.backend.priority=10"
+      # HTTP router for /api
+      - "traefik.http.routers.backend.rule=Host(`www.clubqore.com`) && PathPrefix(`/api`)"
       - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.routers.backend.priority=10"
       - "traefik.http.routers.backend.middlewares=api-stripprefix"
+      # HTTPS router for /api
+      - "traefik.http.routers.backend-secure.rule=Host(`www.clubqore.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend-secure.entrypoints=websecure"
+      - "traefik.http.routers.backend-secure.priority=10"
+      - "traefik.http.routers.backend-secure.middlewares=api-stripprefix"
+      - "traefik.http.routers.backend-secure.tls.certresolver=le"
+      # Middleware to strip /api prefix
       - "traefik.http.middlewares.api-stripprefix.stripprefix.prefixes=/api"
-      # - "traefik.http.routers.backend.tls.certresolver=le" # commented out for IP access
+      # Service
       - "traefik.http.services.backend.loadbalancer.server.port=3000"
       - "traefik.http.services.backend.loadbalancer.healthcheck.path=/health"
       - "traefik.http.services.backend.loadbalancer.healthcheck.interval=10s"
-      # Redirect HTTP to HTTPS
-      # - "traefik.http.routers.backend-http.rule=Host(`api-staging.clubqore.com`)" # commented out for IP access
-      # - "traefik.http.routers.backend-http.entrypoints=web" # commented out for IP access
-      # - "traefik.http.routers.backend-http.middlewares=redirect-to-https" # commented out for IP access
-    # Health check disabled - backend has health check in Dockerfile, docker-compose check was interfering with Traefik routing
     depends_on:
       - db-staging
     networks:
@@ -73,7 +76,7 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${STAGING_POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${STAGING_POSTGRES_USER} -d ${STAGING_POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -87,9 +90,10 @@ services:
       - "--providers.docker.endpoint=unix:///var/run/docker.sock"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-      # - "--certificatesresolvers.le.acme.tlschallenge=true" # commented out for IP access
-      # - "--certificatesresolvers.le.acme.email=${ACME_EMAIL}" # commented out for IP access
-      # - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json" # commented out for IP access
+      # Let's Encrypt SSL
+      - "--certificatesresolvers.le.acme.tlschallenge=true"
+      - "--certificatesresolvers.le.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
       - "--log.level=DEBUG"
       - "--api.dashboard=true"
       - "--api.insecure=true"
