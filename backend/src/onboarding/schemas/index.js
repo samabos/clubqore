@@ -1,7 +1,7 @@
 // Export all onboarding schemas
 export { onboardingSchemas } from './onboardingSchemas.js';
 export { profileSchemas } from './profileSchemas.js';
-export { createTeamManagerSchema, updateTeamManagerSchema, teamManagerParamsSchema } from './teamManagerSchemas.js';
+export { createTeamSchema, updateTeamSchema, assignManagerSchema, assignMemberSchema } from './teamSchemas.js';
 
 // Combined schema definitions for easy reference
 export const allSchemas = {

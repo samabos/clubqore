@@ -1,20 +1,7 @@
-import { AuthUser, ChildInfo, UserPreferences, UserProfile, UserRole } from "./auth";
+import { AuthUser, UserPreferences, UserProfile } from "./auth";
 
-export interface JoinClubAsMemberRequest {
-  clubId: number;
-  position?: 'goalkeeper' | 'defender' | 'midfielder' | 'forward' | 'any';
-  experience?: 'beginner' | 'intermediate' | 'advanced' | 'professional';
-  notes?: string;
-  medicalInfo?: string;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
-  emergencyContactRelation?: string;
-}
-
-
-// Role-specific onboarding requests
+// Club setup request for onboarding
 export interface CreateClubRequest {
-  // Club information
   name: string;
   clubType: 'youth-academy' | 'amateur-club' | 'semi-professional' | 'professional' | 'training-center';
   description?: string;
@@ -27,24 +14,15 @@ export interface CreateClubRequest {
   logoUrl?: string;
 }
 
-export interface SetupParentAccountRequest {
-  children: ChildInfo[];
-}
-
 export interface OnboardingCompleteRequest {
   // Profile data
   profile: Partial<UserProfile>;
-  
+
   // Preferences
   preferences: Partial<UserPreferences>;
-  
-  // Role-specific setup
-  roleSetup?: {
-    role: UserRole;
-    clubSetup?: CreateClubRequest;
-    memberSetup?: JoinClubAsMemberRequest;
-    parentSetup?: SetupParentAccountRequest;
-  };
+
+  // Club setup (for club_manager role)
+  clubSetup?: CreateClubRequest;
 }
 
 export interface OnboardingCompleteResponse {

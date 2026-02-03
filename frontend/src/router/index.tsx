@@ -49,7 +49,6 @@ import { AccountSettingsPage } from "../modules/account";
 import { ParentModule } from "../components/ParentModule";
 import { AppLayout } from "../components/layout";
 import { ProtectedRoute } from "../components/ProtectedRoute";
-import { MembersLayout } from "../components/members";
 import { ScopeProtectedRoute } from "../components/ScopeProtectedRoute";
 
 export const router = createBrowserRouter([
@@ -236,11 +235,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "members",
-        element: (
-          <ScopeProtectedRoute resource="member-management">
-            <MembersLayout />
-          </ScopeProtectedRoute>
-        ),
+        element: <Navigate to="/app/club/members" replace />,
       },
       {
         path: "club/setup",
