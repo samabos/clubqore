@@ -1,9 +1,11 @@
 import { ClubService } from '../services/ClubService.js';
+import { MemberService } from '../services/MemberService.js';
 
 export class ClubController {
   constructor(db) {
     this.db = db;
     this.clubService = new ClubService(db);
+    this.memberService = new MemberService(db);
   }
 
   /**
@@ -185,7 +187,7 @@ export class ClubController {
       const userId = request.user.id;
       const clubId = await this.clubService.getManagersClubId(userId);
       if (!clubId) return reply.status(404).send({ error: 'No club found for this user' });
-      const stats = await this.clubService.getMemberStatsByClub(clubId);
+      const stats = await this.memberService.getMemberStatsByClub(clubId);
       return reply.send({ success: true, stats });
     } catch (err) {
       return reply.status(500).send({ error: err.message || 'Failed to fetch stats' });
@@ -196,8 +198,8 @@ export class ClubController {
     try {
       const { clubId } = request.params;
       const userId = request.user.id;
-      await this.clubService.assertUserInClub(userId, clubId);
-      const stats = await this.clubService.getMemberStatsByClub(clubId);
+      await this.memberService.assertUserInClub(userId, clubId);
+      const stats = await this.memberService.getMemberStatsByClub(clubId);
       return reply.send({ success: true, stats });
     } catch (err) {
       const status = err.statusCode || 500;
@@ -216,7 +218,7 @@ export class ClubController {
           action: 'create_club'
         });
       }
-      const members = await this.clubService.listMembersByClub(clubId);
+      const members = await this.memberService.listMembersByClub(clubId);
       return reply.send({ success: true, data: members });
     } catch (err) {
       request.log.error('Error fetching my club members:', err);
@@ -228,8 +230,8 @@ export class ClubController {
     try {
       const { clubId } = request.params;
       const userId = request.user.id;
-      await this.clubService.assertUserInClub(userId, clubId);
-      const members = await this.clubService.listMembersByClub(clubId);
+      await this.memberService.assertUserInClub(userId, clubId);
+      const members = await this.memberService.listMembersByClub(clubId);
       return reply.send({ success: true, data: members });
     } catch (err) {
       const status = err.statusCode || 500;
@@ -248,7 +250,7 @@ export class ClubController {
           action: 'create_club'
         });
       }
-      const result = await this.clubService.createParentAndChildren(clubId, request.body);
+      const result = await this.memberService.createParentAndChildren(clubId, request.body);
       return reply.code(201).send(result);
     } catch (err) {
       const status = err.statusCode || 400;
@@ -260,8 +262,8 @@ export class ClubController {
     try {
       const { clubId } = request.params;
       const userId = request.user.id;
-      await this.clubService.assertUserInClub(userId, clubId);
-      const result = await this.clubService.createParentAndChildren(clubId, request.body);
+      await this.memberService.assertUserInClub(userId, clubId);
+      const result = await this.memberService.createParentAndChildren(clubId, request.body);
       return reply.code(201).send(result);
     } catch (err) {
       const status = err.statusCode || 400;

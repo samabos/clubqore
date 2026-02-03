@@ -1,7 +1,7 @@
 import { ClubController, MemberController, PersonnelController, TeamController, SeasonController, TrainingSessionController, MatchController, BillingController } from '../controllers/index.js';
 import { createAuthMiddleware } from '../../auth/middleware.js';
 import { clubRoutes } from './clubRoutes.js';
-import { memberRoutes } from './memberRoute.js';
+import { memberRoutes } from './memberRoutes.js';
 import { personnelRoutes } from './personnelRoutes.js';
 import { teamRoutes } from './teamRoutes.js';
 import { seasonRoutes } from './seasonRoutes.js';
