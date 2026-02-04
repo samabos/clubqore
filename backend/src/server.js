@@ -25,7 +25,7 @@ import { registerOnboardingRoutes } from './onboarding/routes/index.js';
 import { registerClubRoutes } from './club/routes/index.js';
 import { registerParentRoutes } from './parent/routes/index.js';
 import { registerAdminRoutes } from './admin/index.js';
-import { postcodeRoutes } from './services/postcodeRoutes.js';
+import { postcodeRoutes } from './shared/routes/postcodeRoutes.js';
 import { registerContactRoutes } from './contact/contactRoutes.js';
 import { startInvoiceScheduler } from './workers/invoice-scheduler.js';
 import { registerPaymentRoutes } from './payment/routes/index.js';

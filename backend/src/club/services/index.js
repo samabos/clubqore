@@ -1,7 +1,12 @@
 export { ClubService } from './ClubService.js';
-export { MemberService } from './MemberService.js';
-export { PersonnelService } from './PersonnelService.js';
-export { TeamService } from './TeamService.js';
-export { InvoiceService } from './InvoiceService.js';
-export { BillingSettingsService } from './BillingSettingsService.js';
-export { ScheduledInvoiceJobService } from './ScheduledInvoiceJobService.js';
+
+// Services moved to domain modules:
+// - MemberService -> member/services/
+// - PersonnelService -> personnel/services/
+// - TeamService -> team/services/
+// - SeasonService -> schedule/services/
+// - TrainingSessionService -> schedule/services/
+// - MatchService -> schedule/services/
+// - InvoiceService -> billing/services/
+// - BillingSettingsService -> billing/services/
+// - ScheduledInvoiceJobService -> billing/services/
