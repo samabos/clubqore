@@ -1,3 +1,8 @@
+/**
+ * @deprecated OBSOLETE - This file has been moved to team/routes/
+ * This file is kept temporarily for reference and can be safely deleted.
+ * New location: backend/src/team/routes/teamRoutes.js
+ */
 export async function teamRoutes(fastify, options) {
   const { teamController, authenticate } = options;
 

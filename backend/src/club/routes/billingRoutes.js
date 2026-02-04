@@ -1,3 +1,8 @@
+/**
+ * @deprecated OBSOLETE - This file has been moved to billing/routes/
+ * This file is kept temporarily for reference and can be safely deleted.
+ * New location: backend/src/billing/routes/billingRoutes.js
+ */
 import { requireRole } from '../../auth/permissionMiddleware.js';
 
 export async function billingRoutes(fastify, options) {

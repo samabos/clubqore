@@ -1,3 +1,8 @@
+/**
+ * @deprecated OBSOLETE - This file has been moved to personnel/controllers/
+ * This file is kept temporarily for reference and can be safely deleted.
+ * New location: backend/src/personnel/controllers/PersonnelController.js
+ */
 import { ClubService } from '../services/ClubService.js';
 import { PersonnelService } from '../services/PersonnelService.js';
 

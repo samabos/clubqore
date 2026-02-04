@@ -1,8 +1,10 @@
 export { ClubController } from './ClubController.js';
-export { MemberController } from './MemberController.js';
-export { PersonnelController } from './PersonnelController.js';
-export { TeamController } from './TeamController.js';
-export { SeasonController } from './SeasonController.js';
-export { TrainingSessionController } from './TrainingSessionController.js';
-export { MatchController } from './MatchController.js';
-export { BillingController } from './BillingController.js';
+
+// Controllers moved to domain modules:
+// - MemberController -> member/controllers/
+// - PersonnelController -> personnel/controllers/
+// - TeamController -> team/controllers/
+// - SeasonController -> schedule/controllers/
+// - TrainingSessionController -> schedule/controllers/
+// - MatchController -> schedule/controllers/
+// - BillingController -> billing/controllers/

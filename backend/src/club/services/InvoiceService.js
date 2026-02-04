@@ -1,3 +1,8 @@
+/**
+ * @deprecated OBSOLETE - This file has been moved to billing/services/
+ * This file is kept temporarily for reference and can be safely deleted.
+ * New location: backend/src/billing/services/InvoiceService.js
+ */
 export class InvoiceService {
   constructor(db) {
     this.db = db;

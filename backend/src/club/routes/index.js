@@ -1,13 +1,16 @@
-import { ClubController, MemberController, PersonnelController, TeamController, SeasonController, TrainingSessionController, MatchController, BillingController } from '../controllers/index.js';
+import { ClubController } from '../controllers/index.js';
+import { MemberController } from '../../member/controllers/index.js';
+import { PersonnelController } from '../../personnel/controllers/index.js';
+import { TeamController } from '../../team/controllers/index.js';
+import { SeasonController, TrainingSessionController, MatchController } from '../../schedule/controllers/index.js';
+import { BillingController } from '../../billing/controllers/index.js';
 import { createAuthMiddleware } from '../../auth/middleware.js';
 import { clubRoutes } from './clubRoutes.js';
-import { memberRoutes } from './memberRoutes.js';
-import { personnelRoutes } from './personnelRoutes.js';
-import { teamRoutes } from './teamRoutes.js';
-import { seasonRoutes } from './seasonRoutes.js';
-import { trainingSessionRoutes } from './trainingSessionRoutes.js';
-import { matchRoutes } from './matchRoutes.js';
-import { billingRoutes } from './billingRoutes.js';
+import { memberRoutes } from '../../member/routes/index.js';
+import { personnelRoutes } from '../../personnel/routes/index.js';
+import { teamRoutes } from '../../team/routes/index.js';
+import { seasonRoutes, trainingSessionRoutes, matchRoutes } from '../../schedule/routes/index.js';
+import { billingRoutes } from '../../billing/routes/index.js';
 
 export async function registerClubRoutes(fastify, options) {
   // Create authentication middleware
