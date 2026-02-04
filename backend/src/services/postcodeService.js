@@ -1,3 +1,8 @@
+/**
+ * @deprecated OBSOLETE - This file has been moved to shared/utils/
+ * This file is kept temporarily for reference and can be safely deleted.
+ * New location: backend/src/shared/utils/postcodeService.js
+ */
 import axios from 'axios';
 
 const POSTCODES_IO_BASE_URL = 'https://api.postcodes.io';

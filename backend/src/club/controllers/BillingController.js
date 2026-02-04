@@ -1,3 +1,8 @@
+/**
+ * @deprecated OBSOLETE - This file has been moved to billing/controllers/
+ * This file is kept temporarily for reference and can be safely deleted.
+ * New location: backend/src/billing/controllers/BillingController.js
+ */
 import { InvoiceService } from '../services/InvoiceService.js';
 import { BillingSettingsService } from '../services/BillingSettingsService.js';
 import { ScheduledInvoiceJobService } from '../services/ScheduledInvoiceJobService.js';

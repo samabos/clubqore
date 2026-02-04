@@ -1,3 +1,8 @@
+/**
+ * @deprecated OBSOLETE - This file has been moved to schedule/routes/
+ * This file is kept temporarily for reference and can be safely deleted.
+ * New location: backend/src/schedule/routes/matchRoutes.js
+ */
 export async function matchRoutes(fastify, options) {
   const { matchController, authenticate } = options;
 

@@ -1,3 +1,8 @@
+/**
+ * @deprecated OBSOLETE - This file has been moved to team/services/
+ * This file is kept temporarily for reference and can be safely deleted.
+ * New location: backend/src/team/services/TeamService.js
+ */
 export class TeamService {
   constructor(db) {
     this.db = db;

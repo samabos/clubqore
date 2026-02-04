@@ -1,3 +1,8 @@
+/**
+ * @deprecated OBSOLETE - This file has been moved to team/controllers/
+ * This file is kept temporarily for reference and can be safely deleted.
+ * New location: backend/src/team/controllers/TeamController.js
+ */
 import { TeamService } from '../services/TeamService.js';
 import { ClubService } from '../services/ClubService.js';
 import { UserService } from '../../auth/services/userService.js';

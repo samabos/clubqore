@@ -1,3 +1,8 @@
+/**
+ * @deprecated OBSOLETE - This file has been moved to schedule/routes/
+ * This file is kept temporarily for reference and can be safely deleted.
+ * New location: backend/src/schedule/routes/seasonRoutes.js
+ */
 export async function seasonRoutes(fastify, options) {
   const { seasonController, authenticate } = options;
 

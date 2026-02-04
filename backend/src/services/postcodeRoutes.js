@@ -1,3 +1,8 @@
+/**
+ * @deprecated OBSOLETE - This file has been moved to shared/routes/
+ * This file is kept temporarily for reference and can be safely deleted.
+ * New location: backend/src/shared/routes/postcodeRoutes.js
+ */
 import { postcodeService } from './postcodeService.js';
 
 /**

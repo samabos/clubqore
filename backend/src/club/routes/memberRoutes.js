@@ -1,3 +1,8 @@
+/**
+ * @deprecated OBSOLETE - This file has been moved to member/routes/
+ * This file is kept temporarily for reference and can be safely deleted.
+ * New location: backend/src/member/routes/memberRoutes.js
+ */
 export const memberRoutes = async function (fastify, options) {
     const {  clubController, memberController, authenticate } = options;
 

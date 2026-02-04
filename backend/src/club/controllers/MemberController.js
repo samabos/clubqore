@@ -1,3 +1,8 @@
+/**
+ * @deprecated OBSOLETE - This file has been moved to member/controllers/
+ * This file is kept temporarily for reference and can be safely deleted.
+ * New location: backend/src/member/controllers/MemberController.js
+ */
 import { MemberService } from '../services/MemberService.js';
 import { ClubService } from '../services/ClubService.js';
 

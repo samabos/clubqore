@@ -1,3 +1,8 @@
+/**
+ * @deprecated OBSOLETE - This file has been moved to schedule/controllers/
+ * This file is kept temporarily for reference and can be safely deleted.
+ * New location: backend/src/schedule/controllers/SeasonController.js
+ */
 import { SeasonService } from '../services/SeasonService.js';
 import { ClubService } from '../services/ClubService.js';
 

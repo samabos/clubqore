@@ -1,3 +1,8 @@
+/**
+ * @deprecated OBSOLETE - This file has been moved to personnel/services/
+ * This file is kept temporarily for reference and can be safely deleted.
+ * New location: backend/src/personnel/services/PersonnelService.js
+ */
 import { PasswordUtils } from '../../onboarding/utils/index.js';
 import { emailService } from '../../services/emailService.js';
 import { EmailOutboxService } from '../../services/emailOutboxService.js';

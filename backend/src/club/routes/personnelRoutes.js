@@ -1,4 +1,9 @@
 /**
+ * @deprecated OBSOLETE - This file has been moved to personnel/routes/
+ * This file is kept temporarily for reference and can be safely deleted.
+ * New location: backend/src/personnel/routes/personnelRoutes.js
+ */
+/**
  * Personnel routes for club personnel management
  * Handles team managers and staff
  */
