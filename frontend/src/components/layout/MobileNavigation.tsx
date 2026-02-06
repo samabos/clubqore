@@ -75,7 +75,7 @@ export function MobileNavigation({
     return false;
   };
 
-  const renderMenuItem = (item: MenuItem, isInSheet = false) => {
+  const renderMenuItem = (item: MenuItem) => {
     const isActive = isMenuItemActive(item);
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = isMenuExpanded(item.id);
@@ -220,7 +220,7 @@ export function MobileNavigation({
 
                 <div className="p-4">
                   <nav className="space-y-2">
-                    {menuItems.map((item) => renderMenuItem(item, true))}
+                    {menuItems.map((item) => renderMenuItem(item))}
                   </nav>
                 </div>
               </SheetContent>

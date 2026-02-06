@@ -88,7 +88,7 @@ export function ContactSection() {
         title: "Message Sent!",
         description: "Thank you for your message. We'll get back to you within 24 hours.",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to send message. Please try again later.",

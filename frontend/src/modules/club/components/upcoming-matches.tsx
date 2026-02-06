@@ -8,7 +8,7 @@ import {
 } from "../../../components/ui/card";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
-import { Trophy, Calendar, Loader2 } from "lucide-react";
+import { Trophy, Loader2 } from "lucide-react";
 import { fetchUpcomingMatches } from "@/modules/match/actions/match-actions";
 import type { Match } from "@/types/match";
 import { format, isToday, isTomorrow, parseISO } from "date-fns";

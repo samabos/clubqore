@@ -17,7 +17,7 @@ export function PreferencesSetup({
   preferences,
   onPreferencesUpdate,
 }: PreferencesSetupProps) {
-  const updatePreference = (field: keyof UserPreferences, value: any) => {
+  const updatePreference = (field: keyof UserPreferences, value: UserPreferences[keyof UserPreferences]) => {
     onPreferencesUpdate({ ...preferences, [field]: value });
   };
 

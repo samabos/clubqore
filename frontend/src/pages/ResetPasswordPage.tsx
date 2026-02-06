@@ -49,8 +49,9 @@ export function ResetPasswordPage() {
       await authService.resetPassword(token, password);
       setSuccess(true);
       setTimeout(() => navigate('/auth'), 2000); // Redirect after 2 seconds
-    } catch (err: any) {
-      setError(err.message || 'Failed to reset password');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to reset password';
+      setError(message);
     } finally {
       setLoading(false);
     }

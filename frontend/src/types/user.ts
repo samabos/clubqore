@@ -8,4 +8,6 @@ export interface MenuItem {
   children?: MenuItem[];
   /** Resource name for scope-based permission checking (e.g., 'parent-dashboard', 'billing') */
   resource?: string;
+  /** Sort order from database resources table */
+  sortOrder?: number;
 }

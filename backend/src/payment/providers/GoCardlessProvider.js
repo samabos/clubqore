@@ -47,12 +47,27 @@ export class GoCardlessProvider extends PaymentProviderInterface {
     this.providerName = 'gocardless';
 
     if (!config.accessToken) {
-      throw new Error('GoCardless access token is required');
+      throw new Error('GoCardless access token is required. Please set GOCARDLESS_ACCESS_TOKEN in your environment.');
     }
 
     this.accessToken = config.accessToken;
     this.environment = config.environment || 'sandbox';
     this.webhookSecret = config.webhookSecret;
+
+    // Validate token matches environment
+    const tokenPrefix = this.accessToken.split('_')[0];
+    if (this.environment === 'sandbox' && tokenPrefix === 'live') {
+      throw new Error(
+        'GoCardless configuration error: You are using a LIVE access token with SANDBOX environment. ' +
+        'Either change GOCARDLESS_ENVIRONMENT to "live" or use a sandbox access token.'
+      );
+    }
+    if (this.environment === 'live' && tokenPrefix === 'sandbox') {
+      throw new Error(
+        'GoCardless configuration error: You are using a SANDBOX access token with LIVE environment. ' +
+        'Either change GOCARDLESS_ENVIRONMENT to "sandbox" or use a live access token.'
+      );
+    }
 
     // Set API base URL based on environment
     this.baseUrl = this.environment === 'live'
@@ -86,10 +101,24 @@ export class GoCardlessProvider extends PaymentProviderInterface {
     const responseData = await response.json();
 
     if (!response.ok) {
-      const error = new Error(responseData.error?.message || 'GoCardless API error');
+      let message = responseData.error?.message || 'GoCardless API error';
+
+      // Provide helpful messages for common errors
+      if (response.status === 401) {
+        message = 'GoCardless authentication failed. Please check your access token is valid and matches the environment (sandbox/live).';
+      } else if (response.status === 403) {
+        message = 'GoCardless access denied. Your access token may not have permission for this operation.';
+      } else if (response.status === 404) {
+        message = 'GoCardless resource not found. The requested customer, mandate, or payment does not exist.';
+      } else if (response.status === 422) {
+        const details = responseData.error?.errors?.map(e => e.message).join(', ');
+        message = `GoCardless validation error: ${details || message}`;
+      }
+
+      const error = new Error(message);
       error.code = responseData.error?.type;
       error.details = responseData.error?.errors;
-      error.status = response.status;
+      error.statusCode = response.status;
       throw error;
     }
 
@@ -233,14 +262,33 @@ export class GoCardlessProvider extends PaymentProviderInterface {
     const response = await this._request('GET', `/billing_requests/${flowId}`);
     const billingRequest = response.billing_requests;
 
-    if (billingRequest.status !== 'fulfilled') {
+    console.log('Billing request status:', billingRequest.status, 'links:', billingRequest.links);
+
+    // Check for terminal failure states
+    if (billingRequest.status === 'cancelled') {
+      throw new Error('The Direct Debit setup was cancelled.');
+    }
+
+    if (billingRequest.status === 'failed') {
+      throw new Error('The Direct Debit setup failed. Please try again.');
+    }
+
+    // For pending states, the mandate might still be created
+    if (billingRequest.status !== 'fulfilled' && billingRequest.status !== 'pending') {
       throw new Error(`Billing request not fulfilled. Status: ${billingRequest.status}`);
     }
 
-    // Get the created mandate
-    const mandateId = billingRequest.links?.mandate_request_mandate;
+    // Get the created mandate - check multiple possible link names
+    const mandateId = billingRequest.links?.mandate_request_mandate ||
+                      billingRequest.links?.mandate ||
+                      billingRequest.mandate_request?.links?.mandate;
+
     if (!mandateId) {
-      throw new Error('No mandate was created');
+      // If no mandate yet but status is pending, it might still be processing
+      if (billingRequest.status === 'pending') {
+        throw new Error('Your Direct Debit is still being processed. Please check back in a few minutes.');
+      }
+      throw new Error('No mandate was created. Please try the setup again.');
     }
 
     const mandate = await this.getMandate(mandateId);

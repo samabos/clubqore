@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate, redirect } from "react-router-dom";
 import { LandingPage } from "../components/home";
 import { Authentication } from "../modules/authentication";
 import { ParentRegistrationPage } from "../modules/authentication/pages/parent-registration.page";
@@ -37,13 +37,14 @@ import {
 import {
   PaymentMethodsPage,
   ParentSubscriptionManagementPage,
+  MandateCallbackPage,
 } from "../modules/parent-billing/pages";
 import {
   ResourceManagementPage,
   PermissionManagementPage,
   SystemSettingsPage,
 } from "../modules/admin";
-import { MyChildrenPage, ChildDetailPage, ParentSchedulePage } from "../modules/parent/pages";
+import { MyChildrenPage, ParentSchedulePage } from "../modules/parent/pages";
 import { ProfileSettingsPage } from "../modules/profile";
 import { AccountSettingsPage } from "../modules/account";
 import { ParentModule } from "../components/ParentModule";
@@ -354,6 +355,10 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: "parent/payment-methods/callback",
+        element: <MandateCallbackPage />,
+      },
+      {
         path: "parent/children",
         element: (
           <ScopeProtectedRoute resource="parent-children">
@@ -362,12 +367,10 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        // Redirect old child detail URLs to the combined page
         path: "parent/children/:childId",
-        element: (
-          <ScopeProtectedRoute resource="parent-children">
-            <ChildDetailPage />
-          </ScopeProtectedRoute>
-        ),
+        loader: ({ params }) => redirect(`/app/parent/children?childId=${params.childId}`),
+        element: null,
       },
       {
         path: "parent/schedule",

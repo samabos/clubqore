@@ -1,7 +1,7 @@
 import cron from 'node-cron';
-import { InvoiceService } from '../club/services/InvoiceService.js';
-import { BillingSettingsService } from '../club/services/BillingSettingsService.js';
-import { ScheduledInvoiceJobService } from '../club/services/ScheduledInvoiceJobService.js';
+import { InvoiceService } from '../billing/services/InvoiceService.js';
+import { BillingSettingsService } from '../billing/services/BillingSettingsService.js';
+import { ScheduledInvoiceJobService } from '../billing/services/ScheduledInvoiceJobService.js';
 import { emailService } from '../services/emailService.js';
 import logger from '../config/logger.js';
 
@@ -221,7 +221,7 @@ export class InvoiceScheduler {
    * Get all users for a specific season
    * This queries users who are associated with the club
    */
-  async getSeasonUsers(clubId, seasonId) {
+  async getSeasonUsers(clubId, _seasonId) {
     try {
       // Get all users who are part of this club
       // This assumes users are linked to clubs through some relationship

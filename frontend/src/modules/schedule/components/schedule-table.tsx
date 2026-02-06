@@ -43,8 +43,8 @@ export function ScheduleTable({ items, onEdit, onDelete, onPublish, onCancel }: 
   const sortedItems = [...items].sort((a, b) => {
     if (!sortColumn) return 0;
 
-    let aVal: any;
-    let bVal: any;
+    let aVal: string | number | undefined;
+    let bVal: string | number | undefined;
 
     switch (sortColumn) {
       case "type":

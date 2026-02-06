@@ -74,7 +74,6 @@ export function TrainingSessionForm({
     handleSubmit,
     formState: { errors },
     reset,
-    setValue,
   } = useForm<CreateTrainingSessionRequest>({
     defaultValues: {
       title: "",
@@ -152,7 +151,7 @@ export function TrainingSessionForm({
       setIsRecurring(false);
       setRecurrenceDays([]);
       setRecurrenceEndDate("");
-    } catch (error) {
+    } catch {
       // Error handling is done in parent component
     }
   };

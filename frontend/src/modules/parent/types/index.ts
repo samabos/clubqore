@@ -1,9 +1,18 @@
 import type { UserChild } from '@/api/profile';
 
+export interface MembershipTierInfo {
+  id: number;
+  name: string;
+  monthlyPrice: number;
+  annualPrice: number | null;
+  billingFrequency: 'monthly' | 'annual';
+}
+
 export interface ChildTeam {
   id: number;
   name: string;
   assigned_at?: string;
+  membershipTier?: MembershipTierInfo | null;
 }
 
 export interface EnrichedChild extends UserChild {

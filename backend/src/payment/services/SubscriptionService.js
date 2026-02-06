@@ -235,6 +235,7 @@ export class SubscriptionService {
       .join('users as child', 's.child_user_id', 'child.id')
       .leftJoin('user_profiles as parent_profile', 'parent.id', 'parent_profile.user_id')
       .leftJoin('user_profiles as child_profile', 'child.id', 'child_profile.user_id')
+      .leftJoin('teams as t', 's.team_id', 't.id')
       .where('s.club_id', clubId)
       .select(
         's.*',
@@ -244,7 +245,8 @@ export class SubscriptionService {
         'parent_profile.last_name as parent_last_name',
         'child.email as child_email',
         'child_profile.first_name as child_first_name',
-        'child_profile.last_name as child_last_name'
+        'child_profile.last_name as child_last_name',
+        't.name as team_name'
       );
 
     // Apply filters
@@ -788,6 +790,7 @@ export class SubscriptionService {
       parentUserId: subscription.parent_user_id,
       childUserId: subscription.child_user_id,
       membershipTierId: subscription.membership_tier_id,
+      teamId: subscription.team_id,
       paymentMandateId: subscription.payment_mandate_id,
       status: subscription.status,
       billingFrequency: subscription.billing_frequency,
@@ -840,6 +843,9 @@ export class SubscriptionService {
         email: subscription.child_email,
         firstName: subscription.child_first_name,
         lastName: subscription.child_last_name
+      } : null,
+      team: subscription.team_name ? {
+        name: subscription.team_name
       } : null,
       club: subscription.club_name ? {
         name: subscription.club_name

@@ -10,7 +10,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "../../../components/ui/avatar";
-import { Users, Plus, Edit } from "lucide-react";
+import { Users, Edit } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -21,7 +21,7 @@ import {
 } from "../../../components/ui/table";
 import { MemberListProps } from "../types/component-types";
 
-export function MemberList({ members, onEdit, onAddMember }: MemberListProps) {
+export function MemberList({ members, onEdit }: MemberListProps) {
   // Show parents (who can be edited) instead of children
   const parentMembers = members.filter((m) => m.membershipType === "parent");
 

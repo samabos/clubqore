@@ -36,6 +36,7 @@ interface AvailableMember {
   email: string;
   first_name: string;
   last_name: string;
+  team_name?: string;
 }
 
 interface CreateSubscriptionFormProps {
@@ -125,7 +126,8 @@ export function CreateSubscriptionForm({
                   ) : (
                     members.map((member) => (
                       <SelectItem key={member.id} value={member.id.toString()}>
-                        {member.first_name} {member.last_name} ({member.email})
+                        {member.first_name} {member.last_name}
+                        {member.team_name && ` - ${member.team_name}`}
                       </SelectItem>
                     ))
                   )}

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node src/server.js",
     "start": "node src/server.js",
+    "lint": "eslint .",
     "test:setup": "cross-env DOTENV_CONFIG_PATH=.env.test node -r dotenv/config src/test/setup-db.js",
     "test": "npm run test:setup && cross-env NODE_ENV=test DOTENV_CONFIG_PATH=.env.test node -r dotenv/config --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "cross-env NODE_ENV=test DOTENV_CONFIG_PATH=.env.test node -r dotenv/config --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
@@ -44,8 +45,11 @@
     "pino-seq": "^3.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.30.1",
     "@jest/globals": "^30.0.5",
     "cross-env": "^7.0.3",
+    "eslint": "^9.30.1",
+    "globals": "^16.3.0",
     "jest": "^30.0.5",
     "supertest": "^7.1.4"
   },

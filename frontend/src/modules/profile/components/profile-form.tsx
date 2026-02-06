@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { AvatarUpload } from './avatar-upload';
 import { AddressInput } from '@/components/ui/address-input';
 import { UserProfile, UpdateProfileRequest } from '../actions';
-import { normalizeAddress } from '@/types/common';
+import { normalizeAddress, Address } from '@/types/common';
 
 interface ProfileFormProps {
   profile: UserProfile;
@@ -175,7 +175,7 @@ export function ProfileForm({ profile, onSubmit, isLoading }: ProfileFormProps) 
                   <FormLabel>Address</FormLabel>
                   <FormControl>
                     <AddressInput
-                      value={field.value as any}
+                      value={field.value as Address | null}
                       onChange={field.onChange}
                       required={false}
                     />

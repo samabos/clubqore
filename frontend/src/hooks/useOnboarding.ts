@@ -144,7 +144,7 @@ export function useOnboarding() {
       console.log("Completing onboarding with data:", apiData);
 
       // Complete onboarding on the backend
-      await onboardingAPI.completeOnboarding(apiData as any);
+      await onboardingAPI.completeOnboarding(apiData as Parameters<typeof onboardingAPI.completeOnboarding>[0]);
 
       // Get updated user profile from backend
       await getCurrentUser();
@@ -153,17 +153,20 @@ export function useOnboarding() {
       const defaultRoute = getDefaultRouteByRole(user!.roles);
       navigate(defaultRoute);
       setIsLoading(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to complete onboarding:", error);
       setIsLoading(false);
 
       // Extract error message from different possible formats
       let errorMessage = "Failed to complete onboarding. Please try again.";
 
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
+      if (error && typeof error === 'object') {
+        const err = error as { response?: { data?: { message?: string } }; message?: string };
+        if (err.response?.data?.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
       } else if (typeof error === "string") {
         errorMessage = error;
       }

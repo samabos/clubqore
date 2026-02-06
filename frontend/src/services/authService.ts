@@ -20,7 +20,7 @@ export interface AuthResponse {
 }
 
 // Check if using httpOnly cookies
-const useHttpOnlyCookies = () => tokenManager.getStorageStrategy() === 'httpOnly';
+const isUsingHttpOnlyCookies = () => tokenManager.getStorageStrategy() === 'httpOnly';
 
 /**
  * Centralized Authentication Service
@@ -46,9 +46,9 @@ export class AuthService {
 
     // Store tokens only if not using httpOnly cookies
     // Server sets cookies automatically for browser clients
-    if (!useHttpOnlyCookies() && data.accessToken && data.refreshToken) {
+    if (!isUsingHttpOnlyCookies() && data.accessToken && data.refreshToken) {
       tokenManager.setTokens(data.accessToken, data.refreshToken);
-    } else if (useHttpOnlyCookies() && data.accessToken) {
+    } else if (isUsingHttpOnlyCookies() && data.accessToken) {
       // For httpOnly, store metadata only for expiration tracking
       tokenManager.setTokens(data.accessToken, data.refreshToken || '');
     }
@@ -80,9 +80,9 @@ export class AuthService {
     const data = await response.json();
 
     // Store tokens only if not using httpOnly cookies
-    if (!useHttpOnlyCookies() && data.accessToken && data.refreshToken) {
+    if (!isUsingHttpOnlyCookies() && data.accessToken && data.refreshToken) {
       tokenManager.setTokens(data.accessToken, data.refreshToken);
-    } else if (useHttpOnlyCookies() && data.accessToken) {
+    } else if (isUsingHttpOnlyCookies() && data.accessToken) {
       tokenManager.setTokens(data.accessToken, data.refreshToken || '');
     }
 
@@ -214,7 +214,7 @@ export class AuthService {
    * For Bearer tokens, we send refresh token in body
    */
   async refreshToken(refreshToken?: string): Promise<{ accessToken: string; refreshToken: string }> {
-    const body = useHttpOnlyCookies() ? {} : { refreshToken };
+    const body = isUsingHttpOnlyCookies() ? {} : { refreshToken };
 
     const response = await apiClient("/auth/refresh", {
       method: "POST",
@@ -229,7 +229,7 @@ export class AuthService {
     const data = await response.json();
 
     // Update stored tokens if not using httpOnly cookies
-    if (!useHttpOnlyCookies() && data.accessToken && data.refreshToken) {
+    if (!isUsingHttpOnlyCookies() && data.accessToken && data.refreshToken) {
       tokenManager.setTokens(data.accessToken, data.refreshToken);
     }
 

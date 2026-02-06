@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Users2, UserCheck, UserX, MapPin, Phone } from "lucide-react";
+import { Users2, UserCheck, UserX, MapPin } from "lucide-react";
 import { RelationshipInfoProps } from "../types/component-types";
 
 export function RelationshipInfo({ member }: RelationshipInfoProps) {

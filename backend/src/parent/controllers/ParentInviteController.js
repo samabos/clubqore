@@ -1,5 +1,5 @@
 import { ParentInviteService } from '../services/ParentInviteService.js';
-import { MemberService } from '../../club/services/MemberService.js';
+import { MemberService } from '../../member/services/MemberService.js';
 
 /**
  * ParentInviteController

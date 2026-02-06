@@ -4,7 +4,6 @@ import { createTestApp, cleanDatabase } from '../../setup.js';
 describe('Onboarding Routes Integration Tests', () => {
   let app;
   let testUserId;
-  let memberUserId;
   let authToken;
   let memberAuthToken;
 
@@ -70,7 +69,7 @@ describe('Onboarding Routes Integration Tests', () => {
 
       if (memberRegisterResponse.statusCode === 200) {
         const memberRegisterBody = JSON.parse(memberRegisterResponse.body);
-        memberUserId = memberRegisterBody.user.id;
+        // memberUserId available via memberRegisterBody.user.id if needed
         memberAuthToken = memberRegisterBody.accessToken;
         console.log('🔍 Member setup successful');
       } else {

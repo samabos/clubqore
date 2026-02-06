@@ -28,6 +28,7 @@ export function AdminBillingSettingsPage() {
 
   useEffect(() => {
     loadClubs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export function AdminBillingSettingsPage() {
     } else {
       setSettings(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClubId]);
 
   const loadClubs = async () => {
@@ -43,10 +45,11 @@ export function AdminBillingSettingsPage() {
       setIsLoadingClubs(true);
       const clubsData = await fetchAllClubs();
       setClubs(clubsData);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load clubs";
       toast({
         title: "Error",
-        description: error.message || "Failed to load clubs",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -59,10 +62,11 @@ export function AdminBillingSettingsPage() {
       setIsLoadingSettings(true);
       const settingsData = await adminFetchBillingSettings(clubId);
       setSettings(settingsData);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load billing settings";
       toast({
         title: "Error",
-        description: error.message || "Failed to load billing settings",
+        description: message,
         variant: "destructive",
       });
       setSettings(null);
@@ -82,10 +86,11 @@ export function AdminBillingSettingsPage() {
       });
       // Reload settings to get fresh data
       await loadSettings(parseInt(selectedClubId));
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to update settings";
       toast({
         title: "Error",
-        description: error.message || "Failed to update settings",
+        description: message,
         variant: "destructive",
       });
       // Don't re-throw - let the form handle completion

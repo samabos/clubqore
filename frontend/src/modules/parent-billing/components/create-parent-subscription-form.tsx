@@ -56,7 +56,6 @@ interface CreateParentSubscriptionFormProps {
 export function CreateParentSubscriptionForm({
   children,
   tiers,
-  clubId,
   onSubmit,
   onCancel,
   isSubmitting = false,
@@ -77,15 +76,16 @@ export function CreateParentSubscriptionForm({
 
   const billingFrequency = form.watch("billingFrequency");
 
+  const watchedTierId = form.watch("tierId");
+
   useEffect(() => {
-    const tierId = form.watch("tierId");
-    if (tierId) {
-      const tier = tiers.find((t) => t.id.toString() === tierId);
+    if (watchedTierId) {
+      const tier = tiers.find((t) => t.id.toString() === watchedTierId);
       setSelectedTier(tier || null);
     } else {
       setSelectedTier(null);
     }
-  }, [form.watch("tierId"), tiers]);
+  }, [watchedTierId, tiers]);
 
   const handleSubmit = async (data: ParentSubscriptionFormData) => {
     await onSubmit({

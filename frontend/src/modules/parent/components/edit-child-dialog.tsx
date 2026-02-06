@@ -130,9 +130,10 @@ export function EditChildDialog({
       toast.success("Child information updated successfully!");
       onSuccess();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating child:", error);
-      toast.error(error.message || "Failed to update child information");
+      const message = error instanceof Error ? error.message : "Failed to update child information";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

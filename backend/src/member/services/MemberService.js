@@ -142,8 +142,6 @@ export class MemberService {
       const existing = childIdToTeam.get(row.user_child_id);
       if (!existing || (row.assigned_at && existing.assigned_at && new Date(row.assigned_at) > new Date(existing.assigned_at))) {
         childIdToTeam.set(row.user_child_id, { team_id: row.team_id, team_name: row.team_name, team_color: row.team_color, assigned_at: row.assigned_at });
-      } else if (!existing) {
-        childIdToTeam.set(row.user_child_id, { team_id: row.team_id, team_name: row.team_name, team_color: row.team_color, assigned_at: row.assigned_at });
       }
     }
 
@@ -273,7 +271,7 @@ export class MemberService {
       // Create role and account for parent
       const accountNumber = UserCreationUtils.generateAccountNumber();
 
-    var roleRecord = await trx('roles')
+    const roleRecord = await trx('roles')
       .where({ name: 'parent', is_active: true })
       .first();
       await AccountUtils.createRoleAndAccount(parent.id, roleRecord.id, clubId, accountNumber, trx);

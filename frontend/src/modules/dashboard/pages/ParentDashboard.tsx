@@ -63,14 +63,10 @@ export function ParentDashboard() {
           return scheduleItem.status !== 'draft';
         });
         setUpcomingEvents(visibleEvents);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Dashboard load error:', err);
-        console.error('Full error details:', {
-          message: err.message,
-          stack: err.stack,
-          response: err.response
-        });
-        setError(err.message || "Failed to load dashboard data. Please try refreshing the page.");
+        const message = err instanceof Error ? err.message : "Failed to load dashboard data. Please try refreshing the page.";
+        setError(message);
       } finally {
         setLoading(false);
       }

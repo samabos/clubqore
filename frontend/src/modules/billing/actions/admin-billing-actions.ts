@@ -1,7 +1,5 @@
 import { BillingSettings, UpdateBillingSettingsRequest } from '@/types/billing';
-import { tokenManager } from '@/api/secureAuth';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+import { apiClient } from '@/api/base';
 
 export interface Club {
   id: number;
@@ -15,15 +13,7 @@ export interface Club {
  * Fetch all clubs for super admin dropdown
  */
 export async function fetchAllClubs(): Promise<Club[]> {
-  const token = tokenManager.getAccessToken();
-  const response = await fetch(`${API_BASE_URL}/admin/clubs`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    credentials: "include",
-  });
+  const response = await apiClient(`/admin/clubs`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -38,18 +28,7 @@ export async function fetchAllClubs(): Promise<Club[]> {
  * Get billing settings for any club (super admin only)
  */
 export async function adminFetchBillingSettings(clubId: number): Promise<BillingSettings> {
-  const token = tokenManager.getAccessToken();
-  const response = await fetch(
-    `${API_BASE_URL}/admin/clubs/${clubId}/billing/settings`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      credentials: "include",
-    }
-  );
+  const response = await apiClient(`/admin/clubs/${clubId}/billing/settings`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -67,8 +46,6 @@ export async function adminUpdateBillingSettings(
   clubId: number,
   settingsData: UpdateBillingSettingsRequest
 ): Promise<BillingSettings> {
-  const token = tokenManager.getAccessToken();
-
   // Transform data to match backend schema expectations
   const transformedData = {
     ...settingsData,
@@ -79,18 +56,10 @@ export async function adminUpdateBillingSettings(
         : null,
   };
 
-  const response = await fetch(
-    `${API_BASE_URL}/admin/clubs/${clubId}/billing/settings`,
-    {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      credentials: "include",
-      body: JSON.stringify(transformedData),
-    }
-  );
+  const response = await apiClient(`/admin/clubs/${clubId}/billing/settings`, {
+    method: "PUT",
+    body: JSON.stringify(transformedData),
+  });
 
   if (!response.ok) {
     const error = await response.json();

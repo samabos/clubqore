@@ -10,9 +10,7 @@ import type {
   UpdateBillingSettingsRequest,
   ScheduledInvoiceJob,
 } from "@/types/billing";
-import { tokenManager } from "@/api/secureAuth";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+import { apiClient } from "@/api/base";
 
 // ==================== CLUB MANAGER ACTIONS ====================
 
@@ -30,17 +28,7 @@ export async function fetchInvoices(filters?: InvoiceFilters): Promise<Invoice[]
   if (filters?.to_date) queryParams.append("to_date", filters.to_date);
   if (filters?.search) queryParams.append("search", filters.search);
 
-  const response = await fetch(
-    `${API_BASE_URL}/billing/invoices?${queryParams.toString()}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-      },
-      credentials: "include",
-    }
-  );
+  const response = await apiClient(`/billing/invoices?${queryParams.toString()}`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -55,14 +43,7 @@ export async function fetchInvoices(filters?: InvoiceFilters): Promise<Invoice[]
  * Fetch a single invoice by ID
  */
 export async function fetchInvoiceById(invoiceId: number): Promise<Invoice> {
-  const response = await fetch(`${API_BASE_URL}/billing/invoices/${invoiceId}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
-  });
+  const response = await apiClient(`/billing/invoices/${invoiceId}`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -77,13 +58,8 @@ export async function fetchInvoiceById(invoiceId: number): Promise<Invoice> {
  * Create a new invoice
  */
 export async function createInvoice(invoiceData: CreateInvoiceRequest): Promise<Invoice> {
-  const response = await fetch(`${API_BASE_URL}/billing/invoices`, {
+  const response = await apiClient(`/billing/invoices`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify(invoiceData),
   });
 
@@ -103,13 +79,8 @@ export async function updateInvoice(
   invoiceId: number,
   invoiceData: UpdateInvoiceRequest
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/billing/invoices/${invoiceId}`, {
+  const response = await apiClient(`/billing/invoices/${invoiceId}`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify(invoiceData),
   });
 
@@ -123,13 +94,8 @@ export async function updateInvoice(
  * Delete an invoice (draft only)
  */
 export async function deleteInvoice(invoiceId: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/billing/invoices/${invoiceId}`, {
+  const response = await apiClient(`/billing/invoices/${invoiceId}`, {
     method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
   });
 
   if (!response.ok) {
@@ -142,13 +108,8 @@ export async function deleteInvoice(invoiceId: number): Promise<void> {
  * Publish an invoice (draft -> pending)
  */
 export async function publishInvoice(invoiceId: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/billing/invoices/${invoiceId}/publish`, {
+  const response = await apiClient(`/billing/invoices/${invoiceId}/publish`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify({}),
   });
 
@@ -165,13 +126,8 @@ export async function markInvoiceAsPaid(
   invoiceId: number,
   paymentData: MarkAsPaidRequest
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/billing/invoices/${invoiceId}/paid`, {
+  const response = await apiClient(`/billing/invoices/${invoiceId}/paid`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify(paymentData),
   });
 
@@ -185,13 +141,8 @@ export async function markInvoiceAsPaid(
  * Cancel an invoice
  */
 export async function cancelInvoice(invoiceId: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/billing/invoices/${invoiceId}/cancel`, {
+  const response = await apiClient(`/billing/invoices/${invoiceId}/cancel`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify({}),
   });
 
@@ -205,14 +156,7 @@ export async function cancelInvoice(invoiceId: number): Promise<void> {
  * Get invoices for a specific user
  */
 export async function fetchUserInvoices(userId: number): Promise<Invoice[]> {
-  const response = await fetch(`${API_BASE_URL}/billing/users/${userId}/invoices`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
-  });
+  const response = await apiClient(`/billing/users/${userId}/invoices`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -229,13 +173,8 @@ export async function fetchUserInvoices(userId: number): Promise<Invoice[]> {
 export async function generateSeasonalInvoices(
   bulkData: BulkSeasonalInvoiceRequest
 ): Promise<{ count: number }> {
-  const response = await fetch(`${API_BASE_URL}/billing/invoices/bulk/seasonal`, {
+  const response = await apiClient(`/billing/invoices/bulk/seasonal`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify(bulkData),
   });
 
@@ -258,14 +197,7 @@ export async function fetchBillingSummary(filters?: InvoiceFilters): Promise<Bil
   if (filters?.from_date) queryParams.append("from_date", filters.from_date);
   if (filters?.to_date) queryParams.append("to_date", filters.to_date);
 
-  const response = await fetch(`${API_BASE_URL}/billing/summary?${queryParams.toString()}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
-  });
+  const response = await apiClient(`/billing/summary?${queryParams.toString()}`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -282,14 +214,7 @@ export async function fetchBillingSummary(filters?: InvoiceFilters): Promise<Bil
  * Fetch billing settings for the club
  */
 export async function fetchBillingSettings(): Promise<BillingSettings> {
-  const response = await fetch(`${API_BASE_URL}/billing/settings`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
-  });
+  const response = await apiClient(`/billing/settings`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -306,13 +231,8 @@ export async function fetchBillingSettings(): Promise<BillingSettings> {
 export async function updateBillingSettings(
   settingsData: UpdateBillingSettingsRequest
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/billing/settings`, {
+  const response = await apiClient(`/billing/settings`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify(settingsData),
   });
 
@@ -328,14 +248,7 @@ export async function updateBillingSettings(
  * Fetch scheduled invoice jobs
  */
 export async function fetchScheduledJobs(): Promise<ScheduledInvoiceJob[]> {
-  const response = await fetch(`${API_BASE_URL}/billing/scheduled-jobs`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
-  });
+  const response = await apiClient(`/billing/scheduled-jobs`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -357,17 +270,7 @@ export async function fetchParentInvoices(filters?: InvoiceFilters): Promise<Inv
   if (filters?.status) queryParams.append("status", filters.status);
   if (filters?.user_id) queryParams.append("user_id", filters.user_id.toString());
 
-  const response = await fetch(
-    `${API_BASE_URL}/parent/billing/invoices?${queryParams.toString()}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-      },
-      credentials: "include",
-    }
-  );
+  const response = await apiClient(`/parent/billing/invoices?${queryParams.toString()}`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -382,14 +285,7 @@ export async function fetchParentInvoices(filters?: InvoiceFilters): Promise<Inv
  * Fetch a single invoice by ID (for parent)
  */
 export async function fetchParentInvoiceById(invoiceId: number): Promise<Invoice> {
-  const response = await fetch(`${API_BASE_URL}/parent/billing/invoices/${invoiceId}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
-  });
+  const response = await apiClient(`/parent/billing/invoices/${invoiceId}`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -404,17 +300,7 @@ export async function fetchParentInvoiceById(invoiceId: number): Promise<Invoice
  * Fetch invoices for a specific child
  */
 export async function fetchChildInvoices(childUserId: number): Promise<Invoice[]> {
-  const response = await fetch(
-    `${API_BASE_URL}/parent/billing/children/${childUserId}/invoices`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-      },
-      credentials: "include",
-    }
-  );
+  const response = await apiClient(`/parent/billing/children/${childUserId}/invoices`);
 
   if (!response.ok) {
     const error = await response.json();

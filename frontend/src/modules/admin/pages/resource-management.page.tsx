@@ -98,10 +98,12 @@ export function ResourceManagementPage() {
 
   useEffect(() => {
     loadResources();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     filterResources();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resources, searchQuery, typeFilter]);
 
   const loadResources = async () => {
@@ -109,10 +111,11 @@ export function ResourceManagementPage() {
       setIsLoading(true);
       const data = await fetchResources();
       setResources(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load resources";
       toast({
         title: "Error",
-        description: error.message || "Failed to load resources",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -200,10 +203,11 @@ export function ResourceManagementPage() {
 
       setIsFormOpen(false);
       await loadResources();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to save resource";
       toast({
         title: "Error",
-        description: error.message || "Failed to save resource",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -223,10 +227,11 @@ export function ResourceManagementPage() {
       setIsDeleteOpen(false);
       setDeletingResource(null);
       await loadResources();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to delete resource";
       toast({
         title: "Error",
-        description: error.message || "Failed to delete resource",
+        description: message,
         variant: "destructive",
       });
     }
@@ -240,10 +245,11 @@ export function ResourceManagementPage() {
         description: `Resource ${resource.is_active ? "deactivated" : "activated"} successfully`,
       });
       await loadResources();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to update resource";
       toast({
         title: "Error",
-        description: error.message || "Failed to update resource",
+        description: message,
         variant: "destructive",
       });
     }

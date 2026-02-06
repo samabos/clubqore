@@ -123,9 +123,10 @@ export function AddChildDialog({
 
       onSuccess();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error adding child:", error);
-      toast.error(error.message || "Failed to add child");
+      const message = error instanceof Error ? error.message : "Failed to add child";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

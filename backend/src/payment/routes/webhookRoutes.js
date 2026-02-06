@@ -13,7 +13,7 @@ import { WebhookController } from '../controllers/WebhookController.js';
  * @param {FastifyInstance} fastify - Fastify instance
  * @param {Object} options - Route options
  */
-export async function webhookRoutes(fastify, options) {
+export async function webhookRoutes(fastify, _options) {
   const controller = new WebhookController(fastify.db);
 
   // Configure to preserve raw body for signature verification

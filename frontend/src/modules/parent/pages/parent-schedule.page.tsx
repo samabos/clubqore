@@ -27,6 +27,7 @@ export function ParentSchedulePage() {
 
   useEffect(() => {
     loadSchedule();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadSchedule = async () => {
@@ -49,7 +50,9 @@ export function ParentSchedulePage() {
           team_name: session.team_name,
           child_first_name: session.child_first_name,
           child_last_name: session.child_last_name,
+          children: session.children,
           title: session.title,
+          session_type: session.session_type,
         };
         scheduleItems.push(parentEventToScheduleItem(eventData));
       });
@@ -66,8 +69,10 @@ export function ParentSchedulePage() {
           team_name: match.team_name,
           child_first_name: match.child_first_name,
           child_last_name: match.child_last_name,
+          children: match.children,
           opponent: match.opponent,
           is_home: match.is_home,
+          match_type: match.match_type,
         };
         scheduleItems.push(parentEventToScheduleItem(eventData));
       });
@@ -80,10 +85,11 @@ export function ParentSchedulePage() {
       });
 
       setItems(scheduleItems);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load schedule";
       toast({
         title: "Error",
-        description: error.message || "Failed to load schedule",
+        description: message,
         variant: "destructive",
       });
     } finally {

@@ -1,17 +1,8 @@
-import { tokenManager } from '@/api/secureAuth';
+import { apiClient } from '@/api/base';
 import type { EnrichedChild, ChildDetailData } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
 export async function fetchParentChildren(): Promise<EnrichedChild[]> {
-  const response = await fetch(`${API_BASE_URL}/parent/children`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: 'include',
-  });
+  const response = await apiClient('/parent/children');
 
   if (!response.ok) {
     const error = await response.json();
@@ -23,14 +14,7 @@ export async function fetchParentChildren(): Promise<EnrichedChild[]> {
 }
 
 export async function fetchChildDetails(childId: string): Promise<ChildDetailData> {
-  const response = await fetch(`${API_BASE_URL}/parent/children/${childId}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: 'include',
-  });
+  const response = await apiClient(`/parent/children/${childId}`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -53,13 +37,8 @@ export async function createChild(
     address: string | null;
   }
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/parent/children`, {
+  const response = await apiClient('/parent/children', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: 'include',
     body: JSON.stringify(childData),
   });
 
@@ -84,18 +63,10 @@ export async function updateChildDetails(
     address: string | null;
   }
 ): Promise<void> {
-  const response = await fetch(
-    `${API_BASE_URL}/parent/children/${childId}`,
-    {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-      },
-      credentials: 'include',
-      body: JSON.stringify(updateData),
-    }
-  );
+  const response = await apiClient(`/parent/children/${childId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updateData),
+  });
 
   if (!response.ok) {
     const error = await response.json();

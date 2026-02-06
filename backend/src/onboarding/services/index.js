@@ -5,4 +5,4 @@ export { UserPreferencesService } from './UserPreferencesService.js';
 export { ClubService } from '../../club/services/ClubService.js';
 export { AccountNumberService } from './AccountNumberService.js';
 export { RoleService } from './RoleService.js';
-export { TeamService } from '../../club/services/TeamService.js';
+export { TeamService } from '../../team/services/TeamService.js';

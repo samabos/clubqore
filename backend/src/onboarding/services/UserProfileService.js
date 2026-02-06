@@ -242,7 +242,7 @@ export class UserProfileService {
     if (typeof emergencyContact === 'string') {
       try {
         emergencyContact = JSON.parse(emergencyContact);
-      } catch (e) {
+      } catch {
         // It's already a plain object or null
       }
     }

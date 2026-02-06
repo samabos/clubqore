@@ -5,7 +5,7 @@
  * Handles mandate and payment status updates.
  */
 
-import { verifyWebhookSignature, parseWebhookEvents, getSignatureHeaderName } from '../utils/webhookValidator.js';
+import { verifyWebhookSignature, parseWebhookEvents } from '../utils/webhookValidator.js';
 import { encrypt } from '../utils/encryption.js';
 import { PaymentMandateService } from './PaymentMandateService.js';
 import { SubscriptionBillingService } from './SubscriptionBillingService.js';
@@ -35,7 +35,7 @@ export class WebhookProcessorService {
     let payload;
     try {
       payload = JSON.parse(rawBody);
-    } catch (error) {
+    } catch {
       throw new Error('Invalid JSON payload');
     }
 
@@ -80,7 +80,7 @@ export class WebhookProcessorService {
    * @returns {Promise<Object>} Processing result
    */
   async _processEvent(provider, event) {
-    const { resourceType, action, resourceId } = event;
+    const { resourceType } = event;
 
     // Check for duplicate processing (idempotency)
     const existingEvent = await this.db('payment_webhooks')
@@ -170,7 +170,7 @@ export class WebhookProcessorService {
         await this._updatePaymentStatus(provider, resourceId, 'confirmed');
         return { action: 'payment_confirmed', paymentId: resourceId };
 
-      case 'paid_out':
+      case 'paid_out': {
         // Payment successfully collected - mark as complete
         const successResult = await this.billingService.handlePaymentSuccess(provider, resourceId);
 
@@ -178,10 +178,11 @@ export class WebhookProcessorService {
         await this._sendPaymentNotification('payment_successful', successResult);
 
         return { action: 'payment_paid_out', paymentId: resourceId, ...successResult };
+      }
 
       case 'failed':
       case 'cancelled':
-      case 'customer_approval_denied':
+      case 'customer_approval_denied': {
         // Payment failed
         const failReason = details.cause || details.description || action;
         const failResult = await this.billingService.handlePaymentFailure(provider, resourceId, failReason);
@@ -195,6 +196,7 @@ export class WebhookProcessorService {
         }
 
         return { action: `payment_${action}`, paymentId: resourceId, ...failResult };
+      }
 
       case 'charged_back':
         // Chargeback - record and potentially suspend
@@ -211,8 +213,8 @@ export class WebhookProcessorService {
    *
    * @private
    */
-  async _handleRefundEvent(provider, event) {
-    const { action, resourceId, details } = event;
+  async _handleRefundEvent(_provider, event) {
+    const { action, resourceId } = event;
 
     // Log refund events for now
     console.log(`Refund event: ${action} for ${resourceId}`);

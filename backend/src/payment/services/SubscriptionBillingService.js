@@ -7,7 +7,7 @@
 
 import { PaymentProviderFactory } from './PaymentProviderFactory.js';
 import { SubscriptionService } from './SubscriptionService.js';
-import { InvoiceService } from '../../club/services/InvoiceService.js';
+import { InvoiceService } from '../../billing/services/InvoiceService.js';
 
 export class SubscriptionBillingService {
   constructor(db) {

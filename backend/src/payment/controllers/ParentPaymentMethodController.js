@@ -94,10 +94,21 @@ export class ParentPaymentMethodController {
         }
       });
     } catch (error) {
-      const status = error.statusCode || 500;
+      request.log.error('Mandate setup error:', error);
+
+      // Determine appropriate status code
+      let status = error.statusCode || 500;
+      let message = error.message || 'Failed to initiate mandate setup';
+
+      // Check for configuration errors
+      if (message.includes('configuration error') || message.includes('access token')) {
+        status = 503; // Service Unavailable
+        message = 'Payment service is not properly configured. Please contact support.';
+      }
+
       return reply.status(status).send({
         success: false,
-        error: error.message
+        error: message
       });
     }
   }
@@ -129,7 +140,24 @@ export class ParentPaymentMethodController {
         message: 'Direct Debit mandate setup completed successfully'
       });
     } catch (error) {
-      const status = error.statusCode || 500;
+      console.error('Mandate completion error:', error.message);
+      console.error('Stack:', error.stack);
+
+      let status = error.statusCode || 500;
+      let message = error.message || 'Failed to complete mandate setup';
+
+      // Provide user-friendly messages for known errors
+      if (message.includes('Invalid or expired')) {
+        status = 400;
+        message = 'Your setup session has expired. Please start the Direct Debit setup again.';
+      } else if (message.includes('No pending mandate')) {
+        status = 404;
+        message = 'No pending setup found. Please start the Direct Debit setup again.';
+      } else if (message.includes('not fulfilled')) {
+        status = 400;
+        message = 'The Direct Debit authorization was not completed. Please try again.';
+      }
+
       return reply.status(status).send({
         success: false,
         error: error.message

@@ -1,12 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -24,14 +17,13 @@ import {
   resumeSubscription,
   cancelParentSubscription,
 } from "@/modules/subscription/actions/subscription-actions";
-import type { Subscription, SubscriptionStatus } from "@/types/subscription";
+import type { Subscription } from "@/types/subscription";
 
 export function ParentSubscriptionManagementPage() {
   const { toast } = useToast();
 
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const [pauseDialogOpen, setPauseDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -40,19 +32,19 @@ export function ParentSubscriptionManagementPage() {
 
   useEffect(() => {
     loadSubscriptions();
-  }, [statusFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadSubscriptions = async () => {
     try {
       setIsLoading(true);
-      const filters =
-        statusFilter !== "all" ? { status: statusFilter as SubscriptionStatus } : {};
-      const data = await fetchParentSubscriptions(filters);
+      const data = await fetchParentSubscriptions({});
       setSubscriptions(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load subscriptions";
       toast({
         title: "Error",
-        description: error.message || "Failed to load subscriptions",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -75,10 +67,11 @@ export function ParentSubscriptionManagementPage() {
         description: "Subscription paused successfully",
       });
       loadSubscriptions();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to pause subscription";
       toast({
         title: "Error",
-        description: error.message || "Failed to pause subscription",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -96,10 +89,11 @@ export function ParentSubscriptionManagementPage() {
         description: "Subscription resumed successfully",
       });
       loadSubscriptions();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to resume subscription";
       toast({
         title: "Error",
-        description: error.message || "Failed to resume subscription",
+        description: message,
         variant: "destructive",
       });
     }
@@ -120,10 +114,11 @@ export function ParentSubscriptionManagementPage() {
         description: "Subscription cancelled successfully",
       });
       loadSubscriptions();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to cancel subscription";
       toast({
         title: "Error",
-        description: error.message || "Failed to cancel subscription",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -133,7 +128,8 @@ export function ParentSubscriptionManagementPage() {
     }
   };
 
-  const handleChangeTier = (subscriptionId: number) => {
+  const handleChangeTier = (_subscriptionId: number) => {
+    void _subscriptionId; // Will be used when tier change is implemented
     // TODO: Implement tier change dialog
     toast({
       title: "Coming Soon",
@@ -156,43 +152,17 @@ export function ParentSubscriptionManagementPage() {
   return (
     <div className="container mx-auto py-8 space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Subscriptions</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your children's club memberships
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Subscriptions</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="paused">Paused</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-              <SelectItem value="suspended">Suspended</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Info Banner */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-sm text-blue-800">
-          Subscriptions are automatically created when your child is assigned to a team by the club manager.
-          Set up a payment method to activate your subscriptions.
+      <div>
+        <h1 className="text-3xl font-bold">Subscriptions</h1>
+        <p className="text-muted-foreground mt-1">
+          Manage your children's club memberships
         </p>
       </div>
 
       {/* Subscription List */}
       {subscriptions.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
-          {statusFilter === "all"
-            ? "No subscriptions found. A subscription will be created when your child is assigned to a team."
-            : `No ${statusFilter} subscriptions found.`}
+          No subscriptions yet. A subscription will be created when your child is assigned to a team.
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2">

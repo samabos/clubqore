@@ -13,12 +13,12 @@ const handleSessionExpired = () => {
 };
 
 // Check if using httpOnly cookies (browser handles auth automatically)
-const useHttpOnlyCookies = () => tokenManager.getStorageStrategy() === 'httpOnly';
+const isUsingHttpOnlyCookies = () => tokenManager.getStorageStrategy() === 'httpOnly';
 
 // API client with auth headers and automatic token refresh
 export const apiClient = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
-  const usingCookies = useHttpOnlyCookies();
+  const usingCookies = isUsingHttpOnlyCookies();
   const token = usingCookies ? null : tokenManager.getAccessToken();
 
   const config: RequestInit = {
@@ -67,7 +67,7 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
 
 // Refresh access token helper
 const refreshAccessToken = async (): Promise<boolean> => {
-  const usingCookies = useHttpOnlyCookies();
+  const usingCookies = isUsingHttpOnlyCookies();
   const refreshToken = usingCookies ? null : tokenManager.getRefreshToken();
 
   // If using cookies, we don't need the token in the body - server reads from cookie

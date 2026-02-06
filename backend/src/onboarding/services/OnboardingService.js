@@ -191,7 +191,7 @@ export class OnboardingService {
   /**
    * Generate account number (internal use)
    */
-  async generateAccountNumber(userId, role, clubId) {
+  async generateAccountNumber(_userId, _role, _clubId) {
     return {
       success: true,
       accountNumber: await this.accountNumberService.generateAccountNumber(),
@@ -249,7 +249,7 @@ export class OnboardingService {
   /**
    * Update completion progress tracking
    */
-  async updateCompletionProgress(userId, step, role = null) {
+  async updateCompletionProgress(userId, step, _role = null) {
     // Log the completion step
     // This could be expanded to include detailed tracking
 

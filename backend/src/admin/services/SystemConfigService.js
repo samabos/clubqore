@@ -180,7 +180,7 @@ export class SystemConfigService {
     }
 
     // Prepare update payload - exclude change_reason as it's only for audit table
-    const { change_reason, ...configUpdates } = updates;
+    const { change_reason: _change_reason, ...configUpdates } = updates;
 
     // Update configuration
     const [updatedConfig] = await this.db('system_config')

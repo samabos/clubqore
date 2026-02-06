@@ -26,7 +26,6 @@ import { Plus, Trash2, DollarSign, Calendar, AlertCircle } from "lucide-react";
 import {
   UpdateBillingSettingsRequest,
   BillingSettings,
-  ServiceChargeType,
   ItemCategory,
   ITEM_CATEGORY_LABELS,
 } from "@/types/billing";

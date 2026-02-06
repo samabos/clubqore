@@ -9,7 +9,7 @@ import { requireRole } from '../../auth/permissionMiddleware.js';
  * - Authentication (valid JWT)
  * - Super Admin role
  */
-export async function registerSystemConfigRoutes(fastify, options) {
+export async function registerSystemConfigRoutes(fastify, _options) {
   // Create authentication middleware
   const authenticate = createAuthMiddleware(fastify.db);
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Building2, Users, DollarSign, Activity, TrendingUp } from 'lucide-react';
+import { Building2, Users, DollarSign, Activity } from 'lucide-react';
 
 interface PlatformMetrics {
   totalClubs: number;

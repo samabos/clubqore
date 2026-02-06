@@ -50,8 +50,9 @@ export function ParentInvitesList({ clubId, refreshTrigger = 0 }: ParentInvitesL
       setLoading(true);
       const { invites: fetchedInvites } = await getClubInvites(clubId, statusFilter);
       setInvites(fetchedInvites);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load invites');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load invites';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -61,6 +62,7 @@ export function ParentInvitesList({ clubId, refreshTrigger = 0 }: ParentInvitesL
     if (clubId) {
       fetchInvites();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clubId, statusFilter, refreshTrigger]);
 
   const handleCopyLink = (inviteCode: string) => {
@@ -74,8 +76,9 @@ export function ParentInvitesList({ clubId, refreshTrigger = 0 }: ParentInvitesL
       setResendingId(inviteId);
       await resendInvite(inviteCode, clubId);
       toast.success('Invitation email resent successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to resend invite');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to resend invite';
+      toast.error(message);
     } finally {
       setResendingId(null);
     }
@@ -87,8 +90,9 @@ export function ParentInvitesList({ clubId, refreshTrigger = 0 }: ParentInvitesL
       await cancelInvite(inviteCode, clubId);
       toast.success('Invitation cancelled successfully');
       fetchInvites(); // Refresh the list
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to cancel invite');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to cancel invite';
+      toast.error(message);
     } finally {
       setCancelingId(null);
     }

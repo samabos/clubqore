@@ -97,4 +97,81 @@ export async function adminBillingRoutes(fastify, options) {
       }
     }
   }, adminBillingController.updateClubBillingSettings.bind(adminBillingController));
+
+  // ============================================
+  // Billing Job Management (Super Admin Only)
+  // ============================================
+
+  // Get subscriptions due for billing
+  fastify.get('/admin/billing/due-subscriptions', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Billing Jobs'],
+      summary: 'Get subscriptions due for billing (super admin only)',
+      description: 'View all subscriptions that are due for billing today or earlier',
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            count: { type: 'integer' },
+            subscriptions: { type: 'array' }
+          }
+        }
+      }
+    }
+  }, adminBillingController.getDueSubscriptions.bind(adminBillingController));
+
+  // Trigger billing manually
+  fastify.post('/admin/billing/trigger-billing', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Billing Jobs'],
+      summary: 'Manually trigger subscription billing (super admin only)',
+      description: 'Process billing for all due subscriptions or a specific subscription',
+      body: {
+        type: 'object',
+        properties: {
+          subscriptionId: { type: 'integer', description: 'Optional: specific subscription to bill' }
+        }
+      }
+    }
+  }, adminBillingController.triggerBilling.bind(adminBillingController));
+
+  // Get failed payments
+  fastify.get('/admin/billing/failed-payments', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Billing Jobs'],
+      summary: 'Get failed payments eligible for retry (super admin only)',
+      description: 'View all failed payments that can be retried',
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            count: { type: 'integer' },
+            payments: { type: 'array' }
+          }
+        }
+      }
+    }
+  }, adminBillingController.getFailedPayments.bind(adminBillingController));
+
+  // Retry a failed payment
+  fastify.post('/admin/billing/retry-payment', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Billing Jobs'],
+      summary: 'Manually retry a failed payment (super admin only)',
+      description: 'Retry a specific failed payment',
+      body: {
+        type: 'object',
+        required: ['paymentId'],
+        properties: {
+          paymentId: { type: 'integer', description: 'The payment ID to retry' }
+        }
+      }
+    }
+  }, adminBillingController.retryPayment.bind(adminBillingController));
 }

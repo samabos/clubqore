@@ -132,9 +132,7 @@ export interface ManageMemberFormProps {
   onEndContract?: () => void;
 }
 
-export interface ManageMemberLoadingProps {
-  // No props needed for now
-}
+export type ManageMemberLoadingProps = Record<string, never>;
 
 // Re-export ChildData via the components index barrel
 export type { ChildData } from "../components";

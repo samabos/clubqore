@@ -39,6 +39,14 @@ import type {
 } from "@/types/billing";
 import type { Season } from "@/types/season";
 
+interface BillingUser {
+  parent_user_id: number;
+  child_user_id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
 export function BillingManagementPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -46,7 +54,7 @@ export function BillingManagementPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [summary, setSummary] = useState<BillingSummary | null>(null);
   const [seasons, setSeasons] = useState<Season[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<BillingUser[]>([]);
   const [filters, setFilters] = useState<InvoiceFilters>({});
   const [isLoading, setIsLoading] = useState(true);
 
@@ -59,6 +67,7 @@ export function BillingManagementPage() {
     loadData();
     loadSeasons();
     loadMembers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const loadData = async () => {
@@ -70,10 +79,11 @@ export function BillingManagementPage() {
       ]);
       setInvoices(invoicesData);
       setSummary(summaryData);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load billing data";
       toast({
         title: "Error",
-        description: error.message || "Failed to load billing data",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -135,10 +145,11 @@ export function BillingManagementPage() {
       });
       setIsCreateFormOpen(false);
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to create invoice";
       toast({
         title: "Error",
-        description: error.message || "Failed to create invoice",
+        description: message,
         variant: "destructive",
       });
       throw error;
@@ -154,10 +165,11 @@ export function BillingManagementPage() {
       });
       setIsBulkGenOpen(false);
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to generate invoices";
       toast({
         title: "Error",
-        description: error.message || "Failed to generate invoices",
+        description: message,
         variant: "destructive",
       });
       throw error;
@@ -172,10 +184,11 @@ export function BillingManagementPage() {
         description: `Invoice ${invoice.invoice_number} published`,
       });
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to publish invoice";
       toast({
         title: "Error",
-        description: error.message || "Failed to publish invoice",
+        description: message,
         variant: "destructive",
       });
     }
@@ -189,10 +202,11 @@ export function BillingManagementPage() {
         description: `Invoice ${invoice.invoice_number} cancelled`,
       });
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to cancel invoice";
       toast({
         title: "Error",
-        description: error.message || "Failed to cancel invoice",
+        description: message,
         variant: "destructive",
       });
     }
@@ -209,10 +223,11 @@ export function BillingManagementPage() {
       });
       setMarkPaidInvoice(null);
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to mark invoice as paid";
       toast({
         title: "Error",
-        description: error.message || "Failed to mark invoice as paid",
+        description: message,
         variant: "destructive",
       });
       throw error;
@@ -234,7 +249,7 @@ export function BillingManagementPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setIsBulkGenOpen(true)}>
+         {/* <Button variant="outline" onClick={() => setIsBulkGenOpen(true)}>
             <Users className="h-4 w-4 mr-2" />
             Generate Seasonal Invoices
           </Button>
@@ -242,6 +257,7 @@ export function BillingManagementPage() {
             <Plus className="h-4 w-4 mr-2" />
             Create Invoice
           </Button>
+          */}
         </div>
       </div>
 

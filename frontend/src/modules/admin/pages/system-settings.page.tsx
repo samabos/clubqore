@@ -38,8 +38,9 @@ export function SystemSettingsPage() {
       setLoading(true);
       const data = await getAllSystemConfigsAdmin({ activeOnly: true });
       setConfigs(data);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load system configurations');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load system configurations';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -68,8 +69,9 @@ export function SystemSettingsPage() {
       await deleteSystemConfig(id);
       toast.success('Configuration deleted successfully');
       fetchConfigs();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete configuration');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete configuration';
+      toast.error(message);
     }
   };
 
@@ -78,8 +80,9 @@ export function SystemSettingsPage() {
     try {
       await clearSystemConfigCache();
       toast.success('Configuration cache cleared successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to clear cache');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to clear cache';
+      toast.error(message);
     }
   };
 

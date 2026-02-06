@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { config, getTokenExpirationMs } from '../../config/index.js';
+import { getTokenExpirationMs } from '../../config/index.js';
 
 export class TokenService {
   constructor(db) {

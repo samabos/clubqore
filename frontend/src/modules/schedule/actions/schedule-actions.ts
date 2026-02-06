@@ -12,8 +12,8 @@ import {
   deleteMatch,
   publishMatch,
 } from "@/modules/match/actions/match-actions";
-import type { TrainingSession, CreateTrainingSessionRequest } from "@/types/training-session";
-import type { Match, CreateMatchRequest } from "@/types/match";
+import type { CreateTrainingSessionRequest } from "@/types/training-session";
+import type { CreateMatchRequest } from "@/types/match";
 import type { ScheduleItem, ScheduleFilters } from "../types/schedule-types";
 import { trainingToScheduleItem, matchToScheduleItem } from "../utils/schedule-utils";
 import { apiClient } from "@/api/base";

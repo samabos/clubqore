@@ -43,17 +43,6 @@ export const useMembersStore = create<MembersState>()(
 
         try {
           const members = await fetchClubMembers();
-          // Debug: inspect team-related fields to verify backend shape
-          if (members && members.length > 0) {
-            const m = members[0] as unknown as {
-              id?: number;
-              team_id?: number;
-              teamId?: number;
-              team?: { id?: number; name?: string };
-              assigned_team_id?: number;
-              team_name?: string;
-            };
-          }
           set({
             members,
             lastLoaded: Date.now(),

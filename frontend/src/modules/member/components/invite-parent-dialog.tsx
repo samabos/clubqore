@@ -63,9 +63,10 @@ export function InviteParentDialog({
       setLastName("");
 
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error sending invite:", error);
-      toast.error(error.message || "Failed to send invitation");
+      const message = error instanceof Error ? error.message : "Failed to send invitation";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

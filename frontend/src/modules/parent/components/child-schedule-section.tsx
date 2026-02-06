@@ -21,6 +21,7 @@ export function ChildScheduleSection({ child }: ChildScheduleSectionProps) {
 
   useEffect(() => {
     loadSchedule();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [child.id]);
 
   const loadSchedule = async () => {

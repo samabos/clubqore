@@ -2,7 +2,6 @@ import {
   Calendar,
   Clock,
   MapPin,
-  Users,
   User,
   MoreVertical,
   Edit,
@@ -170,18 +169,22 @@ export function ScheduleCard({
             </div>
           )}*/}
 
-          {/* Child name (for parent view) */}
-          {item.childName && (
+          {/* Child names (for parent view) */}
+          {item.childNames && item.childNames.length > 0 && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <User className="w-4 h-4" />
-              <span>Child: {item.childName}</span>
+              <span>
+                {item.childNames.length === 1
+                  ? `Child: ${item.childNames[0]}`
+                  : `Children: ${item.childNames.join(', ')}`}
+              </span>
             </div>
           )}
 
           {/* Training-specific fields */}
           {isTrainingItem(item) && (
             <>
-              {item.data.coach_first_name && !item.childName && (
+              {item.data.coach_first_name && !item.childNames && (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <User className="w-4 h-4" />
                   <span>

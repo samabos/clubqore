@@ -1,4 +1,4 @@
-import { messageResponse, errorResponse } from '../schemas/authSchemas.js';
+import { errorResponse } from '../schemas/authSchemas.js';
 
 export function passwordResetRoutes(fastify, controller) {
   // POST /auth/forgot-password - Request password reset

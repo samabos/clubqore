@@ -202,9 +202,10 @@ export function ParentRegistrationPage() {
           },
         });
       }, 1500);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Registration error:", error);
-      toast.error(error.message || "Failed to complete registration");
+      const message = error instanceof Error ? error.message : "Failed to complete registration";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

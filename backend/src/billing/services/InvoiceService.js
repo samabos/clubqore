@@ -400,7 +400,7 @@ export class InvoiceService {
       }
 
       // Calculate new totals if items provided
-      let updateData = {
+      const updateData = {
         ...invoiceData,
         updated_at: new Date()
       };

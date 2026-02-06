@@ -40,6 +40,7 @@ export function MembershipTierManagementPage() {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showInactive]);
 
   const loadData = async () => {
@@ -51,10 +52,11 @@ export function MembershipTierManagementPage() {
       ]);
       setTiers(tiersData);
       setStats(statsData);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load membership tiers";
       toast({
         title: "Error",
-        description: error.message || "Failed to load membership tiers",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -90,10 +92,11 @@ export function MembershipTierManagementPage() {
       }
       setDialogOpen(false);
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to save membership tier";
       toast({
         title: "Error",
-        description: error.message || "Failed to save membership tier",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -110,10 +113,11 @@ export function MembershipTierManagementPage() {
         description: "Membership tier deleted successfully",
       });
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to delete membership tier";
       toast({
         title: "Error",
-        description: error.message || "Failed to delete membership tier",
+        description: message,
         variant: "destructive",
       });
     } finally {

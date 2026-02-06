@@ -42,7 +42,7 @@ export function verifyGoCardlessSignature(body, signature, secret = null) {
       Buffer.from(signature),
       Buffer.from(computed)
     );
-  } catch (error) {
+  } catch {
     // If buffers are different lengths, timingSafeEqual throws
     return false;
   }
@@ -115,7 +115,7 @@ export function verifyStripeSignature(body, signatureHeader, secret = null, tole
         return false;
       }
     });
-  } catch (error) {
+  } catch {
     return false;
   }
 }

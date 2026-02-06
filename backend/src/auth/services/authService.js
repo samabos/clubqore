@@ -346,7 +346,7 @@ export class AuthService {
         email: updatedUser.email,
         email_verified: updatedUser.email_verified
       };
-    } catch (error) {
+    } catch {
       throw new Error('Invalid or expired verification token');
     }
   }
@@ -431,7 +431,7 @@ export class AuthService {
       await this.tokenService.revokeAllUserTokens(payload.userId, 'refresh');
 
       return { success: true };
-    } catch (error) {
+    } catch {
       throw new Error('Invalid or expired reset token');
     }
   }

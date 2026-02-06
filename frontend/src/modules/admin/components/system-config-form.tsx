@@ -37,7 +37,7 @@ interface SystemConfigFormProps {
 }
 
 export function SystemConfigForm({ config, onClose, onSuccess }: SystemConfigFormProps) {
-  const [value, setValue] = useState<any>(config.value);
+  const [value, setValue] = useState<unknown>(config.value);
   const [changeReason, setChangeReason] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -107,8 +107,9 @@ export function SystemConfigForm({ config, onClose, onSuccess }: SystemConfigFor
 
       toast.success('Configuration updated successfully');
       onSuccess();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update configuration');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update configuration';
+      toast.error(message);
     } finally {
       setLoading(false);
     }

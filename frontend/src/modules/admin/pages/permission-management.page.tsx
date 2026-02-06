@@ -24,7 +24,7 @@ import {
   fetchPermissionMatrix,
   bulkUpdateRolePermissions,
 } from "../actions/permission-actions";
-import type { PermissionMatrix, Role, PermissionMatrixEntry, BulkUpdatePermissionData } from "@/types/permission";
+import type { PermissionMatrix, PermissionMatrixEntry, BulkUpdatePermissionData } from "@/types/permission";
 
 type PermissionAction = "can_view" | "can_create" | "can_edit" | "can_delete";
 
@@ -42,6 +42,7 @@ export function PermissionManagementPage() {
 
   useEffect(() => {
     loadMatrix();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -68,10 +69,11 @@ export function PermissionManagementPage() {
       if (data.roles.length > 0 && !selectedRoleId) {
         setSelectedRoleId(data.roles[0].id.toString());
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load permissions";
       toast({
         title: "Error",
-        description: error.message || "Failed to load permissions",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -158,10 +160,11 @@ export function PermissionManagementPage() {
 
       // Reload to get fresh data
       await loadMatrix();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to save permissions";
       toast({
         title: "Error",
-        description: error.message || "Failed to save permissions",
+        description: message,
         variant: "destructive",
       });
     } finally {

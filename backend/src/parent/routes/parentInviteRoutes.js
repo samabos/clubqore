@@ -8,7 +8,7 @@ import { createAuthMiddleware } from '../../auth/middleware.js';
  * - Protected routes require authentication (club managers)
  * - Public routes for invite validation and registration
  */
-export async function registerParentInviteRoutes(fastify, options) {
+export async function registerParentInviteRoutes(fastify, _options) {
   // Create authentication middleware
   const authenticate = createAuthMiddleware(fastify.db);
 

@@ -12,7 +12,7 @@ import { teamRoutes } from '../../team/routes/index.js';
 import { seasonRoutes, trainingSessionRoutes, matchRoutes } from '../../schedule/routes/index.js';
 import { billingRoutes } from '../../billing/routes/index.js';
 
-export async function registerClubRoutes(fastify, options) {
+export async function registerClubRoutes(fastify, _options) {
   // Create authentication middleware
   const authenticate = createAuthMiddleware(fastify.db);
 

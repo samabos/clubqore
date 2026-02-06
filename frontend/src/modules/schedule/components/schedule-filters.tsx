@@ -26,7 +26,7 @@ export function ScheduleFiltersBar({
   seasons,
   teams,
 }: ScheduleFiltersBarProps) {
-  const updateFilter = (key: keyof ScheduleFilters, value: any) => {
+  const updateFilter = (key: keyof ScheduleFilters, value: ScheduleFilters[keyof ScheduleFilters] | "all" | "") => {
     onFiltersChange({
       ...filters,
       [key]: value === "all" || value === "" ? undefined : value,

@@ -3,7 +3,7 @@ import { postcodeService } from '../utils/postcodeService.js';
 /**
  * Register postcode-related routes
  */
-export async function postcodeRoutes(fastify, options) {
+export async function postcodeRoutes(fastify, _options) {
   // GET /api/postcodes/lookup/:postcode - Full address lookup
   fastify.get('/api/postcodes/lookup/:postcode', {
     schema: {

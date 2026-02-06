@@ -21,13 +21,13 @@ interface AppSidebarProps {
   menuItems: MenuItem[];
 }
 
-export function AppSidebar({ currentUser, menuItems }: AppSidebarProps) {
+export function AppSidebar({ menuItems }: AppSidebarProps) {
   const { currentRole, scopes } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
 
-  // Filter menu items based on user scopes
+  // Filter and sort menu items based on user scopes and sortOrder
   const filteredMenuItems = useMemo(() => {
     const filterItem = (item: MenuItem): MenuItem | null => {
       // If item has a resource, check if user has view permission
@@ -35,11 +35,12 @@ export function AppSidebar({ currentUser, menuItems }: AppSidebarProps) {
         return null;
       }
 
-      // If item has children, filter them recursively
+      // If item has children, filter and sort them recursively
       if (item.children) {
         const filteredChildren = item.children
           .map(filterItem)
-          .filter((child): child is MenuItem => child !== null);
+          .filter((child): child is MenuItem => child !== null)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
         // If no children remain after filtering, hide the parent menu
         if (filteredChildren.length === 0) {
@@ -54,7 +55,8 @@ export function AppSidebar({ currentUser, menuItems }: AppSidebarProps) {
 
     return menuItems
       .map(filterItem)
-      .filter((item): item is MenuItem => item !== null);
+      .filter((item): item is MenuItem => item !== null)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   }, [menuItems, scopes]);
 
   const toggleMenu = (menuId: string) => {

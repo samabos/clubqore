@@ -142,10 +142,7 @@ export class PersonnelController {
   async getClubTeamManagers(request, reply) {
     try {
       const { clubId } = request.params;
-      const userId = request.user.id;
-
-      // Validate authorization (optional, depending on your requirements)
-      // await this.clubService.assertUserInClub(userId, parseInt(clubId));
+      // const userId = request.user.id;  // Available for future authorization checks
 
       const teamManagers = await this.personnelService.getTeamManagers(parseInt(clubId));
 

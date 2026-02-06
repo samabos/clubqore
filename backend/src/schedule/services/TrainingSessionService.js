@@ -8,7 +8,7 @@ export class TrainingSessionService {
     const dates = [];
     const start = new Date(startDate);
     const end = new Date(endDate);
-    let current = new Date(start);
+    const current = new Date(start);
 
     while (current <= end) {
       if (pattern === 'daily') {
@@ -959,7 +959,7 @@ export class TrainingSessionService {
    * @param {Object} updates - Updates to apply
    * @param {number} userId - User performing the action
    */
-  async editAllOccurrences(sessionId, updates, userId) {
+  async editAllOccurrences(sessionId, updates, _userId) {
     try {
       const updateData = {
         ...updates,

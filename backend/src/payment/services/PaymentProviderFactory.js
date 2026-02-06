@@ -52,8 +52,16 @@ export class PaymentProviderFactory {
     // Get configuration from environment if not provided
     const providerConfig = config || this._getProviderConfig(normalizedName);
 
-    // Create new instance
-    const instance = new ProviderClass(providerConfig);
+    // Create new instance with error handling
+    let instance;
+    try {
+      instance = new ProviderClass(providerConfig);
+    } catch (error) {
+      // Re-throw with statusCode for proper HTTP response
+      const configError = new Error(error.message);
+      configError.statusCode = 503;
+      throw configError;
+    }
 
     // Cache the instance
     if (cached) {

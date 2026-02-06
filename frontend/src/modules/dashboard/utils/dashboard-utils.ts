@@ -21,7 +21,9 @@ export function combineAndSortEvents(
       team_name: ts.team_name,
       child_first_name: ts.child_first_name,
       child_last_name: ts.child_last_name,
+      children: ts.children,
       title: ts.title,
+      session_type: ts.session_type,
     })),
     ...matches.map((m) => ({
       id: m.id,
@@ -33,8 +35,10 @@ export function combineAndSortEvents(
       team_name: m.team_name,
       child_first_name: m.child_first_name,
       child_last_name: m.child_last_name,
+      children: m.children,
       opponent: m.opponent,
       is_home: m.is_home,
+      match_type: m.match_type,
     })),
   ];
 

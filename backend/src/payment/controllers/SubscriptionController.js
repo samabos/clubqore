@@ -173,23 +173,27 @@ export class SubscriptionController {
     try {
       const clubId = await this._getClubId(request);
 
-      // Get all child users linked to this club who don't have an active subscription
-      const members = await this.db('users as u')
-        .join('user_profiles as up', 'u.id', 'up.user_id')
-        .join('user_roles as ur', 'u.id', 'ur.user_id')
-        .join('roles as r', 'ur.role_id', 'r.id')
+      // Get all children on teams in this club who don't have an active subscription
+      // Children are linked via: team_members -> user_children -> users
+      const members = await this.db('user_children as uc')
+        .join('users as u', 'uc.child_user_id', 'u.id')
+        .leftJoin('user_profiles as up', 'u.id', 'up.user_id')
+        .leftJoin('team_members as tm', 'uc.id', 'tm.user_child_id')
+        .leftJoin('teams as t', 'tm.team_id', 't.id')
         .leftJoin('subscriptions as s', function() {
           this.on('u.id', '=', 's.child_user_id')
-            .andOn('s.club_id', '=', clubId)
+            .andOnVal('s.club_id', '=', clubId)
             .andOnIn('s.status', ['active', 'pending', 'paused']);
         })
-        .where('r.name', 'member')
+        .where('uc.club_id', clubId)
         .whereNull('s.id') // No active subscription
         .select(
           'u.id',
           'u.email',
           'up.first_name',
-          'up.last_name'
+          'up.last_name',
+          't.name as team_name',
+          'uc.id as user_child_id'
         )
         .orderBy('up.last_name', 'asc');
 

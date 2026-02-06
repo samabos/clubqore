@@ -4,9 +4,9 @@ on:
   pull_request:
     branches:
       - main # Deploy staging on PR to main branch
-  push:
-    branches:
-      - main # Deploy production on push to main branch
+  # push:
+  #   branches:
+  #     - main # Deploy production on push to main branch (disabled for now)
 
 env:
   DOCKER_REGISTRY: docker.io
@@ -14,12 +14,50 @@ env:
   FRONTEND_IMAGE_NAME: clubqore-frontend
 
 jobs:
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Type check frontend
+        working-directory: ./frontend
+        run: npx tsc -b --noEmit
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Lint backend
+        working-directory: ./backend
+        run: npm run lint
+
   build-and-deploy:
     runs-on: ubuntu-latest
+    needs: lint-and-typecheck
     # Use GitHub Environments for environment-specific secrets
     environment:
       name: ${{ github.event_name == 'push' && 'production' || 'staging' }}
-      url: ${{ github.event_name == 'push' && 'https://app.clubqore.com' || 'https://staging.clubqore.com' }}
+      url: ${{ github.event_name == 'push' && 'https://www.clubqore.com' || 'https://www.clubqore.com' }}
 
     steps:
       - name: Checkout code
@@ -31,12 +69,14 @@ jobs:
             echo "ENVIRONMENT=production" >> $GITHUB_ENV
             echo "DEPLOY_PATH=/root/clubqore" >> $GITHUB_ENV
             echo "COMPOSE_FILE=docker-compose.prod.yml" >> $GITHUB_ENV
-            echo "FRONTEND_API_URL=https://api.clubqore.com" >> $GITHUB_ENV
+            echo "FRONTEND_API_URL=https://www.clubqore.com/api" >> $GITHUB_ENV
+            echo "GOCARDLESS_ENV=live" >> $GITHUB_ENV
           else
             echo "ENVIRONMENT=staging" >> $GITHUB_ENV
             echo "DEPLOY_PATH=/root/clubqore-staging" >> $GITHUB_ENV
             echo "COMPOSE_FILE=docker-compose.staging.yml" >> $GITHUB_ENV
             echo "FRONTEND_API_URL=https://www.clubqore.com/api" >> $GITHUB_ENV
+            echo "GOCARDLESS_ENV=sandbox" >> $GITHUB_ENV
           fi
 
       - name: Set up Docker Buildx
@@ -105,24 +145,48 @@ jobs:
           DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
           GITHUB_RUN_NUMBER=${{ github.run_number }}
 
-          # Database configuration (environment-specific)
-          STAGING_POSTGRES_DB=${{ secrets.POSTGRES_DB }}
-          STAGING_POSTGRES_USER=${{ secrets.POSTGRES_USER }}
-          STAGING_POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          # Database configuration
+          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
 
           # JWT secrets
           JWT_SECRET=${{ secrets.JWT_SECRET }}
-          JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
 
-          # Frontend URL (environment-specific)
-          FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+          # Token expiration times (in seconds)
+          ACCESS_TOKEN_EXPIRES_IN=900
+          REFRESH_TOKEN_EXPIRES_IN=604800
+          EMAIL_VERIFICATION_TOKEN_EXPIRES_IN=86400
+          PASSWORD_RESET_TOKEN_EXPIRES_IN=3600
+
+          # Application URLs
+          FRONTEND_URL=https://www.clubqore.com
 
           # Email configuration
-          EMAIL_PROVIDER=${{ secrets.EMAIL_PROVIDER }}
-          EMAIL_USER=${{ secrets.EMAIL_USER }}
+          EMAIL_PROVIDER=${{ vars.EMAIL_PROVIDER }}
+          EMAIL_HOST=${{ vars.EMAIL_HOST }}
+          EMAIL_PORT=587
+          EMAIL_SECURE=false
+          EMAIL_USER=${{ vars.EMAIL_USER }}
           EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}
-          EMAIL_FROM_NAME=${{ secrets.EMAIL_FROM_NAME }}
-          EMAIL_FROM_EMAIL=${{ secrets.EMAIL_FROM_EMAIL }}
+          EMAIL_FROM_NAME=ClubQore
+          EMAIL_FROM_EMAIL=noreply@clubqore.com
+
+          # GoCardless Payment Provider (secrets)
+          GOCARDLESS_ACCESS_TOKEN=${{ secrets.GOCARDLESS_ACCESS_TOKEN }}
+          GOCARDLESS_WEBHOOK_SECRET=${{ secrets.GOCARDLESS_WEBHOOK_SECRET }}
+          # GoCardless config (non-sensitive)
+          GOCARDLESS_ENVIRONMENT=${{ env.GOCARDLESS_ENV }}
+          DEFAULT_PAYMENT_PROVIDER=gocardless
+
+          # Payment secrets
+          PAYMENT_ENCRYPTION_KEY=${{ secrets.PAYMENT_ENCRYPTION_KEY }}
+          PAYMENT_HASH_SALT=${{ secrets.PAYMENT_HASH_SALT }}
+
+          # Billing Configuration (non-sensitive defaults)
+          BILLING_RETRY_MAX_ATTEMPTS=3
+          BILLING_RETRY_DAYS=3,5,7
+          BILLING_REMINDER_DAYS_BEFORE=3
 
           # SSL/ACME configuration
           ACME_EMAIL=${{ secrets.ACME_EMAIL }}
@@ -136,11 +200,17 @@ jobs:
 
             echo "🚀 Deploying ClubQore (${{ env.ENVIRONMENT }})..."
 
+            # Load environment variables from .env file
+            source .env
+
             # Debug: Show environment variables
             echo "🔍 Debug: Environment variables:"
-            echo "STAGING_POSTGRES_DB: ${STAGING_POSTGRES_DB}"
-            echo "STAGING_POSTGRES_USER: ${STAGING_POSTGRES_USER}"
+            echo "POSTGRES_DB: ${POSTGRES_DB}"
+            echo "POSTGRES_USER: ${POSTGRES_USER}"
+            echo "GOCARDLESS_ENVIRONMENT: ${GOCARDLESS_ENVIRONMENT}"
             echo "JWT_SECRET: $([ -n "${JWT_SECRET}" ] && echo "Set" || echo "Missing")"
+            echo "GOCARDLESS_ACCESS_TOKEN: $([ -n "${GOCARDLESS_ACCESS_TOKEN}" ] && echo "Set" || echo "Missing")"
+            echo "PAYMENT_ENCRYPTION_KEY: $([ -n "${PAYMENT_ENCRYPTION_KEY}" ] && echo "Set" || echo "Missing")"
 
             # Pull latest images
             echo "📦 Pulling Docker images..."
@@ -173,8 +243,8 @@ jobs:
       - name: Verify deployment
         run: |
           if [ "${{ env.ENVIRONMENT }}" == "production" ]; then
-            BACKEND_URL="https://api.clubqore.com"
-            FRONTEND_URL="https://app.clubqore.com"
+            BACKEND_URL="https://www.clubqore.com/api"
+            FRONTEND_URL="https://www.clubqore.com"
           else
             BACKEND_URL="https://www.clubqore.com/api"
             FRONTEND_URL="https://www.clubqore.com"

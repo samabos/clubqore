@@ -93,13 +93,25 @@ export class ParentScheduleController {
         );
 
       // Add child names to events based on team_id
+      // Returns array of children when multiple children are in the same team
       const addChildNames = (events) => {
         return events.map(event => {
-          const childInfo = childTeamMapping.find(m => m.team_id === event.team_id);
+          // Use Number() to ensure type consistency for comparison
+          const eventTeamId = Number(event.team_id);
+          const children = childTeamMapping
+            .filter(m => Number(m.team_id) === eventTeamId)
+            .map(m => ({
+              first_name: m.child_first_name,
+              last_name: m.child_last_name
+            }));
+
           return {
             ...event,
-            child_first_name: childInfo?.child_first_name || null,
-            child_last_name: childInfo?.child_last_name || null,
+            // For backwards compatibility, keep first child in single fields
+            child_first_name: children[0]?.first_name || null,
+            child_last_name: children[0]?.last_name || null,
+            // New field: array of all children for this event
+            children: children.length > 0 ? children : null,
           };
         });
       };

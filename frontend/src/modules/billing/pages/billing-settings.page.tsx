@@ -19,6 +19,7 @@ export function BillingSettingsPage() {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = async () => {
@@ -30,10 +31,11 @@ export function BillingSettingsPage() {
       ]);
       setSettings(settingsData);
       setJobs(jobsData);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load billing settings";
       toast({
         title: "Error",
-        description: error.message || "Failed to load billing settings",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -49,10 +51,11 @@ export function BillingSettingsPage() {
         description: "Billing settings updated successfully",
       });
       loadData(); // Reload to get fresh data including scheduled jobs
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to update settings";
       toast({
         title: "Error",
-        description: error.message || "Failed to update settings",
+        description: message,
         variant: "destructive",
       });
       throw error;

@@ -26,7 +26,7 @@ class SecureTokenManager {
   }
 
   // Decode JWT token to get expiration
-  private decodeJWTPayload(token: string): any {
+  private decodeJWTPayload(token: string): Record<string, unknown> | null {
     try {
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -206,7 +206,7 @@ class SecureTokenManager {
   }
 
   // Get JWT claims from access token
-  getTokenClaims(): any {
+  getTokenClaims(): Record<string, unknown> | null {
     const tokenData = this.getTokenData();
     if (!tokenData?.accessToken) return null;
     return this.decodeJWTPayload(tokenData.accessToken);
@@ -416,7 +416,7 @@ export const securityUtils = {
   },
 
   // Decode JWT payload (utility function)
-  decodeJWT: (token: string): any => {
+  decodeJWT: (token: string): Record<string, unknown> | null => {
     try {
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');

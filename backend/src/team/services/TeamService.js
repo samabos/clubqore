@@ -372,33 +372,73 @@ export class TeamService {
   async _handleSubscriptionForTeamChange(trx, childUserId, parentUserId, newTeam, options = {}) {
     const clubId = newTeam.club_id;
 
-    // 1. Find existing active subscription for this child in this club
+    // 1. Find ANY existing subscription for this child in this club (regardless of status)
     const existingSubscription = await trx('subscriptions')
       .where('child_user_id', childUserId)
       .where('club_id', clubId)
-      .whereIn('status', ['active', 'pending'])
       .first();
 
-    // 2. If exists and different team, cancel it (immediate for team changes)
-    if (existingSubscription && existingSubscription.team_id !== newTeam.id) {
-      console.log('🔄 Cancelling old subscription:', existingSubscription.id);
-      await trx('subscriptions')
+    if (existingSubscription) {
+      // 2a. If same team and active/pending, just return it
+      if (existingSubscription.team_id === newTeam.id &&
+          ['active', 'pending'].includes(existingSubscription.status)) {
+        console.log('✅ Subscription already exists for this team');
+        return existingSubscription;
+      }
+
+      // 2b. If same team but cancelled/suspended, reactivate it
+      if (existingSubscription.team_id === newTeam.id) {
+        console.log('🔄 Reactivating existing subscription:', existingSubscription.id);
+        const [reactivated] = await trx('subscriptions')
+          .where('id', existingSubscription.id)
+          .update({
+            status: 'active',
+            cancelled_at: null,
+            cancellation_reason: null,
+            updated_at: new Date()
+          })
+          .returning('*');
+        return reactivated;
+      }
+
+      // 2c. Different team - update the existing subscription to new team/tier
+      console.log('🔄 Updating subscription to new team:', existingSubscription.id);
+
+      // Get the tier for the new team
+      const tier = await trx('membership_tiers')
+        .where('id', newTeam.membership_tier_id)
+        .first();
+
+      if (!tier) {
+        throw new Error('Membership tier not found for this team');
+      }
+
+      const billingDay = options.billingDayOfMonth || existingSubscription.billing_day_of_month || Math.min(new Date().getDate(), 28);
+      const billingFrequency = options.billingFrequency || tier.billing_frequency || 'monthly';
+      const amount = billingFrequency === 'annual'
+        ? (tier.annual_price || tier.monthly_price * 12)
+        : tier.monthly_price;
+
+      const [updated] = await trx('subscriptions')
         .where('id', existingSubscription.id)
         .update({
-          status: 'cancelled',
-          cancelled_at: new Date(),
-          cancellation_reason: 'Team change - transferred to new team',
+          team_id: newTeam.id,
+          membership_tier_id: newTeam.membership_tier_id,
+          status: 'active',
+          billing_frequency: billingFrequency,
+          billing_day_of_month: billingDay,
+          amount: amount,
+          cancelled_at: null,
+          cancellation_reason: null,
           updated_at: new Date()
-        });
+        })
+        .returning('*');
+
+      console.log('✅ Updated subscription to new team/tier:', updated.id);
+      return updated;
     }
 
-    // 3. Skip if subscription already exists for this team
-    if (existingSubscription && existingSubscription.team_id === newTeam.id) {
-      console.log('✅ Subscription already exists for this team');
-      return existingSubscription;
-    }
-
-    // 4. Get the tier for the new team
+    // 3. No existing subscription - create new one
     const tier = await trx('membership_tiers')
       .where('id', newTeam.membership_tier_id)
       .first();
@@ -406,13 +446,24 @@ export class TeamService {
     if (!tier) {
       throw new Error('Membership tier not found for this team');
     }
-
-    // 5. Create new subscription
     const billingDay = options.billingDayOfMonth || Math.min(new Date().getDate(), 28);
     const billingFrequency = options.billingFrequency || tier.billing_frequency || 'monthly';
     const amount = billingFrequency === 'annual'
       ? (tier.annual_price || tier.monthly_price * 12)
       : tier.monthly_price;
+
+    // Calculate billing dates
+    const today = new Date();
+    const nextBillingDate = new Date(today.getFullYear(), today.getMonth(), billingDay);
+    if (nextBillingDate <= today) {
+      nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+    }
+    const periodEnd = new Date(nextBillingDate);
+    if (billingFrequency === 'annual') {
+      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    } else {
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
+    }
 
     console.log('📝 Creating new subscription with tier:', tier.name, 'amount:', amount);
 
@@ -423,10 +474,13 @@ export class TeamService {
         child_user_id: childUserId,
         membership_tier_id: newTeam.membership_tier_id,
         team_id: newTeam.id,
-        status: 'pending', // Will become active when payment method is set
+        status: 'active',
         billing_frequency: billingFrequency,
         billing_day_of_month: billingDay,
         amount: amount,
+        current_period_start: today,
+        current_period_end: periodEnd,
+        next_billing_date: nextBillingDate,
         created_at: new Date(),
         updated_at: new Date()
       })

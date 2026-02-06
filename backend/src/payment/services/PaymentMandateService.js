@@ -47,8 +47,8 @@ export class PaymentMandateService {
     });
 
     const redirectUrls = {
-      success: `${baseUrl}/billing/mandate/complete?state=${encodeURIComponent(state)}`,
-      cancel: `${baseUrl}/billing/mandate/cancel?state=${encodeURIComponent(state)}`
+      success: `${baseUrl}/app/parent/payment-methods/callback?status=success&state=${encodeURIComponent(state)}`,
+      cancel: `${baseUrl}/app/parent/payment-methods/callback?status=cancelled&state=${encodeURIComponent(state)}`
     };
 
     // Create setup flow in provider
@@ -59,16 +59,17 @@ export class PaymentMandateService {
     );
 
     // Store pending setup in database
+    // metadata is jsonb, pass object directly (Knex handles serialization)
     await this.db('payment_mandates').insert({
       payment_customer_id: customer.id,
       provider,
       provider_mandate_id: `pending_${flow.flowId}`, // Temporary ID until completed
       scheme: options.scheme || 'bacs',
       status: 'pending_setup',
-      metadata: JSON.stringify({
+      metadata: {
         flowId: flow.flowId,
         setupInitiatedAt: new Date().toISOString()
-      }),
+      },
       created_at: new Date(),
       updated_at: new Date()
     });
@@ -90,14 +91,14 @@ export class PaymentMandateService {
    * @param {Object} queryParams - Query parameters from redirect
    * @returns {Promise<Object>} Completed mandate
    */
-  async completeSetupFlow(state, queryParams = {}) {
+  async completeSetupFlow(state, _queryParams = {}) {
     // Verify state token
     const stateData = verifyState(state);
     if (!stateData) {
       throw new Error('Invalid or expired setup session');
     }
 
-    const { userId, clubId, provider, customerId } = stateData;
+    const { userId, clubId: _clubId, provider, customerId } = stateData;
 
     // Get provider instance
     const providerInstance = PaymentProviderFactory.getProvider(provider);
@@ -109,15 +110,30 @@ export class PaymentMandateService {
       .first();
 
     if (!pendingMandate) {
+      // Check if mandate was already completed (idempotency for duplicate requests)
+      const completedMandate = await this.db('payment_mandates')
+        .where({ payment_customer_id: customerId })
+        .whereIn('status', ['active', 'pending', 'submitted'])
+        .orderBy('created_at', 'desc')
+        .first();
+
+      if (completedMandate) {
+        // Already completed, return the existing mandate
+        return this.formatMandate(completedMandate);
+      }
+
       throw new Error('No pending mandate setup found');
     }
 
-    const metadata = JSON.parse(pendingMandate.metadata || '{}');
+    // metadata is jsonb, so it's already an object (not a string)
+    const metadata = typeof pendingMandate.metadata === 'string'
+      ? JSON.parse(pendingMandate.metadata || '{}')
+      : (pendingMandate.metadata || {});
 
     // Complete setup in provider
     const completedMandate = await providerInstance.completeMandateSetup(metadata.flowId);
 
-    // Update mandate record
+    // Update mandate record (metadata is jsonb, pass object directly)
     const [mandate] = await this.db('payment_mandates')
       .where({ id: pendingMandate.id })
       .update({
@@ -125,10 +141,10 @@ export class PaymentMandateService {
         status: completedMandate.status,
         reference: completedMandate.reference,
         next_possible_charge_date: completedMandate.nextPossibleChargeDate,
-        metadata: JSON.stringify({
+        metadata: {
           ...metadata,
           completedAt: new Date().toISOString()
-        }),
+        },
         updated_at: new Date()
       })
       .returning('*');

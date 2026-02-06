@@ -516,7 +516,6 @@ describe('Auth Routes Integration Tests', () => {
   describe('Email Verification Routes', () => {
     let testUser;
     let accessToken;
-    let userId;
 
     beforeEach(async () => {
       testUser = createTestUser('verification');
@@ -529,7 +528,7 @@ describe('Auth Routes Integration Tests', () => {
       
       const body = JSON.parse(response.body);
       accessToken = body.accessToken;
-      userId = body.user?.id;
+      // userId available via body.user?.id if needed
     });
 
     describe('POST /auth/verify-email', () => {

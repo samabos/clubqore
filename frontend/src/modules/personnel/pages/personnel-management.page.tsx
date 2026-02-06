@@ -5,7 +5,6 @@ import {
   PersonnelTabs,
   PersonnelForm,
   PersonnelTable,
-  PersonnelLoading,
 } from "../components";
 import { Personnel, PersonnelFormData } from "../types/component-types";
 import {
@@ -71,6 +70,7 @@ export function PersonnelManagementPage() {
     });
     navigate("/app/club/setup");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clubId, loadPersonnel]);
 
   const handleAddPersonnel = async (e: React.FormEvent) => {
