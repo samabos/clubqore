@@ -26,6 +26,7 @@ export interface AuthUser {
   profile?: UserProfile;
   preferences?: UserPreferences;
   roles: string[];
+  primaryRole?: UserRole;
   accounts?: UserAccount[];
   children?: UserChild[];
 }

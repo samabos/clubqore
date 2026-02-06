@@ -25,11 +25,10 @@ export function EmailVerificationCallback() {
       return;
     }
 
-    const verifyEmail = async () => {
+    const verifyEmailToken = async () => {
       try {
-        const updatedUser = await emailVerificationAPI.confirmVerification(
-          token
-        );
+        const result = await emailVerificationAPI.verifyEmail(token);
+        const updatedUser = result.user as { isOnboarded?: boolean; roles?: string[] };
         setStatus("success");
         setMessage("Email verified successfully!");
 
@@ -41,7 +40,7 @@ export function EmailVerificationCallback() {
           if (!updatedUser.isOnboarded) {
             navigate("/onboarding");
           } else {
-            const defaultRoute = getDefaultRouteByRole(updatedUser.roles);
+            const defaultRoute = getDefaultRouteByRole(updatedUser.roles || []);
             navigate(defaultRoute);
           }
         }, 2000);
@@ -53,7 +52,7 @@ export function EmailVerificationCallback() {
       }
     };
 
-    verifyEmail();
+    verifyEmailToken();
   }, [searchParams, navigate, getCurrentUser]);
 
   return (

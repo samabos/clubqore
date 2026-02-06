@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Fragment } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -305,9 +305,9 @@ export function PermissionManagementPage() {
               </TableHeader>
               <TableBody>
                 {Array.from(groupedResources.entries()).map(([type, resources]) => (
-                  <>
+                  <Fragment key={`group-${type}`}>
                     {/* Type Header Row */}
-                    <TableRow key={`type-${type}`} className="bg-muted/50">
+                    <TableRow className="bg-muted/50">
                       <TableCell colSpan={5} className="font-semibold capitalize">
                         {type}s
                       </TableCell>
@@ -360,7 +360,7 @@ export function PermissionManagementPage() {
                         </TableRow>
                       );
                     })}
-                  </>
+                  </Fragment>
                 ))}
               </TableBody>
             </Table>

@@ -142,8 +142,8 @@ export function ProfileSetup({ profile, onProfileUpdate }: ProfileSetupProps) {
                 updateField("address", {
                   street: e.target.value,
                   city: profile.address?.city || "",
-                  state: profile.address?.state || "",
-                  zipCode: profile.address?.zipCode || "",
+                  county: profile.address?.county || "",
+                  postcode: profile.address?.postcode || "",
                   country: profile.address?.country || "",
                 })
               }
@@ -157,8 +157,8 @@ export function ProfileSetup({ profile, onProfileUpdate }: ProfileSetupProps) {
                 updateField("address", {
                   street: profile.address?.street || "",
                   city: e.target.value,
-                  state: profile.address?.state || "",
-                  zipCode: profile.address?.zipCode || "",
+                  county: profile.address?.county || "",
+                  postcode: profile.address?.postcode || "",
                   country: profile.address?.country || "",
                 })
               }
@@ -168,34 +168,34 @@ export function ProfileSetup({ profile, onProfileUpdate }: ProfileSetupProps) {
           </div>
           <div className="grid grid-cols-2 gap-4 mt-2">
             <Input
-              id="state"
-              value={profile.address?.state || ""}
+              id="county"
+              value={profile.address?.county || ""}
               onChange={(e) =>
                 updateField("address", {
                   street: profile.address?.street || "",
                   city: profile.address?.city || "",
-                  state: e.target.value,
-                  zipCode: profile.address?.zipCode || "",
+                  county: e.target.value,
+                  postcode: profile.address?.postcode || "",
                   country: profile.address?.country || "",
                 })
               }
               className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
-              placeholder="State"
+              placeholder="County"
             />
             <Input
-              id="zipCode"
-              value={profile.address?.zipCode || ""}
+              id="postcode"
+              value={profile.address?.postcode || ""}
               onChange={(e) =>
                 updateField("address", {
                   street: profile.address?.street || "",
                   city: profile.address?.city || "",
-                  state: profile.address?.state || "",
-                  zipCode: e.target.value,
+                  county: profile.address?.county || "",
+                  postcode: e.target.value,
                   country: profile.address?.country || "",
                 })
               }
               className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
-              placeholder="ZIP Code"
+              placeholder="Postcode"
             />
           </div>
           <div className="mt-2">
@@ -206,8 +206,8 @@ export function ProfileSetup({ profile, onProfileUpdate }: ProfileSetupProps) {
                 updateField("address", {
                   street: profile.address?.street || "",
                   city: profile.address?.city || "",
-                  state: profile.address?.state || "",
-                  zipCode: profile.address?.zipCode || "",
+                  county: profile.address?.county || "",
+                  postcode: profile.address?.postcode || "",
                   country: e.target.value,
                 })
               }
