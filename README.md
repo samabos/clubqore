@@ -1,1 +1,1 @@
-# clubqore
+# Clubqore Documentation.
