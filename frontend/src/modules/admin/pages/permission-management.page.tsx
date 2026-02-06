@@ -24,7 +24,7 @@ import {
   fetchPermissionMatrix,
   bulkUpdateRolePermissions,
 } from "../actions/permission-actions";
-import type { PermissionMatrix, PermissionMatrixEntry, BulkUpdatePermissionData } from "@/types/permission";
+import type { PermissionMatrix, PermissionMatrixEntry, BulkUpdatePermissionData, Resource } from "@/types/permission";
 
 type PermissionAction = "can_view" | "can_create" | "can_edit" | "can_delete";
 
@@ -88,8 +88,8 @@ export function PermissionManagementPage() {
 
   // Group resources by type for better display
   const groupedResources = useMemo(() => {
-    if (!matrix) return new Map();
-    const groups = new Map<string, typeof matrix.resources>();
+    if (!matrix) return new Map<string, Resource[]>();
+    const groups = new Map<string, Resource[]>();
 
     matrix.resources.forEach((resource) => {
       const type = resource.type;

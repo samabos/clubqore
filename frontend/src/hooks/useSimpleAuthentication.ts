@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '@/stores/authStore';
-import { SignInData, SignUpData, authService } from '@/services/authService';
+import { authService } from '@/services/authService';
 import { authToasts } from '@/utils/toast';
-import { AuthUser } from '@/types/auth';
+import { AuthUser, SignInData, SimpleSignUpData } from '@/types/auth';
 
 export type AuthMode = 'signin' | 'signup' | 'forgot-password' | 'email-verification';
 
@@ -16,16 +16,16 @@ export interface UseSimpleAuthenticationReturn {
   showPassword: boolean;
   showConfirmPassword: boolean;
   signInData: SignInData;
-  signUpData: SignUpData;
+  signUpData: SimpleSignUpData;
   forgotEmail: string;
 
   // State setters
-  setAuthMode: (mode: AuthMode) => void;
-  setShowPassword: (show: boolean) => void;
-  setShowConfirmPassword: (show: boolean) => void;
-  setSignInData: (data: SignInData) => void;
-  setSignUpData: (data: SignUpData) => void;
-  setForgotEmail: (email: string) => void;
+  setAuthMode: React.Dispatch<React.SetStateAction<AuthMode>>;
+  setShowPassword: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowConfirmPassword: React.Dispatch<React.SetStateAction<boolean>>;
+  setSignInData: React.Dispatch<React.SetStateAction<SignInData>>;
+  setSignUpData: React.Dispatch<React.SetStateAction<SimpleSignUpData>>;
+  setForgotEmail: React.Dispatch<React.SetStateAction<string>>;
 
   // Handlers
   handleSignIn: (e: React.FormEvent) => Promise<void>;
@@ -40,9 +40,9 @@ export interface UseSimpleAuthenticationReturn {
   switchToSignUp: () => void;
   switchToForgotPassword: () => void;
   switchToEmailVerification: () => void;
-  
+
   // Email verification state
-  pendingUser: AuthUser | null;
+  pendingUser: AuthUser | undefined;
   verificationSent: boolean;
 
   // Auth state from store
@@ -68,7 +68,7 @@ export function useSimpleAuthentication(props: UseSimpleAuthenticationProps = {}
     email: '',
     password: '',
   });
-  const [signUpData, setSignUpData] = useState<SignUpData>({
+  const [signUpData, setSignUpData] = useState<SimpleSignUpData>({
     email: '',
     password: '',
     confirmPassword: '',
@@ -207,7 +207,7 @@ export function useSimpleAuthentication(props: UseSimpleAuthenticationProps = {}
     switchToEmailVerification,
 
     // Email verification state (simplified)
-    pendingUser: auth.user, // Use current user as pending user for now
+    pendingUser: auth.user ?? undefined, // Use current user as pending user for now
     verificationSent: false, // Simplified - always false for now
 
     // Auth state from store

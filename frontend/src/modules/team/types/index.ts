@@ -81,3 +81,16 @@ export interface AssignMemberRequest {
 export interface SetTeamTierRequest {
   membershipTierId: number;
 }
+
+export interface TeamManagerPersonnel {
+  id: number;
+  user_id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: string;
+  is_active: boolean;
+  account_number?: string;
+  // Computed field for display
+  fullName?: string;
+}

@@ -126,7 +126,7 @@ export function getDisplayInfo(item: ScheduleItem): ScheduleItemDisplay {
       end_time: item.data.end_time,
       status: item.data.status as ScheduleStatus,
       venue: item.data.venue,
-      teams: [item.data.home_team_name, opponentName].filter(Boolean),
+      teams: [item.data.home_team_name, opponentName].filter((t): t is string => Boolean(t)),
       color: getMatchColor(item.data.match_type),
       badge: item.data.match_type,
       badgeColor: getMatchBadgeColor(item.data.match_type),

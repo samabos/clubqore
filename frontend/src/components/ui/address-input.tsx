@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Address } from '@/types/common';
 import { postcodeAPI, AddressSuggestion } from '@/api/postcode';
 import { Input } from '@/components/ui/input';

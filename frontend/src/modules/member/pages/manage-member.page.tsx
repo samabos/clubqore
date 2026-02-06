@@ -126,7 +126,7 @@ export function ManageMemberPage() {
 
           return {
             id: index + 1,
-            childUserId: child.id, // Preserve the actual child_user_id for updates
+            childUserId: typeof child.id === 'string' ? parseInt(child.id, 10) : child.id, // Preserve the actual child_user_id for updates
             firstName: child.firstName,
             lastName: child.lastName,
             dateOfBirth: formattedDateOfBirth,
@@ -216,7 +216,7 @@ export function ManageMemberPage() {
     return <ManageMemberLoading />;
   }
 
-  const updateField = (field: string, value: string | boolean) => {
+  const updateField = (field: string, value: string | number | boolean) => {
     if (field.includes(".")) {
       const [parent, child] = field.split(".");
       setFormData((prev) => ({

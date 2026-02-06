@@ -35,9 +35,9 @@ export interface AuthUser {
 export interface UserProfile extends ChildInfo {
   fullName?: string;
   phone?: string;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
-  emergencyContactRelation: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactRelation?: string;
   profileCompletedAt?: string;
   address?: Address;
 }

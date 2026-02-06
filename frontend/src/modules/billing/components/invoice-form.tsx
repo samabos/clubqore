@@ -455,16 +455,16 @@ export function InvoiceForm({
                 <span className="text-muted-foreground">Subtotal:</span>
                 <span>{formatCurrency(calculateSubtotal())}</span>
               </div>
-              {watchTax > 0 && (
+              {(watchTax ?? 0) > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Tax:</span>
-                  <span>{formatCurrency(watchTax)}</span>
+                  <span>{formatCurrency(watchTax ?? 0)}</span>
                 </div>
               )}
-              {watchDiscount > 0 && (
+              {(watchDiscount ?? 0) > 0 && (
                 <div className="flex justify-between text-sm text-green-600">
                   <span>Discount:</span>
-                  <span>-{formatCurrency(watchDiscount)}</span>
+                  <span>-{formatCurrency(watchDiscount ?? 0)}</span>
                 </div>
               )}
               <Separator />

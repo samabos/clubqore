@@ -79,11 +79,15 @@ export function DateOfBirthInput({
         const maxAgeConfig = configs.find(c => c.key === 'max_member_age');
 
         if (minAgeConfig) {
-          const minValue = typeof minAgeConfig.value === 'string' ? parseInt(minAgeConfig.value, 10) : minAgeConfig.value;
+          const minValue = typeof minAgeConfig.value === 'string'
+            ? parseInt(minAgeConfig.value, 10)
+            : typeof minAgeConfig.value === 'number' ? minAgeConfig.value : 5;
           setMinAge(minValue);
         }
         if (maxAgeConfig) {
-          const maxValue = typeof maxAgeConfig.value === 'string' ? parseInt(maxAgeConfig.value, 10) : maxAgeConfig.value;
+          const maxValue = typeof maxAgeConfig.value === 'string'
+            ? parseInt(maxAgeConfig.value, 10)
+            : typeof maxAgeConfig.value === 'number' ? maxAgeConfig.value : 18;
           setMaxAge(maxValue);
         }
       } catch (err) {

@@ -144,7 +144,7 @@ export function useOnboarding() {
       console.log("Completing onboarding with data:", apiData);
 
       // Complete onboarding on the backend
-      await onboardingAPI.completeOnboarding(apiData as Parameters<typeof onboardingAPI.completeOnboarding>[0]);
+      await onboardingAPI.completeOnboarding(apiData as unknown as Parameters<typeof onboardingAPI.completeOnboarding>[0]);
 
       // Get updated user profile from backend
       await getCurrentUser();

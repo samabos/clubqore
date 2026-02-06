@@ -67,9 +67,9 @@ export function ClubDetails() {
         <div className="space-y-4">
           {/* Club Logo and Name */}
           <div className="flex items-center gap-4">
-            {userClub.logo_url ? (
+            {userClub.logoUrl ? (
               <img
-                src={userClub.logo_url}
+                src={userClub.logoUrl}
                 alt={`${userClub.name} logo`}
                 className="w-16 h-16 rounded-lg object-cover border border-gray-200"
               />
@@ -120,7 +120,9 @@ export function ClubDetails() {
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-gray-400" />
                 <span className="text-sm text-gray-600">
-                  {userClub.address}
+                  {typeof userClub.address === 'string'
+                    ? userClub.address
+                    : [userClub.address.street, userClub.address.city, userClub.address.postcode].filter(Boolean).join(', ')}
                 </span>
               </div>
             )}

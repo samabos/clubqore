@@ -180,8 +180,6 @@ export function PaymentMethodsPage() {
                         className={`text-sm font-medium ${
                           stat.changeType === "increase"
                             ? "text-green-600"
-                            : stat.changeType === "decrease"
-                            ? "text-red-600"
                             : "text-gray-600"
                         }`}
                       >

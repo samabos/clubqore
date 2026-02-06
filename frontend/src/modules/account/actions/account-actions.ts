@@ -14,6 +14,15 @@ export interface ChangePasswordResponse {
  * Change password for the logged-in user
  */
 export async function changePassword(data: ChangePasswordRequest): Promise<ChangePasswordResponse> {
-  const response = await apiClient.put<ChangePasswordResponse>('/profile/change-password', data);
-  return response.data;
+  const response = await apiClient('/profile/change-password', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to change password');
+  }
+
+  return response.json();
 }

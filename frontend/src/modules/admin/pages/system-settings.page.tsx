@@ -100,7 +100,7 @@ export function SystemSettingsPage() {
       return <code className="text-xs">{JSON.stringify(config.value)}</code>;
     }
 
-    return <span className="font-medium">{config.value}</span>;
+    return <span className="font-medium">{String(config.value)}</span>;
   };
 
   // Category display names

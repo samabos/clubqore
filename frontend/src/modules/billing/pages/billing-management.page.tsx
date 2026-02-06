@@ -115,7 +115,7 @@ export function BillingManagementPage() {
 
             return {
               parent_user_id: parent.id,
-              child_user_id: child.id,
+              child_user_id: typeof child.id === 'string' ? parseInt(child.id, 10) : child.id,
               first_name: `${parentFirstName} ${parentLastName}`,
               last_name: `(${child.name})`, // Child name in parentheses
               email: parent.email,

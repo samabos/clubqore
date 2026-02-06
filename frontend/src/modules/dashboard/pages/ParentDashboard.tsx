@@ -16,7 +16,6 @@ import {
   DollarSign,
   TrendingUp,
   Bell,
-  ArrowUpRight,
   MessageSquare,
   Baby,
   CreditCard,
@@ -227,18 +226,13 @@ export function ParentDashboard() {
                   <div className="flex items-center gap-1 mt-2">
                     <span
                       className={`text-sm font-medium ${
-                        stat.changeType === "increase"
-                          ? "text-green-600"
-                          : stat.changeType === "warning"
+                        stat.changeType === "warning"
                           ? "text-yellow-600"
                           : "text-gray-600"
                       }`}
                     >
                       {stat.change}
                     </span>
-                    {stat.changeType === "increase" && (
-                      <ArrowUpRight className="w-4 h-4 text-green-600" />
-                    )}
                   </div>
                 </div>
                 <div

@@ -16,4 +16,4 @@ export { ManageMemberLoading } from "./manage-member-loading";
 export { default as ParentInformationForm } from "./parent-information-form";
 export { default as AccountSettingsForm } from "./account-settings-form";
 export { default as ChildrenInformationForm } from "./children-information-form";
-export type { ChildData } from "./children-information-form";
+export type { ChildData } from "../types/component-types";

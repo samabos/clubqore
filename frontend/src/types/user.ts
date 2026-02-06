@@ -1,4 +1,5 @@
-export type UserRole = 'admin' | 'club_manager' | 'member' | 'parent' | 'staff' | 'team_manager' | 'super_admin';
+// Re-export UserRole from auth.ts for backward compatibility
+export type { UserRole } from './auth';
 
 export interface MenuItem {
   id: string;

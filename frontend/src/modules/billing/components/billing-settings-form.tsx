@@ -249,7 +249,7 @@ export function BillingSettingsForm({
                 />
 
                 {/* Example Calculation */}
-                {watchServiceChargeValue > 0 && (
+                {(watchServiceChargeValue ?? 0) > 0 && (
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>

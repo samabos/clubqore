@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { TeamManager } from '@/modules/team/types';
+import { TeamManagerPersonnel } from '@/modules/team/types';
 import { loadAvailablePersonnel } from '@/modules/team/actions/team-actions';
 
 export interface PersonnelState {
   // Data
-  availablePersonnel: TeamManager[];
+  availablePersonnel: TeamManagerPersonnel[];
   isLoading: boolean;
   lastLoaded: number | null;
   clubId: number | null;
@@ -50,8 +50,13 @@ export const usePersonnelStore = create<PersonnelState>()(
         
         try {
           const personnel = await loadAvailablePersonnel(clubId);
+          // Add computed fullName for display convenience
+          const personnelWithFullName = personnel.map(p => ({
+            ...p,
+            fullName: `${p.first_name} ${p.last_name}`.trim(),
+          }));
           set({
-            availablePersonnel: personnel,
+            availablePersonnel: personnelWithFullName,
             lastLoaded: Date.now(),
             clubId,
             isLoading: false,

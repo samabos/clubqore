@@ -109,7 +109,7 @@ export async function cancelScheduleTrainingSession(sessionId: number): Promise<
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function cancelScheduleMatch(matchId: number): Promise<void> {
+export async function cancelScheduleMatch(_matchId: number): Promise<void> {
   // TODO: Implement cancelMatch in match actions when match cancel endpoint is ready
   throw new Error('Match cancellation not yet implemented');
 }

@@ -139,10 +139,10 @@ export function TeamForm({
 
     // Validation
     const newErrors: Record<string, string> = {};
-    if (!formData.name.trim()) {
+    if (!formData.name || !formData.name.trim()) {
       newErrors.name = "Team name is required";
     }
-    if (formData.name.length > 255) {
+    if (formData.name && formData.name.length > 255) {
       newErrors.name = "Team name must be less than 255 characters";
     }
     if (formData.color && !/^#[0-9A-Fa-f]{6}$/.test(formData.color)) {

@@ -12,7 +12,7 @@ import BasicDetailsForm, {
 
 interface ParentInformationFormProps {
   formData: BasicDetailsData;
-  updateField: (field: keyof BasicDetailsData, value: string) => void;
+  updateField: (field: keyof BasicDetailsData, value: string | number | boolean) => void;
   isEditMode?: boolean;
 }
 

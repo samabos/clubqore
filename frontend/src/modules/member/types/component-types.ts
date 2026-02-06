@@ -1,3 +1,14 @@
+// Child data for forms
+export interface ChildData {
+  id: number;
+  childUserId?: number; // The actual child_user_id from the database (used for updates)
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  position: string;
+  medicalInfo: string;
+}
+
 // Define types for parent-child relationships
 export interface ChildInfo {
   id: string | number; // child_user_id or generated ID for unregistered children
@@ -123,7 +134,7 @@ export interface ManageMemberFormProps {
   children: ChildData[];
   isLoading: boolean;
   isEditMode: boolean;
-  onFormDataChange: (field: string, value: string | boolean) => void;
+  onFormDataChange: (field: string, value: string | number | boolean) => void;
   onChildFieldChange: (childId: number, field: string, value: string) => void;
   onAddChild: () => void;
   onRemoveChild: (childId: number) => void;
@@ -133,7 +144,4 @@ export interface ManageMemberFormProps {
 }
 
 export type ManageMemberLoadingProps = Record<string, never>;
-
-// Re-export ChildData via the components index barrel
-export type { ChildData } from "../components";
 

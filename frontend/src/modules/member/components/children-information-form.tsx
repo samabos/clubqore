@@ -18,16 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { User, UserPlus } from "lucide-react";
-
-export interface ChildData {
-  id: number;
-  childUserId?: number; // The actual child_user_id from the database (used for updates)
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  position: string;
-  medicalInfo: string;
-}
+import type { ChildData } from "../types/component-types";
 
 interface ChildrenInformationFormProps {
   children: ChildData[];

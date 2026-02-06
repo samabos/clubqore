@@ -26,8 +26,8 @@ import type { MembershipTier, CreateMembershipTierRequest } from "@/types/subscr
 const tierFormSchema = z.object({
   name: z.string().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
   description: z.string().max(500, "Description must be less than 500 characters").optional(),
-  monthlyPrice: z.coerce.number().min(0, "Price must be positive"),
-  annualPrice: z.coerce.number().min(0, "Price must be positive").optional().nullable(),
+  monthlyPrice: z.number().min(0, "Price must be positive"),
+  annualPrice: z.number().min(0, "Price must be positive").nullable(),
   billingFrequency: z.enum(["monthly", "annual"]),
   isActive: z.boolean(),
 });
@@ -48,7 +48,8 @@ export function MembershipTierForm({
   isSubmitting = false,
 }: MembershipTierFormProps) {
   const form = useForm<TierFormValues>({
-    resolver: zodResolver(tierFormSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(tierFormSchema) as any,
     defaultValues: {
       name: tier?.name || "",
       description: tier?.description || "",
