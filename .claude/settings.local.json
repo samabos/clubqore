@@ -13,7 +13,9 @@
       "Bash(taskkill:*)",
       "Bash(npm run lint:*)",
       "Bash(npx eslint:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:developer.gocardless.com)",
+      "WebFetch(domain:support.gocardless.com)"
     ],
     "deny": [],
     "ask": []

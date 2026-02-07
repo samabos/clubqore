@@ -8,6 +8,7 @@
 import cron from 'node-cron';
 import { SubscriptionBillingService } from '../payment/services/SubscriptionBillingService.js';
 import { SubscriptionService } from '../payment/services/SubscriptionService.js';
+import { WorkerExecutionService } from '../payment/services/WorkerExecutionService.js';
 import logger from '../config/logger.js';
 
 export class SubscriptionBillingWorker {
@@ -15,6 +16,7 @@ export class SubscriptionBillingWorker {
     this.db = db;
     this.billingService = new SubscriptionBillingService(db);
     this.subscriptionService = new SubscriptionService(db);
+    this.executionService = new WorkerExecutionService(db);
     this.isRunning = false;
     this.job = null;
   }
@@ -53,7 +55,7 @@ export class SubscriptionBillingWorker {
     }
 
     this.isRunning = true;
-    logger.info('Starting subscription billing cycle processing...');
+    let executionId = null;
 
     const stats = {
       processed: 0,
@@ -63,12 +65,17 @@ export class SubscriptionBillingWorker {
     };
 
     try {
+      // Track execution start
+      executionId = await this.executionService.startExecution('subscription_billing');
+      logger.info('Starting subscription billing cycle processing...');
+
       // Get all subscriptions due for billing
       const dueSubscriptions = await this.billingService.getDueSubscriptions();
 
       if (dueSubscriptions.length === 0) {
         logger.info('No subscriptions due for billing');
-        return;
+        await this.executionService.completeExecution(executionId, stats);
+        return stats;
       }
 
       logger.info(`Found ${dueSubscriptions.length} subscription(s) due for billing`);
@@ -105,8 +112,19 @@ export class SubscriptionBillingWorker {
         `Subscription billing completed: ${stats.processed} processed, ` +
         `${stats.successful} successful, ${stats.failed} failed`
       );
+
+      // Track execution complete
+      await this.executionService.completeExecution(executionId, {
+        processed: stats.processed,
+        successful: stats.successful,
+        failed: stats.failed,
+        metadata: { errors: stats.errors }
+      });
     } catch (error) {
       logger.error('Error in subscription billing worker:', error);
+      if (executionId) {
+        await this.executionService.failExecution(executionId, error.message);
+      }
     } finally {
       this.isRunning = false;
     }

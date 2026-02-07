@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { usePermission } from '@/hooks/usePermission';
 import { useAuth } from '@/stores/authStore';
-import NotAuthorized from '@/pages/NotAuthorized';
+import { NotAuthorizedPage } from '@/modules/authentication';
 
 interface ScopeProtectedRouteProps {
   /** The resource name to check permission for (e.g., 'parent-dashboard', 'billing') */
@@ -68,7 +68,7 @@ export const ScopeProtectedRoute = ({
     if (redirectTo) {
       return <Navigate to={redirectTo} replace />;
     }
-    return <NotAuthorized />;
+    return <NotAuthorizedPage />;
   }
 
   // User is authorized, render children

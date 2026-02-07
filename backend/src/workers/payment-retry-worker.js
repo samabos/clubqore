@@ -8,6 +8,7 @@
 import cron from 'node-cron';
 import { SubscriptionBillingService } from '../payment/services/SubscriptionBillingService.js';
 import { SubscriptionService } from '../payment/services/SubscriptionService.js';
+import { WorkerExecutionService } from '../payment/services/WorkerExecutionService.js';
 import { getConfig } from '../config/index.js';
 import logger from '../config/logger.js';
 
@@ -16,6 +17,7 @@ export class PaymentRetryWorker {
     this.db = db;
     this.billingService = new SubscriptionBillingService(db);
     this.subscriptionService = new SubscriptionService(db);
+    this.executionService = new WorkerExecutionService(db);
     this.isRunning = false;
     this.job = null;
 
@@ -59,7 +61,7 @@ export class PaymentRetryWorker {
     }
 
     this.isRunning = true;
-    logger.info('Starting payment retry processing...');
+    let executionId = null;
 
     const stats = {
       eligible: 0,
@@ -71,11 +73,16 @@ export class PaymentRetryWorker {
     };
 
     try {
+      // Track execution start
+      executionId = await this.executionService.startExecution('payment_retry');
+      logger.info('Starting payment retry processing...');
+
       // Get failed payments eligible for retry
       const failedPayments = await this.billingService.getPaymentsForRetry(this.maxRetries);
 
       if (failedPayments.length === 0) {
         logger.info('No payments eligible for retry');
+        await this.executionService.completeExecution(executionId, stats);
         return stats;
       }
 
@@ -122,8 +129,19 @@ export class PaymentRetryWorker {
         `Payment retry completed: ${stats.retried} retried, ` +
         `${stats.successful} initiated, ${stats.failed} failed, ${stats.suspended} suspended`
       );
+
+      // Track execution complete
+      await this.executionService.completeExecution(executionId, {
+        processed: stats.retried,
+        successful: stats.successful,
+        failed: stats.failed,
+        metadata: { eligible: stats.eligible, suspended: stats.suspended, errors: stats.errors }
+      });
     } catch (error) {
       logger.error('Error in payment retry worker:', error);
+      if (executionId) {
+        await this.executionService.failExecution(executionId, error.message);
+      }
     } finally {
       this.isRunning = false;
     }

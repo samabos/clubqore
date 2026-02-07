@@ -18,6 +18,7 @@ import {
   Wallet,
   Sliders,
   Briefcase,
+  PlayCircle,
 } from "lucide-react";
 import { MenuItem } from "../types/user";
 import { UserRole } from "../types/auth";
@@ -163,7 +164,7 @@ export const menuItemsByRole: Record<UserRole, MenuItem[]> = {
           icon: Receipt,
           resource: "super-admin-billing-management",
           sortOrder: 1,
-          children: [
+        },
             {
               id: "club-billing-settings",
               label: "Club Billing Settings",
@@ -172,9 +173,15 @@ export const menuItemsByRole: Record<UserRole, MenuItem[]> = {
               resource: "admin-billing-settings",
               sortOrder: 1,
             },
-          ],
-        },
-      ],
+            {
+              id: "billing-jobs",
+              label: "Billing Jobs",
+              icon: PlayCircle,
+              link: "/app/admin/billing/jobs",
+              resource: "admin-billing-jobs",
+              sortOrder: 2,
+            },
+          ] 
     },
     { id: "profile", label: "Profile", icon: User, link: "/app/profile", resource: "profile", sortOrder: 99 },
   ],

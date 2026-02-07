@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/stores/authStore';
-import { authService, AuthError } from '@/services/authService';
+import { authService, AuthError } from '@/api/authService';
 import { authToasts } from '@/utils/toast';
 import { AuthUser, SignInData, ClubManagerSignUpData } from '@/types/auth';
 

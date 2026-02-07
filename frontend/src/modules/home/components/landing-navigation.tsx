@@ -1,18 +1,18 @@
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../stores/authStore";
+import { useAuth } from "@/stores/authStore";
 import { User, LogOut, Settings, ChevronDown } from "lucide-react";
-import { getDefaultRouteByRole } from "../../utils/roleNavigation";
+import { getDefaultRouteByRole } from "@/utils/roleNavigation";
 import { AuthUser } from "@/types/auth";
-import { Logo } from "../brand";
+import { Logo } from "@/components/brand";
 
 interface LandingNavigationProps {
   onGetStarted?: () => void;

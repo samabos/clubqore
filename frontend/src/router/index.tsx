@@ -1,10 +1,9 @@
 import { createBrowserRouter, Navigate, redirect } from "react-router-dom";
-import { LandingPage } from "../components/home";
-import { Authentication } from "../modules/authentication";
+import { LandingPage } from "../modules/home";
+import { Authentication, ResetPasswordPage } from "../modules/authentication";
 import { ParentRegistrationPage } from "../modules/authentication/pages/parent-registration.page";
 import { OnboardingWrapper } from "../components/onboarding/OnboardingWrapper";
 import { EmailVerificationCallback } from "../components/EmailVerificationCallback";
-import { ResetPasswordPage } from "../pages/ResetPasswordPage";
 import { RoleBasedRedirect } from "../components/RoleBasedRedirect";
 import {
   Dashboard,
@@ -43,6 +42,7 @@ import {
   ResourceManagementPage,
   PermissionManagementPage,
   SystemSettingsPage,
+  BillingJobsPage,
 } from "../modules/admin";
 import { MyChildrenPage, ParentSchedulePage } from "../modules/parent/pages";
 import { ProfileSettingsPage } from "../modules/profile";
@@ -184,7 +184,7 @@ export const router = createBrowserRouter([
             path: "billing/jobs",
             element: (
               <ScopeProtectedRoute resource="admin-billing-jobs">
-                <div className="p-6"><h1 className="text-2xl font-bold">Scheduled Invoice Jobs</h1><p className="text-gray-500 mt-4">Coming Soon...</p></div>
+                <BillingJobsPage />
               </ScopeProtectedRoute>
             ),
           },
