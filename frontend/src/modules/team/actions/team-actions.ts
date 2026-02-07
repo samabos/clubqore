@@ -1,5 +1,5 @@
 import { apiClient } from "@/api/base";
-import { handleApiError } from "@/lib/errors";
+import { handleApiError } from "@/api/errors";
 import {
   Team,
   TeamWithDetails,

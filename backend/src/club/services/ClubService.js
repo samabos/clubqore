@@ -7,6 +7,17 @@ export class ClubService {
   }
 
   /**
+   * Check if email is available (not already used by another user)
+   */
+  async isEmailAvailable(email) {
+    const normalizedEmail = email.toLowerCase();
+    const existing = await this.db('users')
+      .whereRaw('LOWER(email) = ?', [normalizedEmail])
+      .first();
+    return !existing;
+  }
+
+  /**
    * Create new club (during club manager onboarding)
    */
   async createClub(clubData, createdBy, trx = null) {

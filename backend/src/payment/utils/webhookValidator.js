@@ -42,7 +42,7 @@ export function verifyGoCardlessSignature(body, signature, secret = null) {
       Buffer.from(signature),
       Buffer.from(computed)
     );
-  } catch (error) {
+  } catch {
     // If buffers are different lengths, timingSafeEqual throws
     return false;
   }
@@ -115,7 +115,7 @@ export function verifyStripeSignature(body, signatureHeader, secret = null, tole
         return false;
       }
     });
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -175,11 +175,13 @@ export function parseWebhookEvents(provider, payload) {
     case 'gocardless':
       // GoCardless sends multiple events in one webhook
       for (const event of (payload?.events || [])) {
+        // GoCardless uses plural resource_type (e.g., 'payments') but singular link keys (e.g., 'payment')
+        const singularResourceType = event.resource_type?.replace(/s$/, '') || event.resource_type;
         events.push({
           id: event.id,
           resourceType: event.resource_type,
           action: event.action,
-          resourceId: event.links?.[event.resource_type] || null,
+          resourceId: event.links?.[singularResourceType] || event.links?.[event.resource_type] || null,
           createdAt: event.created_at,
           details: event.details || {},
           raw: event

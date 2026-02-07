@@ -31,11 +31,10 @@ export function BillingFilters({
   onFiltersChange,
   seasons = [],
   showSeasonFilter = true,
-  showUserFilter = false,
 }: BillingFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleFilterChange = (key: keyof InvoiceFilters, value: any) => {
+  const handleFilterChange = (key: keyof InvoiceFilters, value: InvoiceFilters[keyof InvoiceFilters]) => {
     onFiltersChange({
       ...filters,
       [key]: value || undefined,

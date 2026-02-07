@@ -78,9 +78,8 @@ export async function parentPaymentRoutes(fastify, options) {
     }
   }, (request, reply) => controller.initiateMandateSetup(request, reply));
 
-  // Complete mandate setup (callback)
+  // Complete mandate setup (callback) - No auth required, state token validates user
   fastify.get('/mandate/complete', {
-    preHandler: authenticate,
     schema: {
       description: 'Complete Direct Debit mandate setup (callback handler)',
       tags: ['Parent Payment Methods'],

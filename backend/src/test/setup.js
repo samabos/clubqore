@@ -68,7 +68,7 @@ export async function cleanDatabase(fastify) {
         await fastify.db.raw('ALTER SEQUENCE clubs_id_seq RESTART WITH 1');
         await fastify.db.raw('ALTER SEQUENCE user_roles_id_seq RESTART WITH 1');
         await fastify.db.raw('ALTER SEQUENCE user_accounts_id_seq RESTART WITH 1');
-      } catch (seqError) {
+      } catch {
         // Sequences might not exist yet, ignore
       }
     }
@@ -87,7 +87,7 @@ export async function recreateTestDatabase() {
   
   const adminConfig = {
     ...knexConfig.development,
-    connection: (process.env.TEST_PG_CONNECTION_STRING || 'postgres://user:password@localhost:5432/test_app').replace(/\/[^\/]*$/, '/postgres')
+    connection: (process.env.TEST_PG_CONNECTION_STRING || 'postgres://user:password@localhost:5432/test_app').replace(/\/[^/]*$/, '/postgres')
   };
   
   // Extract database name from connection string

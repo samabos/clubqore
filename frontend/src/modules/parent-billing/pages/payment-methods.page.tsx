@@ -24,6 +24,7 @@ export function PaymentMethodsPage() {
 
   useEffect(() => {
     loadPaymentMethods();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadPaymentMethods = async () => {
@@ -31,10 +32,11 @@ export function PaymentMethodsPage() {
       setIsLoading(true);
       const response = await fetchPaymentMethods();
       setData(response);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load payment methods";
       toast({
         title: "Error",
-        description: error.message || "Failed to load payment methods",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -50,10 +52,11 @@ export function PaymentMethodsPage() {
         description: "Default payment method updated",
       });
       loadPaymentMethods();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to update default payment method";
       toast({
         title: "Error",
-        description: error.message || "Failed to update default payment method",
+        description: message,
         variant: "destructive",
       });
     }
@@ -67,10 +70,11 @@ export function PaymentMethodsPage() {
         description: "Payment method removed",
       });
       loadPaymentMethods();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to remove payment method";
       toast({
         title: "Error",
-        description: error.message || "Failed to remove payment method",
+        description: message,
         variant: "destructive",
       });
     }
@@ -87,10 +91,11 @@ export function PaymentMethodsPage() {
       const response = await initiateMandateSetup(clubId, "gocardless", scheme);
       // Redirect to authorization URL
       window.location.href = response.authorisationUrl;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to initiate Direct Debit setup";
       toast({
         title: "Error",
-        description: error.message || "Failed to initiate Direct Debit setup",
+        description: message,
         variant: "destructive",
       });
       setIsSettingUp(false);
@@ -175,8 +180,6 @@ export function PaymentMethodsPage() {
                         className={`text-sm font-medium ${
                           stat.changeType === "increase"
                             ? "text-green-600"
-                            : stat.changeType === "decrease"
-                            ? "text-red-600"
                             : "text-gray-600"
                         }`}
                       >

@@ -49,6 +49,7 @@ export const authAPI = {
       created_at: result.user.created_at,
       updated_at: result.user.updated_at,
       clubId: result.user.clubId,
+      roles: result.user.roles || [],
     };
 
     return { user, accessToken: result.accessToken, refreshToken: result.refreshToken };
@@ -85,8 +86,9 @@ export const authAPI = {
       created_at: result.user.created_at,
       updated_at: result.user.updated_at,
       clubId: result.user.clubId,
+      roles: result.user.roles || [],
     };
-    
+
     return { user, accessToken: result.accessToken, refreshToken: result.refreshToken };
   },
 
@@ -112,6 +114,7 @@ export const authAPI = {
       created_at: result.user.created_at,
       updated_at: result.user.updated_at,
       clubId: result.user.clubId,
+      roles: result.user.roles || [],
     };
 
     return user;
@@ -150,6 +153,7 @@ export const authAPI = {
       emailVerifiedAt: result.user.emailVerifiedAt,
       created_at: result.user.created_at,
       updated_at: result.user.updated_at,
+      roles: result.user.roles || [],
     };
 
     return user;
@@ -311,6 +315,7 @@ export const emailVerificationAPI = {
       emailVerifiedAt: result.user.emailVerifiedAt,
       created_at: result.user.created_at,
       updated_at: result.user.updated_at,
+      roles: result.user.roles || [],
     };
 
     return user;

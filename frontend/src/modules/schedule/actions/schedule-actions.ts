@@ -12,8 +12,8 @@ import {
   deleteMatch,
   publishMatch,
 } from "@/modules/match/actions/match-actions";
-import type { TrainingSession, CreateTrainingSessionRequest } from "@/types/training-session";
-import type { Match, CreateMatchRequest } from "@/types/match";
+import type { CreateTrainingSessionRequest } from "@/types/training-session";
+import type { CreateMatchRequest } from "@/types/match";
 import type { ScheduleItem, ScheduleFilters } from "../types/schedule-types";
 import { trainingToScheduleItem, matchToScheduleItem } from "../utils/schedule-utils";
 import { apiClient } from "@/api/base";
@@ -109,7 +109,7 @@ export async function cancelScheduleTrainingSession(sessionId: number): Promise<
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function cancelScheduleMatch(matchId: number): Promise<void> {
+export async function cancelScheduleMatch(_matchId: number): Promise<void> {
   // TODO: Implement cancelMatch in match actions when match cancel endpoint is ready
   throw new Error('Match cancellation not yet implemented');
 }

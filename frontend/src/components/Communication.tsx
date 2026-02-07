@@ -6,15 +6,14 @@ import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Badge } from "./ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { 
-  MessageSquare, 
-  Send, 
-  Bell, 
-  Users, 
-  Mail, 
-  Phone,
+import {
+  MessageSquare,
+  Send,
+  Bell,
+  Users,
+  Mail,
   Search,
   Plus,
   MoreVertical,

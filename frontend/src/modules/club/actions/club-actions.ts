@@ -120,7 +120,7 @@ export const getClubStats = async (): Promise<{
   };
 }> => {
   const response = await apiClient("/clubs/stats");
-  
+
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || "Failed to fetch club statistics");

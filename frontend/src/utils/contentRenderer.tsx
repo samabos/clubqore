@@ -1,7 +1,6 @@
 import { UserRole } from "../types/user";
 import {
   Dashboard,
-  AdminDashboard,
   SuperAdminDashboard,
   MemberDashboard,
   ParentDashboard,

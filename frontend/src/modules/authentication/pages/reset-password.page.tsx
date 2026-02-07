@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { authService } from '@/services/authService';
+import { authService } from '@/api/authService';
 
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -49,8 +49,9 @@ export function ResetPasswordPage() {
       await authService.resetPassword(token, password);
       setSuccess(true);
       setTimeout(() => navigate('/auth'), 2000); // Redirect after 2 seconds
-    } catch (err: any) {
-      setError(err.message || 'Failed to reset password');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to reset password';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -61,7 +62,7 @@ export function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-center text-green-600">✓ Password Reset Successful</CardTitle>
+            <CardTitle className="text-center text-green-600">Password Reset Successful</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-center text-muted-foreground">

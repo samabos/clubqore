@@ -1,4 +1,4 @@
-import { InvoiceService } from '../../club/services/InvoiceService.js';
+import { InvoiceService } from '../../billing/services/InvoiceService.js';
 
 export class ParentBillingController {
   constructor(db) {

@@ -13,13 +13,19 @@ const handleSessionExpired = () => {
 };
 
 // Check if using httpOnly cookies (browser handles auth automatically)
-const useHttpOnlyCookies = () => tokenManager.getStorageStrategy() === 'httpOnly';
+const isUsingHttpOnlyCookies = () => tokenManager.getStorageStrategy() === 'httpOnly';
+
+// Auth endpoints that should NOT trigger token refresh on 401
+const AUTH_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/register/club-manager', '/auth/resend-verification-public'];
 
 // API client with auth headers and automatic token refresh
 export const apiClient = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
-  const usingCookies = useHttpOnlyCookies();
+  const usingCookies = isUsingHttpOnlyCookies();
   const token = usingCookies ? null : tokenManager.getAccessToken();
+
+  // Check if this is an auth endpoint (should not auto-refresh on 401)
+  const isAuthEndpoint = AUTH_ENDPOINTS.some(authPath => endpoint.startsWith(authPath));
 
   const config: RequestInit = {
     // Include credentials for httpOnly cookie support
@@ -37,8 +43,9 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
   try {
     const response = await fetch(url, config);
 
-    // Handle token refresh on 401
-    if (response.status === 401) {
+    // Handle token refresh on 401 - but NOT for auth endpoints
+    // Auth endpoints should return their own error messages (invalid credentials, etc.)
+    if (response.status === 401 && !isAuthEndpoint) {
       const refreshed = await refreshAccessToken();
       if (refreshed) {
         // Retry request - cookies will be sent automatically, or use new Bearer token
@@ -67,7 +74,7 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
 
 // Refresh access token helper
 const refreshAccessToken = async (): Promise<boolean> => {
-  const usingCookies = useHttpOnlyCookies();
+  const usingCookies = isUsingHttpOnlyCookies();
   const refreshToken = usingCookies ? null : tokenManager.getRefreshToken();
 
   // If using cookies, we don't need the token in the body - server reads from cookie

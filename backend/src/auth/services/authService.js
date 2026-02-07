@@ -5,7 +5,7 @@ import { config } from '../../config/index.js';
 import { emailService } from '../../services/emailService.js';
 import { EmailOutboxService } from '../../services/emailOutboxService.js';
 import { RoleService } from '../../onboarding/services/RoleService.js';
-import { EmailTakenError, InvalidCredentialsError } from '../../errors/AppError.js';
+import { EmailTakenError, InvalidCredentialsError, EmailNotVerifiedError } from '../../errors/AppError.js';
 
 const defaultRole = 'club_manager';
 
@@ -153,6 +153,130 @@ export class AuthService {
     };
   }
 
+  /**
+   * Register a new club manager with club in a single transaction
+   * @param {Object} registrationData - Registration data
+   * @returns {Promise<Object>} Registration result (no tokens - user must verify email first)
+   */
+  async registerClubManager(registrationData) {
+    const { email, password, firstName, lastName, phone, clubName, clubAddress } = registrationData;
+    const normalizedEmail = email.toLowerCase();
+
+    // Check if user exists
+    const existing = await this.db('users').whereRaw('LOWER(email) = ?', [normalizedEmail]).first();
+    if (existing) {
+      throw new EmailTakenError(normalizedEmail);
+    }
+
+    // Use transaction to create user, profile, and club atomically
+    const result = await this.db.transaction(async (trx) => {
+      // 1. Create user with is_onboarded=true, email_verified=false
+      const hashed = await hashPassword(password);
+      const [user] = await trx('users')
+        .insert({
+          email: normalizedEmail,
+          password: hashed,
+          name: `${firstName} ${lastName}`,
+          is_onboarded: true,
+          email_verified: false,
+          primary_role: 'club_manager',
+          onboarding_completed_at: new Date(),
+          created_at: new Date(),
+          updated_at: new Date()
+        })
+        .returning(['id', 'email', 'email_verified']);
+
+      // 2. Create user profile
+      await trx('user_profiles').insert({
+        user_id: user.id,
+        first_name: firstName,
+        last_name: lastName,
+        full_name: `${firstName} ${lastName}`,
+        phone: phone || null,
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+
+      // 3. Create user preferences with defaults
+      await trx('user_preferences').insert({
+        user_id: user.id,
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+
+      // 4. Create club
+      let addressText = null;
+      let addressStructured = null;
+      if (clubAddress) {
+        if (typeof clubAddress === 'string') {
+          addressText = clubAddress;
+        } else if (typeof clubAddress === 'object') {
+          addressStructured = JSON.stringify(clubAddress);
+          addressText = clubAddress.street || null;
+        }
+      }
+
+      const [club] = await trx('clubs').insert({
+        name: clubName,
+        club_type: 'sports',
+        address: addressText,
+        address_structured: addressStructured,
+        created_by: user.id,
+        is_active: true,
+        verified: false,
+        created_at: new Date(),
+        updated_at: new Date()
+      }).returning(['id']);
+
+      // 5. Get club_manager role ID
+      const role = await trx('roles').where({ name: 'club_manager', is_active: true }).first();
+      if (!role) {
+        throw new Error('Club manager role not found');
+      }
+
+      // 6. Create user_role linking user to club with club_manager role
+      await trx('user_roles').insert({
+        user_id: user.id,
+        role_id: role.id,
+        club_id: club.id,
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+
+      // 7. Update user with club_id
+      await trx('users').where({ id: user.id }).update({ club_id: club.id });
+
+      // Return user data for email sending after commit
+      return {
+        userId: user.id,
+        userEmail: user.email
+      };
+    });
+
+    // 8. Send verification email AFTER transaction commits (so user exists in DB)
+    try {
+      console.log(`📧 Attempting to send verification email to ${normalizedEmail} for user ${result.userId}`);
+      await this.sendEmailVerification(result.userId, normalizedEmail);
+      console.log(`✅ Verification email sent successfully to ${normalizedEmail}`);
+    } catch (emailError) {
+      console.error('❌ Failed to send verification email during registration:', emailError);
+      console.error('Error stack:', emailError.stack);
+      // Don't fail registration if email fails - user can resend later
+    }
+
+    // Return success without tokens (user must verify email first)
+    return {
+      success: true,
+      message: 'Registration successful. Please check your email to verify your account.',
+      user: {
+        id: result.userId,
+        email: result.userEmail,
+        emailVerified: false
+      }
+    };
+  }
+
   async loginUser(email, password) {
     // Normalize email to lowercase for consistent comparison
     const normalizedEmail = email.toLowerCase();
@@ -166,6 +290,11 @@ export class AuthService {
 
     if (!user || !(await verifyPassword(password, user.password))) {
       throw new InvalidCredentialsError();
+    }
+
+    // Block login if email not verified
+    if (!user.email_verified) {
+      throw new EmailNotVerifiedError();
     }
 
     // Get user profile to include avatar
@@ -346,7 +475,7 @@ export class AuthService {
         email: updatedUser.email,
         email_verified: updatedUser.email_verified
       };
-    } catch (error) {
+    } catch {
       throw new Error('Invalid or expired verification token');
     }
   }
@@ -431,7 +560,7 @@ export class AuthService {
       await this.tokenService.revokeAllUserTokens(payload.userId, 'refresh');
 
       return { success: true };
-    } catch (error) {
+    } catch {
       throw new Error('Invalid or expired reset token');
     }
   }

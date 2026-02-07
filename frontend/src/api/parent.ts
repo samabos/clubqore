@@ -9,6 +9,11 @@ export interface ParentScheduleResponse {
   matches: Match[];
 }
 
+export interface ChildInfo {
+  first_name: string | null;
+  last_name: string | null;
+}
+
 export interface TrainingSession {
   id: string;
   team_id: string;
@@ -23,6 +28,7 @@ export interface TrainingSession {
   team_name: string;
   child_first_name: string | null;
   child_last_name: string | null;
+  children: ChildInfo[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -46,6 +52,7 @@ export interface Match {
   team_name: string;
   child_first_name: string | null;
   child_last_name: string | null;
+  children: ChildInfo[] | null;
   created_at: string;
   updated_at: string;
 }

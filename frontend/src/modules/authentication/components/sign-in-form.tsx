@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Mail, Lock, Eye, EyeOff, Chrome } from "lucide-react";
 import { SignInFormProps, SignInData } from "../types";
 import { useNavigate } from "react-router-dom";
+import { Logo } from "@/components/brand";
 
 export function SignInForm({
   signInData,
@@ -24,6 +25,8 @@ export function SignInForm({
   onGoogleAuth,
   onSwitchToSignUp,
   onSwitchToForgotPassword,
+  registeredEmail,
+  onResendVerification,
 }: SignInFormProps) {
   const navigate = useNavigate();
 
@@ -32,15 +35,10 @@ export function SignInForm({
       <CardHeader className="text-center pb-6">
         <Button
           variant="ghost"
-          className="flex items-center justify-center gap-3 mb-4 p-0 h-auto hover:bg-transparent cursor-pointer"
+          className="flex items-center justify-center mb-4 p-0 h-auto hover:bg-transparent cursor-pointer"
           onClick={() => navigate("/")}
         >
-          <div className="w-12 h-12 gradient-primary rounded-2xl flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-lg">CQ</span>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">ClubQore</h1>
-          </div>
+          <Logo variant="full" size="sm" />
         </Button>
         <CardTitle className="text-xl text-gray-900">Welcome Back</CardTitle>
         <CardDescription className="text-gray-600">
@@ -74,7 +72,19 @@ export function SignInForm({
         <form onSubmit={onSignIn} className="space-y-4">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
-              {error}
+              <p>{error}</p>
+              {registeredEmail && onResendVerification && error.toLowerCase().includes('verify') && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  onClick={onResendVerification}
+                  disabled={isLoading}
+                  className="text-red-700 hover:text-red-800 p-0 h-auto mt-1 underline"
+                >
+                  {isLoading ? "Sending..." : "Resend verification email"}
+                </Button>
+              )}
             </div>
           )}
 

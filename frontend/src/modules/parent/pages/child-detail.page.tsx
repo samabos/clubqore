@@ -35,6 +35,7 @@ export function ChildDetailPage() {
     if (childId) {
       loadChildDetails();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [childId]);
 
   const loadChildDetails = async () => {

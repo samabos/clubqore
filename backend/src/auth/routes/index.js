@@ -13,7 +13,7 @@ import { emailAvailabilityRoutes } from './emailAvailability.js';
 import { roleManagementRoutes } from './roleManagement.js';
 import { permissionRoutes } from './permissionRoutes.js';
 
-export async function authRoutes(fastify, options) {
+export async function authRoutes(fastify, _options) {
   const authController = new AuthController(fastify.db);
   const userController = new UserController(fastify.db);
   const permissionController = new PermissionController(fastify.db);

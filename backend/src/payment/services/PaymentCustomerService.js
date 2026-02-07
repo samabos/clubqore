@@ -24,7 +24,7 @@ export class PaymentCustomerService {
    */
   async getOrCreateCustomer(userId, clubId, provider, userData = {}) {
     // Check if customer already exists
-    let customer = await this.db('payment_customers')
+    const customer = await this.db('payment_customers')
       .where({ user_id: userId, club_id: clubId, provider })
       .first();
 

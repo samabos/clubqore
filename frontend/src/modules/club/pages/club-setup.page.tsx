@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { CreateClubRequest } from "../types/component-types";
 import { Club } from "../../../types/club";
+import type { Address } from "../../../types/common";
 import { toast } from "sonner";
 import { useAuth } from "../../../stores/authStore";
 import { tokenManager } from "../../../api/secureAuth";
@@ -86,7 +87,7 @@ export function ClubSetupPage() {
 
   const updateField = (
     field: keyof CreateClubRequest,
-    value: string | number | undefined
+    value: string | number | Address | null | undefined
   ) => {
     setClubData({ ...clubData, [field]: value });
   };
@@ -126,14 +127,15 @@ export function ClubSetupPage() {
             toast.success("Club logo updated successfully!");
           } catch (error) {
             console.error("Error uploading logo:", error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
             if (
-              error.message.includes("401") ||
-              error.message.includes("Invalid access token")
+              errorMessage.includes("401") ||
+              errorMessage.includes("Invalid access token")
             ) {
               toast.error("Please log in again to upload the logo.");
             } else if (
-              error.message.includes("403") ||
-              error.message.includes("permission")
+              errorMessage.includes("403") ||
+              errorMessage.includes("permission")
             ) {
               toast.error(
                 "You don't have permission to update this club's logo."

@@ -50,7 +50,7 @@ export class PaymentProviderInterface {
    * @param {Object} customerData.metadata - Additional metadata (optional)
    * @returns {Promise<Object>} Created customer with provider_customer_id
    */
-  async createCustomer(customerData) {
+  async createCustomer(_customerData) {
     throw new Error('createCustomer() must be implemented by provider');
   }
 
@@ -60,7 +60,7 @@ export class PaymentProviderInterface {
    * @param {string} providerCustomerId - The provider's customer ID
    * @returns {Promise<Object>} Customer data
    */
-  async getCustomer(providerCustomerId) {
+  async getCustomer(_providerCustomerId) {
     throw new Error('getCustomer() must be implemented by provider');
   }
 
@@ -71,7 +71,7 @@ export class PaymentProviderInterface {
    * @param {Object} updateData - Data to update
    * @returns {Promise<Object>} Updated customer data
    */
-  async updateCustomer(providerCustomerId, updateData) {
+  async updateCustomer(_providerCustomerId, _updateData) {
     throw new Error('updateCustomer() must be implemented by provider');
   }
 
@@ -91,7 +91,7 @@ export class PaymentProviderInterface {
    * @param {Object} options - Additional options (scheme, description, etc.)
    * @returns {Promise<Object>} Setup flow with redirect URL
    */
-  async createMandateSetupFlow(providerCustomerId, redirectUrls, options = {}) {
+  async createMandateSetupFlow(_providerCustomerId, _redirectUrls, _options = {}) {
     throw new Error('createMandateSetupFlow() must be implemented by provider');
   }
 
@@ -103,7 +103,7 @@ export class PaymentProviderInterface {
    * @param {string} flowId - The flow/session ID from the setup
    * @returns {Promise<Object>} Completed mandate data
    */
-  async completeMandateSetup(flowId) {
+  async completeMandateSetup(_flowId) {
     throw new Error('completeMandateSetup() must be implemented by provider');
   }
 
@@ -113,7 +113,7 @@ export class PaymentProviderInterface {
    * @param {string} providerMandateId - The provider's mandate ID
    * @returns {Promise<Object>} Mandate data
    */
-  async getMandate(providerMandateId) {
+  async getMandate(_providerMandateId) {
     throw new Error('getMandate() must be implemented by provider');
   }
 
@@ -123,7 +123,7 @@ export class PaymentProviderInterface {
    * @param {string} providerMandateId - The provider's mandate ID
    * @returns {Promise<Object>} Cancelled mandate data
    */
-  async cancelMandate(providerMandateId) {
+  async cancelMandate(_providerMandateId) {
     throw new Error('cancelMandate() must be implemented by provider');
   }
 
@@ -133,7 +133,7 @@ export class PaymentProviderInterface {
    * @param {string} providerCustomerId - The provider's customer ID
    * @returns {Promise<Array>} List of mandates
    */
-  async listMandates(providerCustomerId) {
+  async listMandates(_providerCustomerId) {
     throw new Error('listMandates() must be implemented by provider');
   }
 
@@ -153,7 +153,7 @@ export class PaymentProviderInterface {
    * @param {Object} paymentData.metadata - Additional metadata (optional)
    * @returns {Promise<Object>} Created payment with provider_payment_id
    */
-  async createPayment(providerMandateId, paymentData) {
+  async createPayment(_providerMandateId, _paymentData) {
     throw new Error('createPayment() must be implemented by provider');
   }
 
@@ -163,7 +163,7 @@ export class PaymentProviderInterface {
    * @param {string} providerPaymentId - The provider's payment ID
    * @returns {Promise<Object>} Payment data
    */
-  async getPayment(providerPaymentId) {
+  async getPayment(_providerPaymentId) {
     throw new Error('getPayment() must be implemented by provider');
   }
 
@@ -173,7 +173,7 @@ export class PaymentProviderInterface {
    * @param {string} providerPaymentId - The provider's payment ID
    * @returns {Promise<Object>} Cancelled payment data
    */
-  async cancelPayment(providerPaymentId) {
+  async cancelPayment(_providerPaymentId) {
     throw new Error('cancelPayment() must be implemented by provider');
   }
 
@@ -184,7 +184,7 @@ export class PaymentProviderInterface {
    * @param {Object} options - Retry options
    * @returns {Promise<Object>} New payment data
    */
-  async retryPayment(providerPaymentId, options = {}) {
+  async retryPayment(_providerPaymentId, _options = {}) {
     throw new Error('retryPayment() must be implemented by provider');
   }
 
@@ -195,7 +195,7 @@ export class PaymentProviderInterface {
    * @param {Object} filters - Optional filters
    * @returns {Promise<Array>} List of payments
    */
-  async listPayments(providerMandateId, filters = {}) {
+  async listPayments(_providerMandateId, _filters = {}) {
     throw new Error('listPayments() must be implemented by provider');
   }
 
@@ -212,7 +212,7 @@ export class PaymentProviderInterface {
    * @param {Object} refundData.metadata - Additional metadata (optional)
    * @returns {Promise<Object>} Created refund
    */
-  async createRefund(providerPaymentId, refundData = {}) {
+  async createRefund(_providerPaymentId, _refundData = {}) {
     throw new Error('createRefund() must be implemented by provider');
   }
 
@@ -227,7 +227,7 @@ export class PaymentProviderInterface {
    * @param {string} signature - Signature header value
    * @returns {boolean} True if signature is valid
    */
-  verifyWebhookSignature(body, signature) {
+  verifyWebhookSignature(_body, _signature) {
     throw new Error('verifyWebhookSignature() must be implemented by provider');
   }
 
@@ -237,7 +237,7 @@ export class PaymentProviderInterface {
    * @param {Object} payload - Parsed webhook payload
    * @returns {Array<Object>} Array of normalized event objects
    */
-  parseWebhookEvents(payload) {
+  parseWebhookEvents(_payload) {
     throw new Error('parseWebhookEvents() must be implemented by provider');
   }
 
@@ -254,7 +254,7 @@ export class PaymentProviderInterface {
    * @param {string} currency - Currency code
    * @returns {number} Amount in smallest unit
    */
-  formatAmount(amount, currency = 'GBP') {
+  formatAmount(amount, _currency = 'GBP') {
     // Most currencies have 2 decimal places
     return Math.round(amount * 100);
   }
@@ -266,7 +266,7 @@ export class PaymentProviderInterface {
    * @param {string} currency - Currency code
    * @returns {number} Amount in decimal
    */
-  parseAmount(amount, currency = 'GBP') {
+  parseAmount(amount, _currency = 'GBP') {
     return amount / 100;
   }
 
@@ -277,7 +277,7 @@ export class PaymentProviderInterface {
    * @param {string} providerStatus - Provider's status value
    * @returns {string} Normalized status
    */
-  normalizeStatus(resourceType, providerStatus) {
+  normalizeStatus(_resourceType, _providerStatus) {
     throw new Error('normalizeStatus() must be implemented by provider');
   }
 

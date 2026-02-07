@@ -7,6 +7,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "../ui/sidebar";
+import { Logo } from "../brand";
 import { MenuItem } from "../../types/user";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthUser } from "../../types/auth";
@@ -21,13 +22,13 @@ interface AppSidebarProps {
   menuItems: MenuItem[];
 }
 
-export function AppSidebar({ currentUser, menuItems }: AppSidebarProps) {
+export function AppSidebar({ menuItems }: AppSidebarProps) {
   const { currentRole, scopes } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
 
-  // Filter menu items based on user scopes
+  // Filter and sort menu items based on user scopes and sortOrder
   const filteredMenuItems = useMemo(() => {
     const filterItem = (item: MenuItem): MenuItem | null => {
       // If item has a resource, check if user has view permission
@@ -35,11 +36,12 @@ export function AppSidebar({ currentUser, menuItems }: AppSidebarProps) {
         return null;
       }
 
-      // If item has children, filter them recursively
+      // If item has children, filter and sort them recursively
       if (item.children) {
         const filteredChildren = item.children
           .map(filterItem)
-          .filter((child): child is MenuItem => child !== null);
+          .filter((child): child is MenuItem => child !== null)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
         // If no children remain after filtering, hide the parent menu
         if (filteredChildren.length === 0) {
@@ -54,7 +56,8 @@ export function AppSidebar({ currentUser, menuItems }: AppSidebarProps) {
 
     return menuItems
       .map(filterItem)
-      .filter((item): item is MenuItem => item !== null);
+      .filter((item): item is MenuItem => item !== null)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   }, [menuItems, scopes]);
 
   const toggleMenu = (menuId: string) => {
@@ -163,11 +166,9 @@ export function AppSidebar({ currentUser, menuItems }: AppSidebarProps) {
           className="flex items-center gap-3 p-0 h-auto hover:bg-transparent cursor-pointer"
           onClick={() => navigate("/")}
         >
-          <div className="w-12 h-12 gradient-primary rounded-2xl flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-lg">CQ</span>
-          </div>
+          <Logo variant="icon" size="sm" />
           <div className="text-left">
-            <h2 className="text-white font-semibold text-lg">ClubQore</h2>
+            <h2 className="text-white font-bold text-xl">ClubQore</h2>
             {currentRole && (
               <p className="text-sidebar-foreground text-sm truncate">
                 {getRoleDisplayName(currentRole)}

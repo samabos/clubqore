@@ -72,7 +72,7 @@ export async function createTrainingSession(sessionData: CreateTrainingSessionRe
 
     // Handle Fastify validation errors
     if (error.validation) {
-      const validationErrors = error.validation.map((v: any) =>
+      const validationErrors = error.validation.map((v: { instancePath?: string; message?: string }) =>
         `${v.instancePath || 'body'}: ${v.message}`
       ).join(', ');
       throw new Error(`Validation error: ${validationErrors}`);
@@ -104,7 +104,7 @@ export async function updateTrainingSession(
 
     // Handle Fastify validation errors
     if (error.validation) {
-      const validationErrors = error.validation.map((v: any) =>
+      const validationErrors = error.validation.map((v: { instancePath?: string; message?: string }) =>
         `${v.instancePath || 'body'}: ${v.message}`
       ).join(', ');
       throw new Error(`Validation error: ${validationErrors}`);

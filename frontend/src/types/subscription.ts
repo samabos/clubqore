@@ -67,6 +67,7 @@ export interface Subscription {
   parent_user_id: number;
   child_user_id: number;
   membership_tier_id: number;
+  team_id: number | null;
   payment_mandate_id: number | null;
   status: SubscriptionStatus;
   billing_frequency: BillingFrequency;
@@ -86,6 +87,7 @@ export interface Subscription {
 
   // Joined fields
   tier_name?: string;
+  team_name?: string;
   child_first_name?: string;
   child_last_name?: string;
   child_email?: string;
@@ -178,7 +180,7 @@ export interface ProviderPayment {
   retry_count: number;
   payout_id: string | null;
   paid_out_at: string | null;
-  metadata: Record<string, any> | null;
+  metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }

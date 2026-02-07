@@ -14,7 +14,7 @@ import { useTeams } from "@/stores/teamsStore";
 import { fetchTeamMembers } from "../../team/actions";
 import { fetchClubMembers } from "../actions/member-actions";
 import { ClubMember } from "../types";
-import { NotFoundError } from "@/lib/errors";
+import { NotFoundError } from "@/api/errors";
 import { toast } from "sonner";
 
 export function ClubMemberPage() {

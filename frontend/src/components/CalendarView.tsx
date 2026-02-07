@@ -24,7 +24,6 @@ import { format } from "date-fns";
 
 export function CalendarView() {
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [selectedView, setSelectedView] = useState("month");
 
   const events = [
     {

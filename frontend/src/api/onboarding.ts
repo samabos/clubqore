@@ -45,7 +45,7 @@ export interface UserStatusResponse {
     clubId?: string;
     clubName?: string;
     clubType?: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
   }>;
   availableRoles: Array<'club_manager'>;
 }
@@ -136,7 +136,7 @@ export const onboardingAPI = {
   },
 
   // Get detailed onboarding progress
-  getProgress: async (): Promise<any> => {
+  getProgress: async (): Promise<Record<string, unknown>> => {
     const response = await apiClient('/onboarding/progress');
 
     if (!response.ok) {
@@ -148,7 +148,7 @@ export const onboardingAPI = {
   },
 
   // Set primary role
-  setPrimaryRole: async (role: 'club_manager'): Promise<any> => {
+  setPrimaryRole: async (role: 'club_manager'): Promise<{ success: boolean; message?: string }> => {
     const response = await apiClient('/onboarding/primary-role', {
       method: 'PUT',
       body: JSON.stringify({ role }),
@@ -163,7 +163,7 @@ export const onboardingAPI = {
   },
 
   // Deactivate role
-  deactivateRole: async (role: 'club_manager', clubId?: number): Promise<any> => {
+  deactivateRole: async (role: 'club_manager', clubId?: number): Promise<{ success: boolean; message?: string }> => {
     const url = `/onboarding/roles/${role}${clubId ? `?clubId=${clubId}` : ''}`;
     const response = await apiClient(url, {
       method: 'DELETE',

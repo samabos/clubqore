@@ -1,4 +1,4 @@
-import { tokenManager } from '@/api/secureAuth';
+import { apiClient } from '@/api/base';
 import {
   Resource,
   Role,
@@ -10,28 +10,13 @@ import {
   BulkUpdatePermissionData,
 } from '@/types/permission';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-// Helper to get auth headers
-const getAuthHeaders = () => {
-  const token = tokenManager.getAccessToken();
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
-};
-
 // ===== RESOURCES =====
 
 /**
  * Fetch all resources
  */
 export async function fetchResources(): Promise<Resource[]> {
-  const response = await fetch(`${API_BASE_URL}/auth/resources`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  const response = await apiClient('/auth/resources');
 
   if (!response.ok) {
     const error = await response.json();
@@ -46,11 +31,7 @@ export async function fetchResources(): Promise<Resource[]> {
  * Fetch a single resource by ID
  */
 export async function fetchResourceById(id: number): Promise<Resource> {
-  const response = await fetch(`${API_BASE_URL}/auth/resources/${id}`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  const response = await apiClient(`/auth/resources/${id}`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -65,10 +46,8 @@ export async function fetchResourceById(id: number): Promise<Resource> {
  * Create a new resource
  */
 export async function createResource(resourceData: CreateResourceData): Promise<Resource> {
-  const response = await fetch(`${API_BASE_URL}/auth/resources`, {
+  const response = await apiClient('/auth/resources', {
     method: 'POST',
-    headers: getAuthHeaders(),
-    credentials: 'include',
     body: JSON.stringify(resourceData),
   });
 
@@ -85,10 +64,8 @@ export async function createResource(resourceData: CreateResourceData): Promise<
  * Update a resource
  */
 export async function updateResource(id: number, resourceData: UpdateResourceData): Promise<Resource> {
-  const response = await fetch(`${API_BASE_URL}/auth/resources/${id}`, {
+  const response = await apiClient(`/auth/resources/${id}`, {
     method: 'PUT',
-    headers: getAuthHeaders(),
-    credentials: 'include',
     body: JSON.stringify(resourceData),
   });
 
@@ -105,10 +82,8 @@ export async function updateResource(id: number, resourceData: UpdateResourceDat
  * Delete a resource
  */
 export async function deleteResource(id: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/auth/resources/${id}`, {
+  const response = await apiClient(`/auth/resources/${id}`, {
     method: 'DELETE',
-    headers: getAuthHeaders(),
-    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -123,11 +98,7 @@ export async function deleteResource(id: number): Promise<void> {
  * Fetch all roles
  */
 export async function fetchRoles(): Promise<Role[]> {
-  const response = await fetch(`${API_BASE_URL}/auth/roles`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  const response = await apiClient('/auth/roles');
 
   if (!response.ok) {
     const error = await response.json();
@@ -144,11 +115,7 @@ export async function fetchRoles(): Promise<Role[]> {
  * Fetch the full permission matrix
  */
 export async function fetchPermissionMatrix(): Promise<PermissionMatrix> {
-  const response = await fetch(`${API_BASE_URL}/auth/permissions/matrix`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  const response = await apiClient('/auth/permissions/matrix');
 
   if (!response.ok) {
     const error = await response.json();
@@ -163,11 +130,7 @@ export async function fetchPermissionMatrix(): Promise<PermissionMatrix> {
  * Fetch permissions for a specific role
  */
 export async function fetchRolePermissions(roleId: number): Promise<{ role: Role; permissions: RolePermission[] }> {
-  const response = await fetch(`${API_BASE_URL}/auth/roles/${roleId}/permissions`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  const response = await apiClient(`/auth/roles/${roleId}/permissions`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -186,10 +149,8 @@ export async function updateRolePermission(
   resourceId: number,
   permissions: UpdatePermissionData
 ): Promise<RolePermission> {
-  const response = await fetch(`${API_BASE_URL}/auth/roles/${roleId}/permissions/${resourceId}`, {
+  const response = await apiClient(`/auth/roles/${roleId}/permissions/${resourceId}`, {
     method: 'PUT',
-    headers: getAuthHeaders(),
-    credentials: 'include',
     body: JSON.stringify(permissions),
   });
 
@@ -209,10 +170,8 @@ export async function bulkUpdateRolePermissions(
   roleId: number,
   permissions: BulkUpdatePermissionData[]
 ): Promise<RolePermission[]> {
-  const response = await fetch(`${API_BASE_URL}/auth/roles/${roleId}/permissions`, {
+  const response = await apiClient(`/auth/roles/${roleId}/permissions`, {
     method: 'PUT',
-    headers: getAuthHeaders(),
-    credentials: 'include',
     body: JSON.stringify({ permissions }),
   });
 
@@ -229,10 +188,8 @@ export async function bulkUpdateRolePermissions(
  * Delete a role permission
  */
 export async function deleteRolePermission(roleId: number, resourceId: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/auth/roles/${roleId}/permissions/${resourceId}`, {
+  const response = await apiClient(`/auth/roles/${roleId}/permissions/${resourceId}`, {
     method: 'DELETE',
-    headers: getAuthHeaders(),
-    credentials: 'include',
   });
 
   if (!response.ok) {

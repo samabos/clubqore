@@ -118,7 +118,22 @@ export function TeamDetailsPage() {
       loadTeamDetails(); // Refresh data
     } catch (error) {
       console.error("Error assigning player:", error);
-      toast.error("Failed to assign player to team");
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      if (errorMessage.includes("NO_MEMBERSHIP_TIER")) {
+        toast.error(
+          "This team needs a membership tier before adding players. Please edit the team to assign a tier.",
+          {
+            action: {
+              label: "Edit Team",
+              onClick: () => setIsEditDialogOpen(true),
+            },
+            duration: 8000,
+          }
+        );
+      } else {
+        toast.error("Failed to assign player to team");
+      }
     } finally {
       setIsAssigningMember(false);
     }

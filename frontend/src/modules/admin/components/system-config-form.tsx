@@ -37,7 +37,7 @@ interface SystemConfigFormProps {
 }
 
 export function SystemConfigForm({ config, onClose, onSuccess }: SystemConfigFormProps) {
-  const [value, setValue] = useState<any>(config.value);
+  const [value, setValue] = useState<unknown>(config.value);
   const [changeReason, setChangeReason] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -64,9 +64,10 @@ export function SystemConfigForm({ config, onClose, onSuccess }: SystemConfigFor
     }
 
     if (config.data_type === 'string') {
+      const strValue = String(value ?? '');
       if (
         config.validation_rules?.minLength !== undefined &&
-        value.length < config.validation_rules.minLength
+        strValue.length < config.validation_rules.minLength
       ) {
         toast.error(`Value must be at least ${config.validation_rules.minLength} characters`);
         return;
@@ -74,7 +75,7 @@ export function SystemConfigForm({ config, onClose, onSuccess }: SystemConfigFor
 
       if (
         config.validation_rules?.maxLength !== undefined &&
-        value.length > config.validation_rules.maxLength
+        strValue.length > config.validation_rules.maxLength
       ) {
         toast.error(`Value must be at most ${config.validation_rules.maxLength} characters`);
         return;
@@ -84,7 +85,7 @@ export function SystemConfigForm({ config, onClose, onSuccess }: SystemConfigFor
     if (config.data_type === 'enum') {
       if (
         config.validation_rules?.allowed_values &&
-        !config.validation_rules.allowed_values.includes(value)
+        !config.validation_rules.allowed_values.includes(value as string)
       ) {
         toast.error('Value must be one of the allowed options');
         return;
@@ -107,8 +108,9 @@ export function SystemConfigForm({ config, onClose, onSuccess }: SystemConfigFor
 
       toast.success('Configuration updated successfully');
       onSuccess();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update configuration');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update configuration';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -122,7 +124,7 @@ export function SystemConfigForm({ config, onClose, onSuccess }: SystemConfigFor
           <div className="flex items-center space-x-2">
             <Switch
               id="value"
-              checked={value}
+              checked={Boolean(value)}
               onCheckedChange={setValue}
             />
             <Label htmlFor="value">{value ? 'Enabled' : 'Disabled'}</Label>
@@ -131,7 +133,7 @@ export function SystemConfigForm({ config, onClose, onSuccess }: SystemConfigFor
 
       case 'enum':
         return (
-          <Select value={value} onValueChange={setValue}>
+          <Select value={String(value ?? '')} onValueChange={setValue}>
             <SelectTrigger>
               <SelectValue placeholder="Select value" />
             </SelectTrigger>
@@ -149,7 +151,7 @@ export function SystemConfigForm({ config, onClose, onSuccess }: SystemConfigFor
         return (
           <Input
             type="number"
-            value={value}
+            value={String(value ?? '')}
             onChange={(e) => setValue(e.target.value)}
             min={config.validation_rules?.min}
             max={config.validation_rules?.max}
@@ -180,7 +182,7 @@ export function SystemConfigForm({ config, onClose, onSuccess }: SystemConfigFor
         return (
           <Input
             type="text"
-            value={value}
+            value={String(value ?? '')}
             onChange={(e) => setValue(e.target.value)}
             minLength={config.validation_rules?.minLength}
             maxLength={config.validation_rules?.maxLength}

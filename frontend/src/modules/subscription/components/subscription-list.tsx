@@ -93,6 +93,7 @@ export function SubscriptionList({
           <TableHeader>
             <TableRow>
               <TableHead>Member</TableHead>
+              <TableHead>Team</TableHead>
               <TableHead>Tier</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Billing</TableHead>
@@ -117,6 +118,7 @@ export function SubscriptionList({
                     )}
                   </div>
                 </TableCell>
+                <TableCell>{subscription.team_name || "-"}</TableCell>
                 <TableCell>{subscription.tier_name || "-"}</TableCell>
                 <TableCell>
                   <Badge

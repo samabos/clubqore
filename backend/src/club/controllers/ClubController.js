@@ -1,5 +1,5 @@
 import { ClubService } from '../services/ClubService.js';
-import { MemberService } from '../services/MemberService.js';
+import { MemberService } from '../../member/services/MemberService.js';
 
 export class ClubController {
   constructor(db) {

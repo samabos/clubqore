@@ -99,8 +99,8 @@ export class OnboardingController {
       const userId = request.user.id;
       const { role } = request.body;
 
-      const result = await this.onboardingService.setPrimaryRole(userId, role);
-      
+      await this.onboardingService.setPrimaryRole(userId, role);
+
       reply.code(200).send({
         success: true,
         message: 'Primary role updated successfully'
@@ -124,8 +124,8 @@ export class OnboardingController {
       const { role } = request.params;
       const { clubId } = request.query;
 
-      const result = await this.onboardingService.deactivateRole(userId, role, clubId);
-      
+      await this.onboardingService.deactivateRole(userId, role, clubId);
+
       reply.code(200).send({
         success: true,
         message: 'Role deactivated successfully'

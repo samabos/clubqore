@@ -29,10 +29,7 @@ const parentSubscriptionFormSchema = z.object({
   childId: z.string().min(1, "Please select a child"),
   tierId: z.string().min(1, "Please select a membership tier"),
   billingFrequency: z.enum(["monthly", "annual"]),
-  billingDayOfMonth: z.coerce
-    .number()
-    .min(1, "Billing day must be at least 1")
-    .max(28, "Billing day must be at most 28"),
+  billingDayOfMonth: z.number().min(1, "Billing day must be at least 1").max(28, "Billing day must be at most 28"),
 });
 
 type ParentSubscriptionFormData = z.infer<typeof parentSubscriptionFormSchema>;
@@ -56,7 +53,6 @@ interface CreateParentSubscriptionFormProps {
 export function CreateParentSubscriptionForm({
   children,
   tiers,
-  clubId,
   onSubmit,
   onCancel,
   isSubmitting = false,
@@ -66,7 +62,8 @@ export function CreateParentSubscriptionForm({
   const [selectedTier, setSelectedTier] = useState<MembershipTier | null>(null);
 
   const form = useForm<ParentSubscriptionFormData>({
-    resolver: zodResolver(parentSubscriptionFormSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(parentSubscriptionFormSchema) as any,
     defaultValues: {
       childId: "",
       tierId: "",
@@ -77,15 +74,16 @@ export function CreateParentSubscriptionForm({
 
   const billingFrequency = form.watch("billingFrequency");
 
+  const watchedTierId = form.watch("tierId");
+
   useEffect(() => {
-    const tierId = form.watch("tierId");
-    if (tierId) {
-      const tier = tiers.find((t) => t.id.toString() === tierId);
+    if (watchedTierId) {
+      const tier = tiers.find((t) => t.id.toString() === watchedTierId);
       setSelectedTier(tier || null);
     } else {
       setSelectedTier(null);
     }
-  }, [form.watch("tierId"), tiers]);
+  }, [watchedTierId, tiers]);
 
   const handleSubmit = async (data: ParentSubscriptionFormData) => {
     await onSubmit({
@@ -227,7 +225,7 @@ export function CreateParentSubscriptionForm({
               </Select>
               {selectedTier && (
                 <FormDescription>
-                  {billingFrequency === "annual"
+                  {billingFrequency === "annual" && selectedTier.annualPrice != null
                     ? `${formatPrice(selectedTier.annualPrice)} per year`
                     : `${formatPrice(selectedTier.monthlyPrice)} per month`}
                 </FormDescription>

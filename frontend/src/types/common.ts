@@ -16,9 +16,10 @@ export type AddressLegacy = {
 };
 
 // Type guard to check if address is new format
-export function isNewAddress(addr: any): addr is Address {
-    return addr &&
+export function isNewAddress(addr: unknown): addr is Address {
+    return Boolean(addr) &&
            typeof addr === 'object' &&
+           addr !== null &&
            'county' in addr &&
            'postcode' in addr &&
            !('state' in addr) &&

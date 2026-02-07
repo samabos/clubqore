@@ -1,6 +1,13 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Hash, Calendar } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Users, Calendar, PoundSterling } from "lucide-react";
 import type { ChildDetailData } from "../types";
 
 interface ChildTeamsSectionProps {
@@ -11,9 +18,27 @@ export function ChildTeamsSection({ child }: ChildTeamsSectionProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
-      month: "long",
+      month: "short",
       day: "numeric",
     });
+  };
+
+  const formatPrice = (tier: { monthlyPrice: number; annualPrice: number | null; billingFrequency: string }) => {
+    // Handle null/undefined prices to prevent NaN
+    const price = tier.billingFrequency === "annual" && tier.annualPrice != null
+      ? tier.annualPrice
+      : tier.monthlyPrice;
+
+    // Return null if price is not a valid number
+    if (price == null || isNaN(price)) {
+      return null;
+    }
+
+    const formattedPrice = new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
+    }).format(price);
+    return `${formattedPrice}/${tier.billingFrequency === "annual" ? "year" : "month"}`;
   };
 
   if (child.teams.length === 0) {
@@ -26,31 +51,65 @@ export function ChildTeamsSection({ child }: ChildTeamsSectionProps) {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {child.teams.map((team) => (
-        <Card key={team.id} className="hover:shadow-md transition-shadow">
-          <CardHeader>
-            <CardTitle className="text-lg">{team.name}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {child.position && (
-              <div className="flex items-center gap-2 text-sm">
-                <Hash className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Position:</span>
-                <span className="font-medium">{child.position}</span>
-              </div>
-            )}
-
-            {team.assigned_at && (
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Joined:</span>
-                <span className="font-medium">{formatDate(team.assigned_at)}</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+    <div className="border rounded-lg">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Team Name</TableHead>
+            <TableHead>Subscription Plan</TableHead>
+            <TableHead>Price</TableHead>
+            <TableHead>Joined</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {child.teams.map((team) => (
+            <TableRow key={team.id}>
+              <TableCell className="font-medium">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  {team.name}
+                </div>
+              </TableCell>
+              <TableCell>
+                {team.membershipTier ? (
+                  <Badge variant="secondary">
+                    {team.membershipTier.name}
+                  </Badge>
+                ) : (
+                  <span className="text-muted-foreground text-sm">No subscription plan</span>
+                )}
+              </TableCell>
+              <TableCell>
+                {team.membershipTier ? (
+                  (() => {
+                    const price = formatPrice(team.membershipTier);
+                    return price ? (
+                      <div className="flex items-center gap-1 text-sm">
+                        <PoundSterling className="h-3 w-3 text-muted-foreground" />
+                        {price}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    );
+                  })()
+                ) : (
+                  <span className="text-muted-foreground text-sm">-</span>
+                )}
+              </TableCell>
+              <TableCell>
+                {team.assigned_at ? (
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Calendar className="h-3 w-3" />
+                    {formatDate(team.assigned_at)}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground text-sm">-</span>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

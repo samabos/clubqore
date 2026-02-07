@@ -46,7 +46,7 @@ export class UserPreferencesService {
       
       // Map nested privacy to flat structure  
       profile_visibility: preferencesData.profileVisibility ?? privacy.profile_visibility ?? 'members_only',
-      show_contact_info: preferencesData.showContactInfo ?? (privacy.contact_visibility === 'public') ?? false,
+      show_contact_info: preferencesData.showContactInfo ?? (privacy.contact_visibility === 'public'),
       
       // Map nested communication to flat structure
       theme: preferencesData.theme ?? communication.theme ?? 'auto',

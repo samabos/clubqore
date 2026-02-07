@@ -97,4 +97,164 @@ export async function adminBillingRoutes(fastify, options) {
       }
     }
   }, adminBillingController.updateClubBillingSettings.bind(adminBillingController));
+
+  // ============================================
+  // Billing Job Management (Super Admin Only)
+  // ============================================
+
+  // Get subscriptions due for billing
+  fastify.get('/admin/billing/due-subscriptions', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Billing Jobs'],
+      summary: 'Get subscriptions due for billing (super admin only)',
+      description: 'View all subscriptions that are due for billing today or earlier',
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            count: { type: 'integer' },
+            subscriptions: { type: 'array' }
+          }
+        }
+      }
+    }
+  }, adminBillingController.getDueSubscriptions.bind(adminBillingController));
+
+  // Trigger billing manually
+  fastify.post('/admin/billing/trigger-billing', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Billing Jobs'],
+      summary: 'Manually trigger subscription billing (super admin only)',
+      description: 'Process billing for all due subscriptions or a specific subscription',
+      body: {
+        type: 'object',
+        properties: {
+          subscriptionId: { type: 'integer', description: 'Optional: specific subscription to bill' }
+        }
+      }
+    }
+  }, adminBillingController.triggerBilling.bind(adminBillingController));
+
+  // Get failed payments
+  fastify.get('/admin/billing/failed-payments', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Billing Jobs'],
+      summary: 'Get failed payments eligible for retry (super admin only)',
+      description: 'View all failed payments that can be retried',
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            count: { type: 'integer' },
+            payments: { type: 'array' }
+          }
+        }
+      }
+    }
+  }, adminBillingController.getFailedPayments.bind(adminBillingController));
+
+  // Retry a failed payment
+  fastify.post('/admin/billing/retry-payment', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Billing Jobs'],
+      summary: 'Manually retry a failed payment (super admin only)',
+      description: 'Retry a specific failed payment',
+      body: {
+        type: 'object',
+        required: ['paymentId'],
+        properties: {
+          paymentId: { type: 'integer', description: 'The payment ID to retry' }
+        }
+      }
+    }
+  }, adminBillingController.retryPayment.bind(adminBillingController));
+
+  // ============================================
+  // Worker Status & Management (Super Admin Only)
+  // ============================================
+
+  // Get all workers status
+  fastify.get('/admin/billing/workers/status', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Billing Jobs'],
+      summary: 'Get status of all billing workers (super admin only)',
+      description: 'View status and last execution time for all background workers',
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            workers: { type: 'array' }
+          }
+        }
+      }
+    }
+  }, adminBillingController.getWorkersStatus.bind(adminBillingController));
+
+  // Get all workers execution history (must be before :name/history to avoid route conflict)
+  fastify.get('/admin/billing/workers/history', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Billing Jobs'],
+      summary: 'Get execution history for all workers (super admin only)',
+      description: 'View recent execution history across all billing workers',
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', default: 50, maximum: 100 }
+        }
+      }
+    }
+  }, adminBillingController.getAllWorkerHistory.bind(adminBillingController));
+
+  // Get worker execution history
+  fastify.get('/admin/billing/workers/:name/history', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Billing Jobs'],
+      summary: 'Get execution history for a specific worker (super admin only)',
+      description: 'View recent execution history for a billing worker',
+      params: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Worker name' }
+        },
+        required: ['name']
+      },
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', default: 50, maximum: 100 }
+        }
+      }
+    }
+  }, adminBillingController.getWorkerHistory.bind(adminBillingController));
+
+  // Trigger a specific worker manually
+  fastify.post('/admin/billing/workers/:name/trigger', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Billing Jobs'],
+      summary: 'Manually trigger a specific worker (super admin only)',
+      description: 'Run a billing worker immediately instead of waiting for scheduled time',
+      params: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            enum: ['subscription_billing', 'payment_retry', 'invoice_scheduler', 'subscription_notification'],
+            description: 'Worker name to trigger'
+          }
+        },
+        required: ['name']
+      }
+    }
+  }, adminBillingController.triggerWorker.bind(adminBillingController));
 }

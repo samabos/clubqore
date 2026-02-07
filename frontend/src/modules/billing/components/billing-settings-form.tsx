@@ -26,7 +26,6 @@ import { Plus, Trash2, DollarSign, Calendar, AlertCircle } from "lucide-react";
 import {
   UpdateBillingSettingsRequest,
   BillingSettings,
-  ServiceChargeType,
   ItemCategory,
   ITEM_CATEGORY_LABELS,
 } from "@/types/billing";
@@ -250,7 +249,7 @@ export function BillingSettingsForm({
                 />
 
                 {/* Example Calculation */}
-                {watchServiceChargeValue > 0 && (
+                {(watchServiceChargeValue ?? 0) > 0 && (
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>

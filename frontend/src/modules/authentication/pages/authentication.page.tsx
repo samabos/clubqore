@@ -2,9 +2,9 @@ import { useEffect } from "react";
 import { useSimpleAuthentication } from "../../../hooks/useSimpleAuthentication";
 import { useNavigationSetup } from "../../../hooks/useNavigationSetup";
 import { SignInForm } from "../components/sign-in-form";
-import { SignUpForm } from "../components/sign-up-form";
+import { ClubManagerSignUpForm } from "../components/club-manager-signup-form";
 import { ForgotPasswordForm } from "../components/forgot-password-form";
-import { EmailVerificationForm } from "../components/email-verification-form";
+import { RegistrationSuccess } from "../components/registration-success";
 import { AuthenticationProps } from "../types";
 import { toast } from "sonner";
 
@@ -27,7 +27,7 @@ export function Authentication({ onAuth }: AuthenticationProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-2xl">
         {auth.authMode === "signin" && (
           <SignInForm
             signInData={auth.signInData}
@@ -40,21 +40,18 @@ export function Authentication({ onAuth }: AuthenticationProps) {
             onGoogleAuth={auth.handleGoogleAuth}
             onSwitchToSignUp={auth.switchToSignUp}
             onSwitchToForgotPassword={auth.switchToForgotPassword}
+            registeredEmail={auth.registeredEmail}
+            onResendVerification={auth.handleResendVerification}
           />
         )}
 
         {auth.authMode === "signup" && (
-          <SignUpForm
-            signUpData={auth.signUpData}
-            setSignUpData={auth.setSignUpData}
-            showPassword={auth.showPassword}
-            setShowPassword={auth.setShowPassword}
-            showConfirmPassword={auth.showConfirmPassword}
-            setShowConfirmPassword={auth.setShowConfirmPassword}
+          <ClubManagerSignUpForm
+            formData={auth.signUpData}
+            setFormData={auth.setSignUpData}
             isLoading={auth.isLoading}
             error={auth.error}
-            onSignUp={auth.handleSignUp}
-            onGoogleAuth={auth.handleGoogleAuth}
+            onSubmit={auth.handleSignUp}
             onSwitchToSignIn={auth.switchToSignIn}
           />
         )}
@@ -70,16 +67,11 @@ export function Authentication({ onAuth }: AuthenticationProps) {
           />
         )}
 
-        {auth.authMode === "email-verification" && (
-          <EmailVerificationForm
-            pendingUser={auth.pendingUser}
-            signUpData={auth.signUpData}
-            verificationSent={auth.verificationSent}
-            isLoading={auth.isLoading}
-            error={auth.error}
+        {auth.authMode === "registration-success" && (
+          <RegistrationSuccess
+            email={auth.registeredEmail}
             onResendVerification={auth.handleResendVerification}
-            onEmailVerificationComplete={auth.handleEmailVerificationComplete}
-            onSwitchToSignUp={auth.switchToSignUp}
+            isLoading={auth.isLoading}
           />
         )}
       </div>

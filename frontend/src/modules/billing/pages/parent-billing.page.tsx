@@ -36,6 +36,7 @@ export function ParentBillingPage() {
 
   useEffect(() => {
     loadInvoices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const loadInvoices = async () => {
@@ -43,10 +44,11 @@ export function ParentBillingPage() {
       setIsLoading(true);
       const data = await fetchParentInvoices(filters);
       setInvoices(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load invoices";
       toast({
         title: "Error",
-        description: error.message || "Failed to load invoices",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -58,7 +60,7 @@ export function ParentBillingPage() {
     navigate(`/app/parent/billing/${invoice.id}`);
   };
 
-  const handleFilterChange = (key: keyof InvoiceFilters, value: any) => {
+  const handleFilterChange = (key: keyof InvoiceFilters, value: InvoiceFilters[keyof InvoiceFilters]) => {
     setFilters({
       ...filters,
       [key]: value || undefined,

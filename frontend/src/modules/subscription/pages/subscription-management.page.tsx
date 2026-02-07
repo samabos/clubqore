@@ -39,6 +39,7 @@ interface AvailableMember {
   email: string;
   first_name: string;
   last_name: string;
+  team_name?: string;
 }
 
 export function SubscriptionManagementPage() {
@@ -59,10 +60,12 @@ export function SubscriptionManagementPage() {
 
   useEffect(() => {
     loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     loadSubscriptions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const loadInitialData = async () => {
@@ -76,10 +79,11 @@ export function SubscriptionManagementPage() {
       setSubscriptions(subsData);
       setStats(statsData);
       setTiers(tiersData);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load subscriptions";
       toast({
         title: "Error",
-        description: error.message || "Failed to load subscriptions",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -91,10 +95,11 @@ export function SubscriptionManagementPage() {
     try {
       const subsData = await fetchSubscriptions(filters);
       setSubscriptions(subsData);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load subscriptions";
       toast({
         title: "Error",
-        description: error.message || "Failed to load subscriptions",
+        description: message,
         variant: "destructive",
       });
     }
@@ -105,10 +110,11 @@ export function SubscriptionManagementPage() {
       setIsLoadingMembers(true);
       const members = await fetchAvailableMembers();
       setAvailableMembers(members);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load available members";
       toast({
         title: "Error",
-        description: error.message || "Failed to load available members",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -144,10 +150,11 @@ export function SubscriptionManagementPage() {
       loadSubscriptions();
       const statsData = await fetchSubscriptionStats();
       setStats(statsData);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to create subscription";
       toast({
         title: "Error",
-        description: error.message || "Failed to create subscription",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -172,10 +179,11 @@ export function SubscriptionManagementPage() {
       // Refresh stats
       const statsData = await fetchSubscriptionStats();
       setStats(statsData);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to cancel subscription";
       toast({
         title: "Error",
-        description: error.message || "Failed to cancel subscription",
+        description: message,
         variant: "destructive",
       });
     } finally {

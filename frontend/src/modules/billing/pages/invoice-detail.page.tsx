@@ -25,6 +25,7 @@ export function InvoiceDetailPage() {
     if (invoiceId) {
       loadInvoice();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invoiceId]);
 
   const loadInvoice = async () => {
@@ -34,10 +35,11 @@ export function InvoiceDetailPage() {
       setIsLoading(true);
       const data = await fetchInvoiceById(parseInt(invoiceId));
       setInvoice(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load invoice";
       toast({
         title: "Error",
-        description: error.message || "Failed to load invoice",
+        description: message,
         variant: "destructive",
       });
       navigate("/app/billing");
@@ -56,10 +58,11 @@ export function InvoiceDetailPage() {
         description: "Invoice published successfully",
       });
       loadInvoice();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to publish invoice";
       toast({
         title: "Error",
-        description: error.message || "Failed to publish invoice",
+        description: message,
         variant: "destructive",
       });
     }
@@ -75,10 +78,11 @@ export function InvoiceDetailPage() {
         description: "Invoice cancelled successfully",
       });
       loadInvoice();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to cancel invoice";
       toast({
         title: "Error",
-        description: error.message || "Failed to cancel invoice",
+        description: message,
         variant: "destructive",
       });
     }
@@ -95,10 +99,11 @@ export function InvoiceDetailPage() {
       });
       setShowMarkPaidDialog(false);
       loadInvoice();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to mark invoice as paid";
       toast({
         title: "Error",
-        description: error.message || "Failed to mark invoice as paid",
+        description: message,
         variant: "destructive",
       });
       throw error;

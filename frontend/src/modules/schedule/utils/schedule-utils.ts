@@ -1,5 +1,6 @@
 import type { TrainingSession, SessionType } from "@/types/training-session";
 import type { Match, MatchType } from "@/types/match";
+// SessionType and MatchType are used in parentEventToScheduleItem for type casting
 import type {
   ScheduleItem,
   TrainingScheduleItem,
@@ -7,6 +8,12 @@ import type {
   ScheduleItemDisplay,
   ScheduleStatus,
 } from "../types/schedule-types";
+
+// Child info for parent events
+export interface ParentChildInfo {
+  first_name: string | null;
+  last_name: string | null;
+}
 
 // Parent API event format (used in dashboard and parent schedule)
 export interface ParentEventData {
@@ -19,13 +26,16 @@ export interface ParentEventData {
   team_name: string;
   child_first_name?: string | null;
   child_last_name?: string | null;
+  children?: ParentChildInfo[] | null; // Array of all children for this event
 
   // Training-specific fields
   title?: string;
+  session_type?: string; // actual session type from backend
 
   // Match-specific fields
   opponent?: string | null;
   is_home?: boolean;
+  match_type?: string; // actual match type from backend
 }
 
 // Type guards
@@ -116,7 +126,7 @@ export function getDisplayInfo(item: ScheduleItem): ScheduleItemDisplay {
       end_time: item.data.end_time,
       status: item.data.status as ScheduleStatus,
       venue: item.data.venue,
-      teams: [item.data.home_team_name, opponentName].filter(Boolean),
+      teams: [item.data.home_team_name, opponentName].filter((t): t is string => Boolean(t)),
       color: getMatchColor(item.data.match_type),
       badge: item.data.match_type,
       badgeColor: getMatchBadgeColor(item.data.match_type),
@@ -220,9 +230,15 @@ export function getStatusColor(status: ScheduleStatus): string {
 // Convert parent API event data to ScheduleItem
 // Used by ParentDashboard and other parent views
 export function parentEventToScheduleItem(event: ParentEventData): ScheduleItem {
-  const childName = event.child_first_name && event.child_last_name
-    ? `${event.child_first_name} ${event.child_last_name}`
-    : undefined;
+  // Build child names array from children array or fall back to single child fields
+  let childNames: string[] | undefined;
+  if (event.children && event.children.length > 0) {
+    childNames = event.children
+      .filter(c => c.first_name && c.last_name)
+      .map(c => `${c.first_name} ${c.last_name}`);
+  } else if (event.child_first_name && event.child_last_name) {
+    childNames = [`${event.child_first_name} ${event.child_last_name}`];
+  }
 
   const baseItem = {
     id: parseInt(event.id),
@@ -233,10 +249,12 @@ export function parentEventToScheduleItem(event: ParentEventData): ScheduleItem 
     status: 'scheduled' as const,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    childName,
+    childNames: childNames && childNames.length > 0 ? childNames : undefined,
   };
 
   if (event.type === 'training') {
+    // Use actual session_type from backend, fallback to 'training'
+    const sessionType = (event.session_type || 'training') as SessionType;
     return {
       ...baseItem,
       type: 'training',
@@ -246,7 +264,7 @@ export function parentEventToScheduleItem(event: ParentEventData): ScheduleItem 
         club_id: 0,
         title: event.title || 'Training Session',
         description: null,
-        session_type: 'practice' as const,
+        session_type: sessionType,
         date: event.date,
         start_time: event.start_time,
         end_time: event.end_time || '',
@@ -270,6 +288,8 @@ export function parentEventToScheduleItem(event: ParentEventData): ScheduleItem 
       }
     };
   } else {
+    // Use actual match_type from backend, fallback to 'league'
+    const matchType = (event.match_type || 'league') as MatchType;
     return {
       ...baseItem,
       type: 'match',
@@ -278,7 +298,7 @@ export function parentEventToScheduleItem(event: ParentEventData): ScheduleItem 
         id: parseInt(event.id),
         season_id: null,
         club_id: 0,
-        match_type: 'league' as const,
+        match_type: matchType,
         home_team_id: 0,
         away_team_id: null,
         opponent_name: event.opponent || null,

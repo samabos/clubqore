@@ -90,6 +90,9 @@ export class InvoiceService {
       const invoiceNumber = await this.generateInvoiceNumber(clubId);
 
       // Insert invoice
+      // Use provided status or default to 'draft'
+      const invoiceStatus = invoiceData.status || 'draft';
+
       const [result] = await trx('invoices')
         .insert({
           club_id: clubId,
@@ -98,7 +101,7 @@ export class InvoiceService {
           season_id: invoiceData.season_id || null,
           invoice_number: invoiceNumber,
           invoice_type: invoiceData.invoice_type,
-          status: 'draft',
+          status: invoiceStatus,
           issue_date: invoiceData.issue_date,
           due_date: invoiceData.due_date,
           subtotal,
@@ -400,7 +403,7 @@ export class InvoiceService {
       }
 
       // Calculate new totals if items provided
-      let updateData = {
+      const updateData = {
         ...invoiceData,
         updated_at: new Date()
       };
@@ -522,15 +525,23 @@ export class InvoiceService {
     const trx = await this.db.transaction();
 
     try {
-      const invoice = await trx('invoices')
+      const query = trx('invoices')
         .where('id', invoiceId)
-        .where('club_id', clubId)
-        .whereIn('status', ['pending', 'overdue'])
-        .first();
+        .whereIn('status', ['draft', 'pending', 'sent', 'overdue']);
+
+      // Only filter by clubId if provided (internal calls may not have it)
+      if (clubId) {
+        query.where('club_id', clubId);
+      }
+
+      const invoice = await query.first();
 
       if (!invoice) {
         throw new Error('Invoice not found or cannot be marked as paid');
       }
+
+      // Use provided userId or fall back to invoice's parent_user_id for system payments
+      const paymentCreator = userId || invoice.parent_user_id;
 
       // Record payment
       await trx('payments').insert({
@@ -540,7 +551,7 @@ export class InvoiceService {
         payment_date: paymentData.payment_date || new Date(),
         reference_number: paymentData.reference_number || null,
         notes: paymentData.notes || null,
-        created_by: userId,
+        created_by: paymentCreator,
         created_at: new Date(),
         updated_at: new Date()
       });

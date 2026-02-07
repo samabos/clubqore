@@ -44,7 +44,7 @@ export const toast = {
     messages: {
       loading: string;
       success: string | ((data: T) => string);
-      error: string | ((error: any) => string);
+      error: string | ((error: unknown) => string);
     }
   ) => {
     return sonnerToast.promise(promise, messages);
@@ -53,18 +53,22 @@ export const toast = {
 
 // Auth-specific toast messages
 export const authToasts = {
+  // Generic methods
+  success: (message: string) => toast.success(message),
+  error: (message: string) => toast.error(message),
+
   loginSuccess: () => toast.success("Welcome back!", { description: "Successfully signed in" }),
   loginError: (error: string) => toast.error("Sign in failed", { description: error }),
-  
+
   signupSuccess: () => toast.success("Account created!", { description: "Check your email to verify your account" }),
   signupError: (error: string) => toast.error("Sign up failed", { description: error }),
-  
+
   emailVerificationSent: () => toast.success("Verification email sent!", { description: "Check your inbox and spam folder" }),
   emailAlreadyVerified: () => toast.success("Email already verified!", { description: "Redirecting to onboarding..." }),
   emailVerificationError: (error: string) => toast.error("Verification failed", { description: error }),
-  
+
   passwordResetSent: () => toast.success("Password reset link sent!", { description: "Check your email for instructions" }),
   passwordResetError: (error: string) => toast.error("Password reset failed", { description: error }),
-  
+
   logoutSuccess: () => toast.info("Signed out", { description: "You have been successfully signed out" }),
 };

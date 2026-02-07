@@ -1,7 +1,8 @@
 import cron from 'node-cron';
-import { InvoiceService } from '../club/services/InvoiceService.js';
-import { BillingSettingsService } from '../club/services/BillingSettingsService.js';
-import { ScheduledInvoiceJobService } from '../club/services/ScheduledInvoiceJobService.js';
+import { InvoiceService } from '../billing/services/InvoiceService.js';
+import { BillingSettingsService } from '../billing/services/BillingSettingsService.js';
+import { ScheduledInvoiceJobService } from '../billing/services/ScheduledInvoiceJobService.js';
+import { WorkerExecutionService } from '../payment/services/WorkerExecutionService.js';
 import { emailService } from '../services/emailService.js';
 import logger from '../config/logger.js';
 
@@ -15,6 +16,7 @@ export class InvoiceScheduler {
     this.invoiceService = new InvoiceService(db);
     this.billingSettingsService = new BillingSettingsService(db);
     this.scheduledJobService = new ScheduledInvoiceJobService(db);
+    this.executionService = new WorkerExecutionService(db);
     this.isRunning = false;
   }
 
@@ -51,30 +53,59 @@ export class InvoiceScheduler {
     }
 
     this.isRunning = true;
-    logger.info('🔄 Starting invoice scheduler job...');
+    let executionId = null;
+
+    const stats = {
+      processed: 0,
+      successful: 0,
+      failed: 0
+    };
 
     try {
+      // Track execution start
+      executionId = await this.executionService.startExecution('invoice_scheduler');
+      logger.info('🔄 Starting invoice scheduler job...');
+
       // Get all pending jobs that should be executed
       const pendingJobs = await this.scheduledJobService.getPendingJobs();
 
       if (pendingJobs.length === 0) {
         logger.info('✅ No pending invoice jobs to process');
-        return;
+        await this.executionService.completeExecution(executionId, stats);
+        return stats;
       }
 
       logger.info(`📋 Found ${pendingJobs.length} pending job(s) to process`);
 
       // Process each job
       for (const job of pendingJobs) {
-        await this.processJob(job);
+        stats.processed++;
+        try {
+          await this.processJob(job);
+          stats.successful++;
+        } catch {
+          stats.failed++;
+        }
       }
 
       logger.info('✅ Invoice scheduler job completed successfully');
+
+      // Track execution complete
+      await this.executionService.completeExecution(executionId, {
+        processed: stats.processed,
+        successful: stats.successful,
+        failed: stats.failed
+      });
     } catch (error) {
       logger.error('❌ Error in invoice scheduler:', error);
+      if (executionId) {
+        await this.executionService.failExecution(executionId, error.message);
+      }
     } finally {
       this.isRunning = false;
     }
+
+    return stats;
   }
 
   /**
@@ -221,7 +252,7 @@ export class InvoiceScheduler {
    * Get all users for a specific season
    * This queries users who are associated with the club
    */
-  async getSeasonUsers(clubId, seasonId) {
+  async getSeasonUsers(clubId, _seasonId) {
     try {
       // Get all users who are part of this club
       // This assumes users are linked to clubs through some relationship

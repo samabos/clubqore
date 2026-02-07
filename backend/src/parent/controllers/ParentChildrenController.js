@@ -32,14 +32,20 @@ export class ParentChildrenController {
       // Enrich each child with teams, events count, and invoice totals
       const enrichedChildren = await Promise.all(
         children.map(async (child) => {
-          // Get teams for this child
+          // Get teams for this child with membership tier info
           const teams = await this.db('team_members')
             .join('teams', 'team_members.team_id', 'teams.id')
+            .leftJoin('membership_tiers', 'teams.membership_tier_id', 'membership_tiers.id')
             .where('team_members.user_child_id', child.id)
             .select(
               'teams.id',
               'teams.name',
-              'team_members.assigned_at'
+              'team_members.assigned_at',
+              'membership_tiers.id as membership_tier_id',
+              'membership_tiers.name as membership_tier_name',
+              'membership_tiers.monthly_price as membership_tier_monthly_price',
+              'membership_tiers.annual_price as membership_tier_annual_price',
+              'membership_tiers.billing_frequency as membership_tier_billing_frequency'
             );
 
           // Get team IDs for event counting
@@ -49,21 +55,23 @@ export class ParentChildrenController {
 
           if (teamIds.length > 0) {
             // Count training sessions (exclude drafts)
+            // Use CURRENT_DATE for date comparison since date column is DATE type (not TIMESTAMP)
             const trainingCount = await this.db('training_sessions')
               .join('training_session_teams', 'training_sessions.id', 'training_session_teams.training_session_id')
               .whereIn('training_session_teams.team_id', teamIds)
-              .where('training_sessions.date', '>=', this.db.fn.now())
+              .whereRaw('training_sessions.date >= CURRENT_DATE')
               .where('training_sessions.status', '!=', 'draft')
               .count('* as count')
               .first();
 
             // Count matches (exclude drafts)
+            // Use CURRENT_DATE for date comparison since date column is DATE type (not TIMESTAMP)
             const matchCount = await this.db('matches')
               .where(function() {
                 this.whereIn('matches.home_team_id', teamIds)
                   .orWhereIn('matches.away_team_id', teamIds);
               })
-              .where('matches.date', '>=', this.db.fn.now())
+              .whereRaw('matches.date >= CURRENT_DATE')
               .where('matches.status', '!=', 'draft')
               .count('* as count')
               .first();
@@ -81,6 +89,20 @@ export class ParentChildrenController {
             )
             .first();
 
+          // Format teams with membership tier info
+          const formattedTeams = teams.map(team => ({
+            id: team.id,
+            name: team.name,
+            assigned_at: team.assigned_at,
+            membershipTier: team.membership_tier_id ? {
+              id: team.membership_tier_id,
+              name: team.membership_tier_name,
+              monthlyPrice: Number(team.membership_tier_monthly_price),
+              annualPrice: team.membership_tier_annual_price ? Number(team.membership_tier_annual_price) : null,
+              billingFrequency: team.membership_tier_billing_frequency
+            } : null
+          }));
+
           return {
             id: child.id,
             firstName: child.first_name,
@@ -92,7 +114,7 @@ export class ParentChildrenController {
             enrollmentStatus: 'active', // Default value since column doesn't exist
             position: child.position || null,
             profileImage: child.avatar || null,
-            teams: teams,
+            teams: formattedTeams,
             upcomingEventsCount: upcomingEventsCount,
             pendingInvoices: {
               count: Number(invoiceStats.count),
@@ -154,14 +176,20 @@ export class ParentChildrenController {
         });
       }
 
-      // Get teams for this child
+      // Get teams for this child with membership tier info
       const teams = await this.db('team_members')
         .join('teams', 'team_members.team_id', 'teams.id')
+        .leftJoin('membership_tiers', 'teams.membership_tier_id', 'membership_tiers.id')
         .where('team_members.user_child_id', child.id)
         .select(
           'teams.id',
           'teams.name',
-          'team_members.assigned_at'
+          'team_members.assigned_at',
+          'membership_tiers.id as membership_tier_id',
+          'membership_tiers.name as membership_tier_name',
+          'membership_tiers.monthly_price as membership_tier_monthly_price',
+              'membership_tiers.annual_price as membership_tier_annual_price',
+          'membership_tiers.billing_frequency as membership_tier_billing_frequency'
         );
 
       // Get team IDs for event counting
@@ -171,21 +199,23 @@ export class ParentChildrenController {
 
       if (teamIds.length > 0) {
         // Count training sessions (exclude drafts)
+        // Use CURRENT_DATE for date comparison since date column is DATE type (not TIMESTAMP)
         const trainingCount = await this.db('training_sessions')
           .join('training_session_teams', 'training_sessions.id', 'training_session_teams.training_session_id')
           .whereIn('training_session_teams.team_id', teamIds)
-          .where('training_sessions.date', '>=', this.db.fn.now())
+          .whereRaw('training_sessions.date >= CURRENT_DATE')
           .where('training_sessions.status', '!=', 'draft')
           .count('* as count')
           .first();
 
         // Count matches (exclude drafts)
+        // Use CURRENT_DATE for date comparison since date column is DATE type (not TIMESTAMP)
         const matchCount = await this.db('matches')
           .where(function() {
             this.whereIn('matches.home_team_id', teamIds)
               .orWhereIn('matches.away_team_id', teamIds);
           })
-          .where('matches.date', '>=', this.db.fn.now())
+          .whereRaw('matches.date >= CURRENT_DATE')
           .where('matches.status', '!=', 'draft')
           .count('* as count')
           .first();
@@ -203,6 +233,20 @@ export class ParentChildrenController {
         )
         .first();
 
+      // Format teams with membership tier info
+      const formattedTeams = teams.map(team => ({
+        id: team.id,
+        name: team.name,
+        assigned_at: team.assigned_at,
+        membershipTier: team.membership_tier_id ? {
+          id: team.membership_tier_id,
+          name: team.membership_tier_name,
+          monthlyPrice: Number(team.membership_tier_monthly_price),
+          annualPrice: team.membership_tier_annual_price ? Number(team.membership_tier_annual_price) : null,
+          billingFrequency: team.membership_tier_billing_frequency
+        } : null
+      }));
+
       const enrichedChild = {
         id: child.id,
         firstName: child.first_name,
@@ -218,7 +262,7 @@ export class ParentChildrenController {
         emergencyContact: child.emergency_contact || null,
         phone: child.phone || null,
         address: child.address || null,
-        teams: teams,
+        teams: formattedTeams,
         upcomingEventsCount: upcomingEventsCount,
         pendingInvoices: {
           count: Number(invoiceStats.count),

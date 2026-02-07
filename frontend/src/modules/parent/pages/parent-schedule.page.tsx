@@ -27,6 +27,7 @@ export function ParentSchedulePage() {
 
   useEffect(() => {
     loadSchedule();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadSchedule = async () => {
@@ -49,7 +50,9 @@ export function ParentSchedulePage() {
           team_name: session.team_name,
           child_first_name: session.child_first_name,
           child_last_name: session.child_last_name,
+          children: session.children,
           title: session.title,
+          session_type: session.session_type,
         };
         scheduleItems.push(parentEventToScheduleItem(eventData));
       });
@@ -66,8 +69,10 @@ export function ParentSchedulePage() {
           team_name: match.team_name,
           child_first_name: match.child_first_name,
           child_last_name: match.child_last_name,
+          children: match.children,
           opponent: match.opponent,
           is_home: match.is_home,
+          match_type: match.match_type,
         };
         scheduleItems.push(parentEventToScheduleItem(eventData));
       });
@@ -80,10 +85,11 @@ export function ParentSchedulePage() {
       });
 
       setItems(scheduleItems);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load schedule";
       toast({
         title: "Error",
-        description: error.message || "Failed to load schedule",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -153,8 +159,15 @@ export function ParentSchedulePage() {
           ))}
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          No scheduled events found
+        <div className="text-center py-12">
+          <CalendarIcon className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No scheduled events found
+          </h3>
+          <p className="text-gray-500 max-w-md mx-auto">
+            Events will appear here once your children are assigned to teams
+            and the club schedules training sessions or matches.
+          </p>
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

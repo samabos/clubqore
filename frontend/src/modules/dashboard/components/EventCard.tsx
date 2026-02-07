@@ -20,7 +20,7 @@ export interface EventCardProps {
   variant?: 'default' | 'compact';
 }
 
-export function EventCard({ event, variant = 'default' }: EventCardProps) {
+export function EventCard({ event }: EventCardProps) {
   const eventDate = parseISO(event.date);
   const dateLabel = isToday(eventDate)
     ? 'Today'

@@ -1,4 +1,4 @@
-import { authService } from "@/services/authService";
+import { authService } from "@/api/authService";
 import { SignInData, SimpleSignUpData, AuthUser } from "../types/component-types";
 
 /**

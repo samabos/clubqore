@@ -5,11 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { 
-  CreditCard, 
-  DollarSign, 
-  Calendar, 
-  Download, 
+import {
+  CreditCard,
+  DollarSign,
+  Download,
   Plus,
   TrendingUp,
   Users,
@@ -17,7 +16,6 @@ import {
   Clock,
   XCircle,
   AlertCircle,
-  Receipt,
   Building2
 } from "lucide-react";
 

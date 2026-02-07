@@ -7,7 +7,8 @@
 
 import { PaymentProviderFactory } from './PaymentProviderFactory.js';
 import { SubscriptionService } from './SubscriptionService.js';
-import { InvoiceService } from '../../club/services/InvoiceService.js';
+import { InvoiceService } from '../../billing/services/InvoiceService.js';
+import logger from '../../config/logger.js';
 
 export class SubscriptionBillingService {
   constructor(db) {
@@ -36,10 +37,13 @@ export class SubscriptionBillingService {
     }
 
     // Create invoice
+    // Subscription invoices are created as 'pending' (ready for payment)
+    // instead of 'draft' since they're system-generated and don't need manual review
     const invoiceData = {
       user_id: subscription.child_user_id,
       season_id: null, // Subscription invoices are not seasonal
       invoice_type: 'subscription',
+      status: 'pending', // System-generated invoices are ready for payment immediately
       issue_date: new Date(),
       due_date: subscription.next_billing_date || new Date(),
       notes: `Subscription: ${subscription.tier_name} (${subscription.billing_frequency})`,
@@ -51,18 +55,19 @@ export class SubscriptionBillingService {
       }]
     };
 
+    // Use parent_user_id as creator for system-generated subscription invoices
     const invoice = await this.invoiceService.createInvoice(
       subscription.club_id,
       invoiceData,
-      null // System-generated
+      subscription.parent_user_id
     );
 
     // Link invoice to subscription
     await this.db('provider_payments').insert({
       subscription_id: subscriptionId,
-      invoice_id: invoice.id,
+      invoice_id: invoice.invoice_id,
       provider: 'pending', // Will be set when payment is created
-      provider_payment_id: `pending_${invoice.id}`,
+      provider_payment_id: `pending_${invoice.invoice_id}`,
       amount: subscription.amount,
       currency: 'GBP',
       status: 'pending',
@@ -70,7 +75,7 @@ export class SubscriptionBillingService {
       updated_at: new Date()
     });
 
-    return invoice;
+    return { id: invoice.invoice_id, ...invoice };
   }
 
   /**
@@ -104,8 +109,10 @@ export class SubscriptionBillingService {
       throw new Error('Subscription has no payment mandate');
     }
 
-    if (subscription.mandate_status !== 'active') {
-      throw new Error(`Mandate is not active (status: ${subscription.mandate_status})`);
+    // Accept mandates that can receive payments (active, pending, submitted)
+    const usableMandateStatuses = ['active', 'pending', 'submitted', 'pending_submission'];
+    if (!usableMandateStatuses.includes(subscription.mandate_status)) {
+      throw new Error(`Mandate cannot accept payments (status: ${subscription.mandate_status})`);
     }
 
     // Get provider instance
@@ -343,6 +350,8 @@ export class SubscriptionBillingService {
   /**
    * Get subscriptions due for billing
    *
+   * Automatically links parent's active mandate if subscription doesn't have one.
+   *
    * @param {Date} date - Date to check (defaults to today)
    * @returns {Promise<Array>} List of due subscriptions
    */
@@ -350,18 +359,81 @@ export class SubscriptionBillingService {
     const targetDate = new Date(date);
     targetDate.setHours(23, 59, 59, 999);
 
+    logger.info(`[getDueSubscriptions] Checking for subscriptions due by ${targetDate.toISOString()}`);
+
+    // First, find subscriptions due that don't have a mandate linked
+    // and try to link their parent's active mandate
+    const subscriptionsWithoutMandate = await this.db('subscriptions as s')
+      .join('membership_tiers as mt', 's.membership_tier_id', 'mt.id')
+      .where('s.status', 'active')
+      .whereNull('s.payment_mandate_id')
+      .where('s.next_billing_date', '<=', targetDate)
+      .select('s.id', 's.parent_user_id');
+
+    logger.info(`[getDueSubscriptions] Found ${subscriptionsWithoutMandate.length} subscriptions without mandate`);
+
+    // Auto-link parent's active mandate to subscriptions
+    for (const sub of subscriptionsWithoutMandate) {
+      logger.info(`[getDueSubscriptions] Looking for mandate for parent_user_id=${sub.parent_user_id}, subscription_id=${sub.id}`);
+
+      // First, check what payment_customers exist for this user
+      const paymentCustomers = await this.db('payment_customers')
+        .where('user_id', sub.parent_user_id)
+        .select('*');
+
+      logger.info(`[getDueSubscriptions] Found ${paymentCustomers.length} payment_customers for user ${sub.parent_user_id}:`,
+        paymentCustomers.map(pc => ({ id: pc.id, club_id: pc.club_id, provider: pc.provider })));
+
+      // Check all mandates for these payment customers (any status)
+      if (paymentCustomers.length > 0) {
+        const customerIds = paymentCustomers.map(pc => pc.id);
+        const allMandates = await this.db('payment_mandates')
+          .whereIn('payment_customer_id', customerIds)
+          .select('*');
+
+        logger.info(`[getDueSubscriptions] Found ${allMandates.length} mandates for these customers:`,
+          allMandates.map(m => ({ id: m.id, status: m.status, payment_customer_id: m.payment_customer_id })));
+      }
+
+      // Look for usable mandates (active, pending, submitted, pending_submission)
+      const parentMandate = await this.db('payment_mandates as pm')
+        .join('payment_customers as pc', 'pm.payment_customer_id', 'pc.id')
+        .where('pc.user_id', sub.parent_user_id)
+        .whereIn('pm.status', ['active', 'pending', 'submitted', 'pending_submission'])
+        .whereNot('pm.status', 'pending_setup') // Exclude incomplete setup
+        .select('pm.id', 'pm.status')
+        .first();
+
+      if (parentMandate) {
+        logger.info(`[getDueSubscriptions] Linking mandate ${parentMandate.id} (status: ${parentMandate.status}) to subscription ${sub.id}`);
+        await this.db('subscriptions')
+          .where('id', sub.id)
+          .update({
+            payment_mandate_id: parentMandate.id,
+            updated_at: new Date()
+          });
+      } else {
+        logger.warn(`[getDueSubscriptions] No usable mandate found for parent_user_id=${sub.parent_user_id}`);
+      }
+    }
+
+    // Now get all due subscriptions with usable mandates
+    // Accept mandates that are active, pending, or submitted (ready to accept payments)
     const subscriptions = await this.db('subscriptions as s')
       .join('membership_tiers as mt', 's.membership_tier_id', 'mt.id')
       .join('payment_mandates as pm', 's.payment_mandate_id', 'pm.id')
       .where('s.status', 'active')
-      .where('pm.status', 'active')
+      .whereIn('pm.status', ['active', 'pending', 'submitted', 'pending_submission'])
       .where('s.next_billing_date', '<=', targetDate)
       .select(
         's.*',
         'mt.name as tier_name',
         'pm.provider',
-        'pm.provider_mandate_id'
+        'pm.provider_mandate_id',
+        'pm.status as mandate_status'
       );
+
+    logger.info(`[getDueSubscriptions] Returning ${subscriptions.length} subscriptions ready for billing`);
 
     return subscriptions;
   }

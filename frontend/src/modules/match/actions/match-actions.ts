@@ -169,7 +169,6 @@ export async function deleteMatchEvent(eventId: number): Promise<void> {
   });
 
   if (!response.ok) {
-    const error = await response.json();
     throw new Error('Failed to delete match event');
   }
 }

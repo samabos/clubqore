@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { AuthUser, UserRole } from '@/types/auth';
-import { authService, SignInData, SignUpData } from '@/services/authService';
+import { authService, SignInData, SignUpData } from '@/api/authService';
 import { tokenManager, getScopesFromToken } from '@/api/secureAuth';
 import { Club } from '@/types/club';
 

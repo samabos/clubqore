@@ -90,12 +90,57 @@ export class AuthController {
       return reply.send(result);
     } catch (error) {
       if (error instanceof AppError) {
-        return reply.code(error.statusCode).send({ error: error.message });
+        // Include error code for specific handling on frontend (e.g., EMAIL_NOT_VERIFIED)
+        const response = { error: error.message };
+        if (error.code) {
+          response.code = error.code;
+        }
+        return reply.code(error.statusCode).send(response);
       }
       // Log the actual error for debugging but don't expose it to the client
       request.log.error('Login error:', error);
       // Return a generic error message to prevent information disclosure
       return reply.code(500).send({ error: 'An error occurred during login. Please try again later.' });
+    }
+  }
+
+  async registerClubManager(request, reply) {
+    try {
+      const result = await this.authService.registerClubManager(request.body);
+      // Note: Do NOT set auth cookies - user must verify email first
+      return reply.send(result);
+    } catch (error) {
+      if (error instanceof AppError) {
+        return reply.code(error.statusCode).send({ error: error.message });
+      }
+      request.log.error('Club manager registration error:', error);
+      return reply.code(500).send({ error: 'An error occurred during registration. Please try again later.' });
+    }
+  }
+
+  async resendEmailVerificationPublic(request, reply) {
+    try {
+      const { email } = request.body;
+      const normalizedEmail = email.toLowerCase();
+
+      // Find user by email
+      const user = await this.authService.db('users').whereRaw('LOWER(email) = ?', [normalizedEmail]).first();
+
+      if (!user) {
+        // Don't reveal if user exists
+        return reply.code(200).send({ message: 'If an account with that email exists, a verification email has been sent' });
+      }
+
+      if (user.email_verified) {
+        return reply.code(400).send({ error: 'Email is already verified' });
+      }
+
+      await this.authService.sendEmailVerification(user.id, user.email);
+      reply.code(200).send({ message: 'Verification email sent successfully' });
+    } catch (error) {
+      // Don't reveal internal errors
+      request.log.error('Resend verification public error:', error);
+      reply.code(200).send({ message: 'If an account with that email exists, a verification email has been sent' });
     }
   }
 

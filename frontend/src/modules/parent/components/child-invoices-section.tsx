@@ -19,6 +19,7 @@ export function ChildInvoicesSection({ child }: ChildInvoicesSectionProps) {
 
   useEffect(() => {
     loadInvoices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [child.childUserId]);
 
   const loadInvoices = async () => {

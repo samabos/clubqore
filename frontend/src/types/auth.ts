@@ -26,6 +26,7 @@ export interface AuthUser {
   profile?: UserProfile;
   preferences?: UserPreferences;
   roles: string[];
+  primaryRole?: UserRole;
   accounts?: UserAccount[];
   children?: UserChild[];
 }
@@ -34,9 +35,9 @@ export interface AuthUser {
 export interface UserProfile extends ChildInfo {
   fullName?: string;
   phone?: string;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
-  emergencyContactRelation: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactRelation?: string;
   profileCompletedAt?: string;
   address?: Address;
 }
@@ -125,6 +126,27 @@ export interface SimpleSignUpData {
   email: string;
   password: string;
   confirmPassword: string;
+}
+
+export interface ClubManagerSignUpData {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  clubName: string;
+  clubAddress: string | Address;
+}
+
+export interface RegistrationSuccessResponse {
+  success: boolean;
+  message: string;
+  user: {
+    id: number;
+    email: string;
+    emailVerified: boolean;
+  };
 }
 
 export interface SignInData {

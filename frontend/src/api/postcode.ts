@@ -27,8 +27,8 @@ export async function lookupPostcode(postcode: string): Promise<Address> {
     }
 
     return await response.json();
-  } catch (error: any) {
-    if (error.message) {
+  } catch (error: unknown) {
+    if (error instanceof Error) {
       throw error;
     }
     throw new Error('Network error - could not connect to postcode service');
@@ -55,7 +55,7 @@ export async function autocompletePostcode(partial: string): Promise<string[]> {
 
     const data = await response.json();
     return data.suggestions || [];
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Return empty array on errors (better UX for autocomplete)
     console.warn('Autocomplete error:', error);
     return [];
@@ -78,7 +78,7 @@ export async function validatePostcode(postcode: string): Promise<boolean> {
 
     const data: PostcodeValidationResponse = await response.json();
     return data.valid;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.warn('Validation error:', error);
     return false;
   }
@@ -133,7 +133,7 @@ export async function searchAddresses(searchTerm: string): Promise<AddressSugges
 
     const data = await response.json();
     return data.suggestions || [];
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Return empty array on errors (better UX for autocomplete)
     console.warn('Address search error:', error);
     return [];
@@ -156,8 +156,8 @@ export async function getFullAddress(addressId: string): Promise<Address> {
     }
 
     return await response.json();
-  } catch (error: any) {
-    if (error.message) {
+  } catch (error: unknown) {
+    if (error instanceof Error) {
       throw error;
     }
     throw new Error('Network error - could not retrieve address');

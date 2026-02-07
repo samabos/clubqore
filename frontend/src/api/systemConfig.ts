@@ -11,7 +11,7 @@ import { apiClient } from './base';
 export interface SystemConfig {
   id: number;
   key: string;
-  value: any;
+  value: unknown;
   category: 'registration' | 'financial' | 'system' | 'notifications';
   data_type: 'string' | 'number' | 'boolean' | 'json' | 'enum';
   validation_rules?: {
@@ -32,8 +32,8 @@ export interface SystemConfigAudit {
   id: number;
   config_id: number;
   key: string;
-  old_value: any;
-  new_value: any;
+  old_value: unknown;
+  new_value: unknown;
   changed_by: number;
   changed_at: string;
   change_reason?: string;
@@ -46,7 +46,7 @@ export interface SystemConfigAudit {
 
 export interface CreateConfigPayload {
   key: string;
-  value: any;
+  value: unknown;
   category: 'registration' | 'financial' | 'system' | 'notifications';
   data_type: 'string' | 'number' | 'boolean' | 'json' | 'enum';
   validation_rules?: {
@@ -61,7 +61,7 @@ export interface CreateConfigPayload {
 }
 
 export interface UpdateConfigPayload {
-  value?: any;
+  value?: unknown;
   description?: string;
   validation_rules?: {
     min?: number;
@@ -147,7 +147,7 @@ export async function getSystemConfigById(id: number): Promise<SystemConfig> {
 /**
  * Get a single configuration value by key
  */
-export async function getSystemConfigByKey(key: string): Promise<{ key: string; value: any }> {
+export async function getSystemConfigByKey(key: string): Promise<{ key: string; value: unknown }> {
   const response = await apiClient(`/api/admin/system-config/key/${key}`);
   if (!response.ok) {
     const error = await response.json();

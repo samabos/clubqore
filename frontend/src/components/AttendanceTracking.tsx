@@ -8,24 +8,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Input } from "./ui/input";
-import { Calendar } from "./ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  Users, 
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  Users,
   TrendingUp,
-  TrendingDown,
   Calendar as CalendarIcon,
   Search,
   Download,
   Filter
 } from "lucide-react";
-import { format } from "date-fns";
 
 export function AttendanceTracking() {
-  const [selectedDate, setSelectedDate] = useState<Date>();
   const [searchTerm, setSearchTerm] = useState("");
 
   const attendanceStats = [

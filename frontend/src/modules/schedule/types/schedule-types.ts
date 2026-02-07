@@ -1,5 +1,5 @@
-import type { TrainingSession, SessionType, SessionStatus as TrainingStatus } from "@/types/training-session";
-import type { Match, MatchType, MatchStatus } from "@/types/match";
+import type { TrainingSession, SessionType } from "@/types/training-session";
+import type { Match, MatchType } from "@/types/match";
 
 // Base schedule item interface
 export interface BaseScheduleItem {
@@ -12,7 +12,7 @@ export interface BaseScheduleItem {
   created_at: string;
   updated_at: string;
   season_name?: string;
-  childName?: string; // For parent view - shows which child the event is for
+  childNames?: string[]; // For parent view - shows which children the event is for
 }
 
 // Schedule item types

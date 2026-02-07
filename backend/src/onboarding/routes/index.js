@@ -10,7 +10,7 @@ import { profileRoutes } from './profileRoutes.js';
 import { accountRoutes } from './accountRoutes.js';
 import { roleRoutes } from './roleRoutes.js';
 
-export async function registerOnboardingRoutes(fastify, options) {
+export async function registerOnboardingRoutes(fastify, _options) {
   // Create authentication middleware
   const authenticate = createAuthMiddleware(fastify.db);
 

@@ -103,3 +103,10 @@ export class AccessDeniedError extends ForbiddenError {
     super(message);
   }
 }
+
+export class EmailNotVerifiedError extends UnauthorizedError {
+  constructor() {
+    super('Please verify your email before signing in');
+    this.code = 'EMAIL_NOT_VERIFIED';
+  }
+}

@@ -110,7 +110,52 @@ export const messageResponse = {
 export const errorResponse = {
   type: 'object',
   properties: {
-    error: { type: 'string' }
+    error: { type: 'string' },
+    code: { type: 'string' }
+  }
+};
+
+export const clubManagerRegistrationRequest = {
+  type: 'object',
+  required: ['email', 'password', 'firstName', 'lastName', 'clubName'],
+  properties: {
+    email: { type: 'string', format: 'email' },
+    password: { type: 'string', minLength: 8 },
+    firstName: { type: 'string', minLength: 1, maxLength: 100 },
+    lastName: { type: 'string', minLength: 1, maxLength: 100 },
+    phone: { type: 'string', maxLength: 20 },
+    clubName: { type: 'string', minLength: 1, maxLength: 255 },
+    clubAddress: {
+      oneOf: [
+        { type: 'string' },
+        {
+          type: 'object',
+          properties: {
+            street: { type: 'string' },
+            city: { type: 'string' },
+            county: { type: 'string' },
+            postcode: { type: 'string' },
+            country: { type: 'string' }
+          }
+        }
+      ]
+    }
+  }
+};
+
+export const registrationSuccessResponse = {
+  type: 'object',
+  properties: {
+    success: { type: 'boolean' },
+    message: { type: 'string' },
+    user: {
+      type: 'object',
+      properties: {
+        id: { type: 'integer' },
+        email: { type: 'string' },
+        emailVerified: { type: 'boolean' }
+      }
+    }
   }
 };
 
@@ -122,5 +167,7 @@ export const authSchemas = {
   refreshResponse,
   userResponse,
   messageResponse,
-  errorResponse
+  errorResponse,
+  clubManagerRegistrationRequest,
+  registrationSuccessResponse
 };

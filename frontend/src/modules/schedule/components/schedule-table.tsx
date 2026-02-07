@@ -43,8 +43,8 @@ export function ScheduleTable({ items, onEdit, onDelete, onPublish, onCancel }: 
   const sortedItems = [...items].sort((a, b) => {
     if (!sortColumn) return 0;
 
-    let aVal: any;
-    let bVal: any;
+    let aVal: string | number | undefined;
+    let bVal: string | number | undefined;
 
     switch (sortColumn) {
       case "type":
@@ -86,7 +86,7 @@ export function ScheduleTable({ items, onEdit, onDelete, onPublish, onCancel }: 
     if (isTrainingItem(item)) {
       return item.data.title;
     } else if (isMatchItem(item)) {
-      const homeTeam = item.data.home_team || "Home";
+      const homeTeam = item.data.home_team_name || "Home";
       const opponent = item.data.opponent_name || "Opponent";
       return item.data.is_home ? `${homeTeam} vs ${opponent}` : `${opponent} vs ${homeTeam}`;
     }
@@ -103,8 +103,10 @@ export function ScheduleTable({ items, onEdit, onDelete, onPublish, onCancel }: 
   };
 
   const getTeamsDisplay = (item: ScheduleItem) => {
-    if (item.teams && item.teams.length > 0) {
-      return item.teams.map((t) => t.name).join(", ");
+    if (isTrainingItem(item) && item.data.teams && item.data.teams.length > 0) {
+      return item.data.teams.map((t) => t.name).join(", ");
+    } else if (isMatchItem(item)) {
+      return item.data.home_team_name || "-";
     }
     return "-";
   };

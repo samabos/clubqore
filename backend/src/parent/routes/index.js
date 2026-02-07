@@ -8,7 +8,7 @@ import { parentScheduleRoutes } from './parentScheduleRoutes.js';
 import { parentChildrenRoutes } from './parentChildrenRoutes.js';
 import { registerParentInviteRoutes } from './parentInviteRoutes.js';
 
-export async function registerParentRoutes(fastify, options) {
+export async function registerParentRoutes(fastify, _options) {
   // Create authentication middleware
   const authenticate = createAuthMiddleware(fastify.db);
 

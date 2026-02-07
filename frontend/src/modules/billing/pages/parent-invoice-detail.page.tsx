@@ -19,6 +19,7 @@ export function ParentInvoiceDetailPage() {
     if (invoiceId) {
       loadInvoice();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invoiceId]);
 
   const loadInvoice = async () => {
@@ -28,10 +29,11 @@ export function ParentInvoiceDetailPage() {
       setIsLoading(true);
       const data = await fetchParentInvoiceById(parseInt(invoiceId));
       setInvoice(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load invoice";
       toast({
         title: "Error",
-        description: error.message || "Failed to load invoice",
+        description: message,
         variant: "destructive",
       });
       navigate("/app/parent/billing");

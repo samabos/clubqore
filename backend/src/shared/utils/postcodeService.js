@@ -222,7 +222,7 @@ export async function validatePostcode(postcode) {
     );
 
     return response.status === 200 && response.data && response.data.result === true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

@@ -36,8 +36,9 @@ export function ConfigAuditDialog({ configId, onClose }: ConfigAuditDialogProps)
         setLoading(true);
         const data = await getConfigAuditHistory(configId, 50);
         setAuditHistory(data);
-      } catch (error: any) {
-        toast.error(error.message || 'Failed to load audit history');
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to load audit history';
+        toast.error(message);
       } finally {
         setLoading(false);
       }
@@ -47,7 +48,7 @@ export function ConfigAuditDialog({ configId, onClose }: ConfigAuditDialogProps)
   }, [configId]);
 
   // Render value display
-  const renderValue = (value: any) => {
+  const renderValue = (value: unknown) => {
     if (value === null || value === undefined) {
       return <span className="text-muted-foreground italic">None</span>;
     }

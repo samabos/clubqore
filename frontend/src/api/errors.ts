@@ -9,14 +9,21 @@
  * Base API Error class with HTTP status code support
  */
 export class ApiError extends Error {
+  statusCode?: number;
+  code?: string;
+  details?: unknown;
+
   constructor(
     message: string,
-    public statusCode?: number,
-    public code?: string,
-    public details?: unknown
+    statusCode?: number,
+    code?: string,
+    details?: unknown
   ) {
     super(message);
     this.name = 'ApiError';
+    this.statusCode = statusCode;
+    this.code = code;
+    this.details = details;
     Object.setPrototypeOf(this, ApiError.prototype);
   }
 }
@@ -47,9 +54,12 @@ export class NotFoundError extends ApiError {
  * Validation errors (400, 422)
  */
 export class ValidationError extends ApiError {
-  constructor(message: string = 'Validation failed', public errors?: Record<string, string[]>) {
+  errors?: Record<string, string[]>;
+
+  constructor(message: string = 'Validation failed', errors?: Record<string, string[]>) {
     super(message, 400, 'VALIDATION_ERROR', errors);
     this.name = 'ValidationError';
+    this.errors = errors;
     Object.setPrototypeOf(this, ValidationError.prototype);
   }
 }

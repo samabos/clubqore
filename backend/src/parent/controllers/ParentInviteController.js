@@ -1,5 +1,5 @@
 import { ParentInviteService } from '../services/ParentInviteService.js';
-import { MemberService } from '../../club/services/MemberService.js';
+import { MemberService } from '../../member/services/MemberService.js';
 
 /**
  * ParentInviteController
@@ -157,6 +157,7 @@ export class ParentInviteController {
         phone: registrationData.parent.phone,
         address: registrationData.parent.address,
         generatePassword: false,
+        emailVerified: true, // Email verified because they clicked the invite link from their email
         children: registrationData.children || []
       };
 

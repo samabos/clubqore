@@ -29,7 +29,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Users, DollarSign } from "lucide-react";
 import {
   BulkSeasonalInvoiceRequest,

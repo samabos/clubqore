@@ -65,7 +65,6 @@ export function MatchForm({
     handleSubmit,
     formState: { errors },
     reset,
-    setValue,
   } = useForm<CreateMatchRequest>({
     defaultValues: {
       venue: "",
@@ -146,7 +145,7 @@ export function MatchForm({
       setSelectedAwayTeam("");
       setOpponentType("external");
       setIsHomeMatch(true);
-    } catch (error) {
+    } catch {
       // Error handling is done in parent component
     }
   };

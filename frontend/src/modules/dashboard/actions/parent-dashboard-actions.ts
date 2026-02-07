@@ -1,10 +1,11 @@
 // Parent Dashboard Actions
 // Data fetching and business logic for parent dashboard
 
-import { profileAPI } from '@/api/profile';
-import { parentAPI } from '@/api/parent';
+import { profileAPI, type UserChild } from '@/api/profile';
+import { parentAPI, type TrainingSession, type Match } from '@/api/parent';
 import { fetchParentInvoices } from '@/modules/billing/actions/billing-actions';
 import type { ParentDashboardData } from '../types';
+import type { Invoice } from '@/types/billing';
 
 /**
  * Fetch all data needed for the parent dashboard
@@ -12,9 +13,9 @@ import type { ParentDashboardData } from '../types';
  * Uses individual try-catch to allow partial data loading on error
  */
 export async function fetchParentDashboardData(): Promise<ParentDashboardData> {
-  let children = [];
-  let invoices = [];
-  let scheduleData = { trainingSessions: [], matches: [] };
+  let children: UserChild[] = [];
+  let invoices: Invoice[] = [];
+  let scheduleData: { trainingSessions: TrainingSession[]; matches: Match[] } = { trainingSessions: [], matches: [] };
 
   // Fetch children
   try {

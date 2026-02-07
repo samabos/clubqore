@@ -28,7 +28,7 @@ export async function up(knex) {
   console.log('✅ Status consolidation complete - draft, scheduled, and cancelled remain');
 }
 
-export async function down(knex) {
+export async function down(_knex) {
   // Cannot reliably reverse this migration as we've lost the original status information
   console.log('⚠️  Cannot reverse status consolidation - data has been merged');
   console.log('⚠️  All completed/in_progress statuses were changed to scheduled');

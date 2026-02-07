@@ -9,12 +9,14 @@
 
 import cron from 'node-cron';
 import { emailService } from '../services/emailService.js';
+import { WorkerExecutionService } from '../payment/services/WorkerExecutionService.js';
 import { getConfig } from '../config/index.js';
 import logger from '../config/logger.js';
 
 export class SubscriptionNotificationWorker {
   constructor(db) {
     this.db = db;
+    this.executionService = new WorkerExecutionService(db);
     this.isRunning = false;
     this.job = null;
 
@@ -56,7 +58,7 @@ export class SubscriptionNotificationWorker {
     }
 
     this.isRunning = true;
-    logger.info('Starting subscription notification processing...');
+    let executionId = null;
 
     const stats = {
       upcomingBillingReminders: 0,
@@ -66,6 +68,10 @@ export class SubscriptionNotificationWorker {
     };
 
     try {
+      // Track execution start
+      executionId = await this.executionService.startExecution('subscription_notification');
+      logger.info('Starting subscription notification processing...');
+
       // Send upcoming billing reminders
       stats.upcomingBillingReminders = await this._sendUpcomingBillingReminders();
 
@@ -75,13 +81,26 @@ export class SubscriptionNotificationWorker {
       // Send warnings for subscriptions at risk of suspension
       stats.suspensionWarnings = await this._sendSuspensionWarnings();
 
+      const totalSent = stats.upcomingBillingReminders + stats.pausedSubscriptionReminders + stats.suspensionWarnings;
+
       logger.info(
         `Notifications sent: ${stats.upcomingBillingReminders} billing reminders, ` +
         `${stats.pausedSubscriptionReminders} pause reminders, ${stats.suspensionWarnings} suspension warnings`
       );
+
+      // Track execution complete
+      await this.executionService.completeExecution(executionId, {
+        processed: totalSent,
+        successful: totalSent,
+        failed: 0,
+        metadata: stats
+      });
     } catch (error) {
       logger.error('Error in subscription notification worker:', error);
       stats.errors.push(error.message);
+      if (executionId) {
+        await this.executionService.failExecution(executionId, error.message);
+      }
     } finally {
       this.isRunning = false;
     }

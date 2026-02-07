@@ -94,7 +94,7 @@ export function emailVerificationRoutes(fastify, controller, authenticate) {
     }
   }, controller.confirmEmailVerification.bind(controller));
 
-  // POST /auth/resend-verification - Resend verification email
+  // POST /auth/resend-verification - Resend verification email (authenticated)
   fastify.post('/auth/resend-verification', {
     schema: {
       description: 'Resend email verification link',
@@ -103,8 +103,8 @@ export function emailVerificationRoutes(fastify, controller, authenticate) {
       body: {
         type: 'object',
         properties: {
-          email: { 
-            type: 'string', 
+          email: {
+            type: 'string',
             format: 'email',
             description: 'Email to resend verification to (optional, defaults to user\'s current email)'
           }
@@ -126,4 +126,40 @@ export function emailVerificationRoutes(fastify, controller, authenticate) {
     },
     preHandler: authenticate
   }, controller.resendEmailVerification.bind(controller));
+
+  // POST /auth/resend-verification-public - Resend verification email (public, no auth required)
+  fastify.post('/auth/resend-verification-public', {
+    schema: {
+      description: 'Resend email verification link (public - requires email)',
+      tags: ['auth'],
+      body: {
+        type: 'object',
+        required: ['email'],
+        properties: {
+          email: {
+            type: 'string',
+            format: 'email',
+            description: 'Email address to send verification to'
+          }
+        }
+      },
+      response: {
+        200: messageResponse,
+        400: errorResponse,
+        429: {
+          type: 'object',
+          properties: {
+            error: { type: 'string' },
+            retryAfter: { type: 'integer' }
+          }
+        }
+      }
+    },
+    config: {
+      rateLimit: {
+        max: 3,
+        timeWindow: '5 minutes'
+      }
+    }
+  }, controller.resendEmailVerificationPublic.bind(controller));
 }

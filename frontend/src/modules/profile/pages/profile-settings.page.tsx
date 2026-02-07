@@ -96,7 +96,7 @@ export function ProfileSettingsPage() {
   const handleUpdatePreferences = async (data: UserPreferences) => {
     setIsSavingPreferences(true);
     try {
-      const updatedPreferences = await updatePreferences(data);
+      const updatedPreferences = await updatePreferences(data as unknown as Parameters<typeof updatePreferences>[0]);
       setPreferences(updatedPreferences as unknown as UserPreferences);
       toast.success('Preferences saved successfully');
     } catch (error) {

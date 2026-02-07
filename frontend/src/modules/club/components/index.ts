@@ -1,6 +1,5 @@
 export { ClubSetupBanner } from "./club-setup-banner";
 export { DashboardHeader } from "./dashboard-header";
-export { StatsGrid } from "./stats-grid";
 export { RecentMembers } from "./recent-members";
 export { AlertsPanel } from "./alerts-panel";
 export { UpcomingSessions } from "./upcoming-sessions";

@@ -10,9 +10,7 @@ import type {
   MandateSetupResponse,
   PaymentMethod,
 } from "@/types/subscription";
-import { tokenManager } from "@/api/secureAuth";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+import { apiClient } from "@/api/base";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapSubscriptionFromBackend(sub: any): Subscription {
@@ -22,6 +20,7 @@ function mapSubscriptionFromBackend(sub: any): Subscription {
     parent_user_id: sub.parentUserId ?? sub.parent_user_id,
     child_user_id: sub.childUserId ?? sub.child_user_id,
     membership_tier_id: sub.membershipTierId ?? sub.membership_tier_id,
+    team_id: sub.teamId ?? sub.team_id ?? null,
     payment_mandate_id: sub.paymentMandateId ?? sub.payment_mandate_id,
     status: sub.status,
     billing_frequency: sub.billingFrequency ?? sub.billing_frequency,
@@ -40,6 +39,7 @@ function mapSubscriptionFromBackend(sub: any): Subscription {
     updated_at: sub.updatedAt ?? sub.updated_at,
     // Flatten nested objects
     tier_name: sub.tier?.name ?? sub.tier_name,
+    team_name: sub.team?.name ?? sub.team_name,
     child_first_name: sub.child?.firstName ?? sub.child_first_name,
     child_last_name: sub.child?.lastName ?? sub.child_last_name,
     child_email: sub.child?.email ?? sub.child_email,
@@ -59,17 +59,7 @@ export async function fetchMembershipTiers(includeInactive = false): Promise<Mem
   const queryParams = new URLSearchParams();
   if (!includeInactive) queryParams.append("activeOnly", "true");
 
-  const response = await fetch(
-    `${API_BASE_URL}/club/membership-tiers?${queryParams.toString()}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-      },
-      credentials: "include",
-    }
-  );
+  const response = await apiClient(`/club/membership-tiers?${queryParams.toString()}`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -84,14 +74,7 @@ export async function fetchMembershipTiers(includeInactive = false): Promise<Mem
  * Fetch a single membership tier by ID
  */
 export async function fetchMembershipTierById(tierId: number): Promise<MembershipTier> {
-  const response = await fetch(`${API_BASE_URL}/club/membership-tiers/${tierId}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
-  });
+  const response = await apiClient(`/club/membership-tiers/${tierId}`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -106,13 +89,8 @@ export async function fetchMembershipTierById(tierId: number): Promise<Membershi
  * Create a new membership tier
  */
 export async function createMembershipTier(tierData: CreateMembershipTierRequest): Promise<MembershipTier> {
-  const response = await fetch(`${API_BASE_URL}/club/membership-tiers`, {
+  const response = await apiClient(`/club/membership-tiers`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify(tierData),
   });
 
@@ -132,13 +110,8 @@ export async function updateMembershipTier(
   tierId: number,
   tierData: UpdateMembershipTierRequest
 ): Promise<MembershipTier> {
-  const response = await fetch(`${API_BASE_URL}/club/membership-tiers/${tierId}`, {
+  const response = await apiClient(`/club/membership-tiers/${tierId}`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify(tierData),
   });
 
@@ -155,13 +128,8 @@ export async function updateMembershipTier(
  * Delete a membership tier
  */
 export async function deleteMembershipTier(tierId: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/club/membership-tiers/${tierId}`, {
+  const response = await apiClient(`/club/membership-tiers/${tierId}`, {
     method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
   });
 
   if (!response.ok) {
@@ -174,13 +142,8 @@ export async function deleteMembershipTier(tierId: number): Promise<void> {
  * Reorder membership tiers
  */
 export async function reorderMembershipTiers(tierIds: number[]): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/club/membership-tiers/reorder`, {
+  const response = await apiClient(`/club/membership-tiers/reorder`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify({ tierIds }),
   });
 
@@ -194,14 +157,7 @@ export async function reorderMembershipTiers(tierIds: number[]): Promise<void> {
  * Fetch membership tier statistics
  */
 export async function fetchMembershipTierStats(): Promise<MembershipTierStats[]> {
-  const response = await fetch(`${API_BASE_URL}/club/membership-tiers/stats`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
-  });
+  const response = await apiClient(`/club/membership-tiers/stats`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -224,17 +180,7 @@ export async function fetchSubscriptions(filters?: SubscriptionFilters): Promise
   if (filters?.tierId) queryParams.append("tierId", filters.tierId.toString());
   if (filters?.search) queryParams.append("search", filters.search);
 
-  const response = await fetch(
-    `${API_BASE_URL}/club/subscriptions?${queryParams.toString()}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-      },
-      credentials: "include",
-    }
-  );
+  const response = await apiClient(`/club/subscriptions?${queryParams.toString()}`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -250,14 +196,7 @@ export async function fetchSubscriptions(filters?: SubscriptionFilters): Promise
  * Fetch a single subscription by ID
  */
 export async function fetchSubscriptionById(subscriptionId: number): Promise<Subscription> {
-  const response = await fetch(`${API_BASE_URL}/club/subscriptions/${subscriptionId}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
-  });
+  const response = await apiClient(`/club/subscriptions/${subscriptionId}`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -272,14 +211,7 @@ export async function fetchSubscriptionById(subscriptionId: number): Promise<Sub
  * Fetch subscription statistics
  */
 export async function fetchSubscriptionStats(): Promise<SubscriptionStats> {
-  const response = await fetch(`${API_BASE_URL}/club/subscriptions/stats`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
-  });
+  const response = await apiClient(`/club/subscriptions/stats`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -308,13 +240,8 @@ export async function cancelSubscription(
   reason?: string,
   immediate?: boolean
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/club/subscriptions/${subscriptionId}/cancel`, {
+  const response = await apiClient(`/club/subscriptions/${subscriptionId}/cancel`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify({ reason, immediate }),
   });
 
@@ -328,14 +255,7 @@ export async function cancelSubscription(
  * Get members available for subscription (no active subscription)
  */
 export async function fetchAvailableMembers(): Promise<{ id: number; email: string; first_name: string; last_name: string }[]> {
-  const response = await fetch(`${API_BASE_URL}/club/subscriptions/available-members`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
-  });
+  const response = await apiClient(`/club/subscriptions/available-members`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -356,13 +276,8 @@ export async function createSubscriptionForMember(
   billingDayOfMonth?: number,
   parentUserId?: number
 ): Promise<Subscription> {
-  const response = await fetch(`${API_BASE_URL}/club/subscriptions`, {
+  const response = await apiClient(`/club/subscriptions`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify({
       childUserId,
       membershipTierId,
@@ -392,17 +307,7 @@ export async function fetchParentSubscriptions(filters?: SubscriptionFilters): P
   if (filters?.status) queryParams.append("status", filters.status);
   if (filters?.clubId) queryParams.append("clubId", filters.clubId.toString());
 
-  const response = await fetch(
-    `${API_BASE_URL}/parent/subscriptions?${queryParams.toString()}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-      },
-      credentials: "include",
-    }
-  );
+  const response = await apiClient(`/parent/subscriptions?${queryParams.toString()}`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -425,13 +330,8 @@ export async function createParentSubscription(
   billingDayOfMonth?: number,
   billingFrequency?: "monthly" | "annual"
 ): Promise<Subscription> {
-  const response = await fetch(`${API_BASE_URL}/parent/subscriptions`, {
+  const response = await apiClient(`/parent/subscriptions`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify({
       clubId,
       childUserId,
@@ -459,13 +359,8 @@ export async function changeSubscriptionTier(
   newTierId: number,
   prorate?: boolean
 ): Promise<Subscription> {
-  const response = await fetch(`${API_BASE_URL}/parent/subscriptions/${subscriptionId}/tier`, {
+  const response = await apiClient(`/parent/subscriptions/${subscriptionId}/tier`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify({ newTierId, prorate }),
   });
 
@@ -485,13 +380,8 @@ export async function pauseSubscription(
   subscriptionId: number,
   resumeDate?: string
 ): Promise<Subscription> {
-  const response = await fetch(`${API_BASE_URL}/parent/subscriptions/${subscriptionId}/pause`, {
+  const response = await apiClient(`/parent/subscriptions/${subscriptionId}/pause`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify({ resumeDate }),
   });
 
@@ -508,13 +398,8 @@ export async function pauseSubscription(
  * Resume subscription (parent)
  */
 export async function resumeSubscription(subscriptionId: number): Promise<Subscription> {
-  const response = await fetch(`${API_BASE_URL}/parent/subscriptions/${subscriptionId}/resume`, {
+  const response = await apiClient(`/parent/subscriptions/${subscriptionId}/resume`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify({}),
   });
 
@@ -535,13 +420,8 @@ export async function cancelParentSubscription(
   reason?: string,
   immediate?: boolean
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/parent/subscriptions/${subscriptionId}/cancel`, {
+  const response = await apiClient(`/parent/subscriptions/${subscriptionId}/cancel`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify({ reason, immediate }),
   });
 
@@ -555,17 +435,7 @@ export async function cancelParentSubscription(
  * Get available tiers for a club (parent view)
  */
 export async function fetchAvailableTiers(clubId: number): Promise<MembershipTier[]> {
-  const response = await fetch(
-    `${API_BASE_URL}/parent/subscriptions/clubs/${clubId}/membership-tiers`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-      },
-      credentials: "include",
-    }
-  );
+  const response = await apiClient(`/parent/subscriptions/clubs/${clubId}/membership-tiers`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -582,14 +452,7 @@ export async function fetchAvailableTiers(clubId: number): Promise<MembershipTie
  * Fetch all payment methods for the authenticated parent
  */
 export async function fetchPaymentMethods(): Promise<PaymentMethodsResponse> {
-  const response = await fetch(`${API_BASE_URL}/parent/payment-methods`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
-  });
+  const response = await apiClient(`/parent/payment-methods`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -608,13 +471,8 @@ export async function initiateMandateSetup(
   provider: "gocardless" = "gocardless",
   scheme: "bacs" | "sepa_core" | "ach" = "bacs"
 ): Promise<MandateSetupResponse> {
-  const response = await fetch(`${API_BASE_URL}/parent/payment-methods/mandate/setup`, {
+  const response = await apiClient(`/parent/payment-methods/mandate/setup`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-    },
-    credentials: "include",
     body: JSON.stringify({ clubId, provider, scheme }),
   });
 
@@ -631,17 +489,10 @@ export async function initiateMandateSetup(
  * Set a payment method as default
  */
 export async function setDefaultPaymentMethod(paymentMethodId: number): Promise<PaymentMethod> {
-  const response = await fetch(
-    `${API_BASE_URL}/parent/payment-methods/${paymentMethodId}/default`,
-    {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-      },
-      credentials: "include",
-    }
-  );
+  const response = await apiClient(`/parent/payment-methods/${paymentMethodId}/default`, {
+    method: "PUT",
+    body: JSON.stringify({}),
+  });
 
   if (!response.ok) {
     const error = await response.json();
@@ -656,17 +507,9 @@ export async function setDefaultPaymentMethod(paymentMethodId: number): Promise<
  * Remove a payment method
  */
 export async function removePaymentMethod(paymentMethodId: number): Promise<void> {
-  const response = await fetch(
-    `${API_BASE_URL}/parent/payment-methods/${paymentMethodId}`,
-    {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-      },
-      credentials: "include",
-    }
-  );
+  const response = await apiClient(`/parent/payment-methods/${paymentMethodId}`, {
+    method: "DELETE",
+  });
 
   if (!response.ok) {
     const error = await response.json();

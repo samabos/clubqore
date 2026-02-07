@@ -9,7 +9,7 @@ import { getDefaultRouteByRole } from '@/utils/roleNavigation';
  * Page displayed when a user attempts to access a resource they don't have permission for.
  * Provides a clear message and navigation options to return to their authorized areas.
  */
-export function NotAuthorized() {
+export function NotAuthorizedPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -55,5 +55,3 @@ export function NotAuthorized() {
     </div>
   );
 }
-
-export default NotAuthorized;

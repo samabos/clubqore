@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Fragment } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,7 @@ import {
   fetchPermissionMatrix,
   bulkUpdateRolePermissions,
 } from "../actions/permission-actions";
-import type { PermissionMatrix, Role, PermissionMatrixEntry, BulkUpdatePermissionData } from "@/types/permission";
+import type { PermissionMatrix, PermissionMatrixEntry, BulkUpdatePermissionData, Resource } from "@/types/permission";
 
 type PermissionAction = "can_view" | "can_create" | "can_edit" | "can_delete";
 
@@ -42,6 +42,7 @@ export function PermissionManagementPage() {
 
   useEffect(() => {
     loadMatrix();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -68,10 +69,11 @@ export function PermissionManagementPage() {
       if (data.roles.length > 0 && !selectedRoleId) {
         setSelectedRoleId(data.roles[0].id.toString());
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load permissions";
       toast({
         title: "Error",
-        description: error.message || "Failed to load permissions",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -86,8 +88,8 @@ export function PermissionManagementPage() {
 
   // Group resources by type for better display
   const groupedResources = useMemo(() => {
-    if (!matrix) return new Map();
-    const groups = new Map<string, typeof matrix.resources>();
+    if (!matrix) return new Map<string, Resource[]>();
+    const groups = new Map<string, Resource[]>();
 
     matrix.resources.forEach((resource) => {
       const type = resource.type;
@@ -158,10 +160,11 @@ export function PermissionManagementPage() {
 
       // Reload to get fresh data
       await loadMatrix();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to save permissions";
       toast({
         title: "Error",
-        description: error.message || "Failed to save permissions",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -302,9 +305,9 @@ export function PermissionManagementPage() {
               </TableHeader>
               <TableBody>
                 {Array.from(groupedResources.entries()).map(([type, resources]) => (
-                  <>
+                  <Fragment key={`group-${type}`}>
                     {/* Type Header Row */}
-                    <TableRow key={`type-${type}`} className="bg-muted/50">
+                    <TableRow className="bg-muted/50">
                       <TableCell colSpan={5} className="font-semibold capitalize">
                         {type}s
                       </TableCell>
@@ -357,7 +360,7 @@ export function PermissionManagementPage() {
                         </TableRow>
                       );
                     })}
-                  </>
+                  </Fragment>
                 ))}
               </TableBody>
             </Table>

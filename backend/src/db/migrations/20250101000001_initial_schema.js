@@ -378,6 +378,6 @@ export async function up(knex) {
   });
 }
 
-export async function down(knex) {
+export async function down(_knex) {
   // Intentionally left empty to avoid accidental data loss.
 }

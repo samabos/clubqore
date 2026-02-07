@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../stores/authStore";
 import { getDefaultRouteByRole } from "../utils/roleNavigation";
 import { onboardingAPI } from "../api/onboarding";
+import { emailVerificationAPI } from "../api/emailVerification";
 import {
   UserProfile,
   UserPreferences
@@ -26,7 +27,7 @@ interface OnboardingData {
 export function useOnboarding() {
   const navigate = useNavigate();
   const { user , getCurrentUser } = useAuth();
-  
+
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +52,7 @@ export function useOnboarding() {
     clubData: {},
   });
 
-  // Simplified 4-step onboarding flow (club_manager only)
+  // Simplified 3-step onboarding flow (profile, club, complete)
   const universalSteps: OnboardingStep[] = [
     {
       id: "profile-setup",
@@ -63,12 +64,6 @@ export function useOnboarding() {
       id: "club-setup",
       title: "Club Setup",
       description: "Create your football club",
-      completed: false,
-    },
-    {
-      id: "preferences-setup",
-      title: "Preferences",
-      description: "Set your notification and privacy preferences",
       completed: false,
     },
     {
@@ -108,33 +103,27 @@ export function useOnboarding() {
         personalData: {
           firstName: onboardingData.profile.firstName || "",
           lastName: onboardingData.profile.lastName || "",
-          dateOfBirth: onboardingData.profile.dateOfBirth,
           phone: onboardingData.profile.phone,
-          address: { ...onboardingData.profile.address },
           profileImage: onboardingData.profile.profileImage,
         },
-        clubData: onboardingData.clubData, // Club setup is part of onboarding flow
+        clubData: {
+          ...onboardingData.clubData,
+          type: 'sports', // Default type for football clubs
+        },
         preferences: {
           notifications: {
-            email_notifications:
-              onboardingData.preferences.emailNotifications ?? true,
-            push_notifications:
-              onboardingData.preferences.pushNotifications ?? true,
-            sms_notifications:
-              onboardingData.preferences.smsNotifications ?? false,
-            marketing_emails:
-              onboardingData.preferences.generalUpdates ?? false,
+            email_notifications: true,
+            push_notifications: true,
+            sms_notifications: false,
+            marketing_emails: false,
           },
           privacy: {
-            profile_visibility:
-              onboardingData.preferences.profileVisibility || "members_only",
-            contact_visibility: onboardingData.preferences.showContactInfo
-              ? "public"
-              : "private",
+            profile_visibility: "members_only",
+            contact_visibility: "private",
             activity_visibility: "members_only",
           },
           communication: {
-            preferred_language: onboardingData.preferences.language || "en",
+            preferred_language: "en",
             timezone: "UTC",
             communication_method: "email" as const,
           },
@@ -144,7 +133,16 @@ export function useOnboarding() {
       console.log("Completing onboarding with data:", apiData);
 
       // Complete onboarding on the backend
-      await onboardingAPI.completeOnboarding(apiData as any);
+      await onboardingAPI.completeOnboarding(apiData as unknown as Parameters<typeof onboardingAPI.completeOnboarding>[0]);
+
+      // Send email verification
+      try {
+        await emailVerificationAPI.sendVerification();
+        console.log("Verification email sent successfully");
+      } catch (emailError) {
+        // Don't block onboarding if email fails - user can resend later
+        console.warn("Failed to send verification email:", emailError);
+      }
 
       // Get updated user profile from backend
       await getCurrentUser();
@@ -153,17 +151,20 @@ export function useOnboarding() {
       const defaultRoute = getDefaultRouteByRole(user!.roles);
       navigate(defaultRoute);
       setIsLoading(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to complete onboarding:", error);
       setIsLoading(false);
 
       // Extract error message from different possible formats
       let errorMessage = "Failed to complete onboarding. Please try again.";
 
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
+      if (error && typeof error === 'object') {
+        const err = error as { response?: { data?: { message?: string } }; message?: string };
+        if (err.response?.data?.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
       } else if (typeof error === "string") {
         errorMessage = error;
       }
@@ -177,17 +178,14 @@ export function useOnboarding() {
 
     switch (stepId) {
       case "profile-setup":
+        // Only require first name and last name
         return (
           onboardingData.profile.firstName &&
-          onboardingData.profile.lastName &&
-          onboardingData.profile.dateOfBirth
+          onboardingData.profile.lastName
         );
       case "club-setup":
-        return (
-          onboardingData.clubData.name &&
-          onboardingData.clubData.clubType
-        );
-      case "preferences-setup":
+        // Only require club name
+        return Boolean(onboardingData.clubData.name);
       case "setup-complete":
         return true;
       default:

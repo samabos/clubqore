@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Address } from '@/types/common';
 import { postcodeAPI, AddressSuggestion } from '@/api/postcode';
 import { Input } from '@/components/ui/input';
@@ -56,7 +56,6 @@ export function AddressInput({
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -93,23 +92,6 @@ export function AddressInput({
     fetchSuggestions();
   }, [debouncedSearchQuery, mode]);
 
-  const handlePostcodeSearch = async (postcode: string) => {
-    setIsLoading(true);
-    setSearchError(null);
-
-    try {
-      const address = await postcodeAPI.lookup(postcode);
-      setManualAddress(address);
-      onChange(address);
-      setMode('display');
-      setShowSuggestions(false);
-    } catch (error: any) {
-      setSearchError(error.message || 'Failed to lookup postcode');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSuggestionClick = async (suggestion: AddressSuggestion) => {
     setShowSuggestions(false);
     setIsLoadingAddress(true);
@@ -121,8 +103,9 @@ export function AddressInput({
       setManualAddress(fullAddress);
       onChange(fullAddress);
       setMode('display');
-    } catch (error: any) {
-      setSearchError(error.message || 'Failed to load address');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load address';
+      setSearchError(message);
     } finally {
       setIsLoadingAddress(false);
     }

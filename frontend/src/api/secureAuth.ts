@@ -18,7 +18,6 @@ class SecureTokenManager {
   private readonly TOKEN_DATA_KEY = 'clubqore_token_data';
   private refreshInterval: NodeJS.Timeout | null = null;
   private readonly REFRESH_INTERVAL = parseInt(import.meta.env.VITE_TOKEN_REFRESH_INTERVAL || '120000'); // 2 minutes
-  private readonly EXPIRY_BUFFER = parseInt(import.meta.env.VITE_TOKEN_EXPIRY_BUFFER || '60000'); // 1 minute
   private readonly EXPIRY_WARNING = parseInt(import.meta.env.VITE_TOKEN_EXPIRY_WARNING || '300000'); // 5 minutes
 
   constructor(strategy: StorageStrategy = 'localStorage') {
@@ -26,7 +25,7 @@ class SecureTokenManager {
   }
 
   // Decode JWT token to get expiration
-  private decodeJWTPayload(token: string): any {
+  private decodeJWTPayload(token: string): Record<string, unknown> | null {
     try {
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -46,7 +45,7 @@ class SecureTokenManager {
   // Get expiration from JWT token
   private getTokenExpiration(token: string): number {
     const payload = this.decodeJWTPayload(token);
-    if (payload && payload.exp) {
+    if (payload && typeof payload.exp === 'number') {
       // JWT exp is in seconds, convert to milliseconds
       return payload.exp * 1000;
     }
@@ -206,7 +205,7 @@ class SecureTokenManager {
   }
 
   // Get JWT claims from access token
-  getTokenClaims(): any {
+  getTokenClaims(): Record<string, unknown> | null {
     const tokenData = this.getTokenData();
     if (!tokenData?.accessToken) return null;
     return this.decodeJWTPayload(tokenData.accessToken);
@@ -416,7 +415,7 @@ export const securityUtils = {
   },
 
   // Decode JWT payload (utility function)
-  decodeJWT: (token: string): any => {
+  decodeJWT: (token: string): Record<string, unknown> | null => {
     try {
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -436,20 +435,20 @@ export const securityUtils = {
   // Check if JWT token is expired
   isJWTExpired: (token: string): boolean => {
     const payload = securityUtils.decodeJWT(token);
-    if (!payload || !payload.exp) return true;
-    
+    if (!payload || typeof payload.exp !== 'number') return true;
+
     // JWT exp is in seconds, convert to milliseconds and add 30-second buffer
     const expirationTime = payload.exp * 1000;
     const bufferTime = 30 * 1000; // 30 seconds
-    
+
     return Date.now() > (expirationTime - bufferTime);
   },
 
   // Get time until JWT expires (in milliseconds)
   getJWTTimeToExpiry: (token: string): number => {
     const payload = securityUtils.decodeJWT(token);
-    if (!payload || !payload.exp) return 0;
-    
+    if (!payload || typeof payload.exp !== 'number') return 0;
+
     const expirationTime = payload.exp * 1000;
     return Math.max(0, expirationTime - Date.now());
   },

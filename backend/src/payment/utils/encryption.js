@@ -10,7 +10,7 @@ import { getConfig } from '../../config/index.js';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16; // 128 bits
-const AUTH_TAG_LENGTH = 16; // 128 bits
+const _AUTH_TAG_LENGTH = 16; // 128 bits - reserved for future use
 const KEY_VERSION = 1; // For future key rotation support
 
 /**
@@ -184,7 +184,7 @@ export function verifyState(state) {
     }
 
     return data;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

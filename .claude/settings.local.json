@@ -10,7 +10,12 @@
       "Bash(ls -la \"c:\\\\Projects\\\\clubqore\\\\frontend\\\\src\\\\modules\"\" | grep -E \"^d \")",
       "Bash(tree:*)",
       "Bash(wc:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:developer.gocardless.com)",
+      "WebFetch(domain:support.gocardless.com)"
     ],
     "deny": [],
     "ask": []

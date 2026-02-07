@@ -1,10 +1,12 @@
-import { LandingNavigation } from "./LandingNavigation";
-import { HeroSection } from "./HeroSection";
-import { StatsSection } from "./StatsSection";
-import { FeaturesSection } from "./FeaturesSection";
-import { PricingSection } from "./PricingSection";
-import { ContactSection } from "./ContactSection";
-import { LandingFooter } from "./LandingFooter";
+import {
+  LandingNavigation,
+  HeroSection,
+  StatsSection,
+  FeaturesSection,
+  PricingSection,
+  ContactSection,
+  LandingFooter,
+} from "../components";
 
 interface LandingPageProps {
   onGetStarted?: () => void;

@@ -26,7 +26,7 @@ const subscriptionFormSchema = z.object({
   memberId: z.string().min(1, "Please select a member"),
   tierId: z.string().min(1, "Please select a membership tier"),
   billingFrequency: z.enum(["monthly", "annual"]),
-  billingDayOfMonth: z.coerce.number().min(1).max(28),
+  billingDayOfMonth: z.number().min(1).max(28),
 });
 
 type SubscriptionFormValues = z.infer<typeof subscriptionFormSchema>;
@@ -36,6 +36,7 @@ interface AvailableMember {
   email: string;
   first_name: string;
   last_name: string;
+  team_name?: string;
 }
 
 interface CreateSubscriptionFormProps {
@@ -63,7 +64,8 @@ export function CreateSubscriptionForm({
   const [selectedTier, setSelectedTier] = useState<MembershipTier | null>(null);
 
   const form = useForm<SubscriptionFormValues>({
-    resolver: zodResolver(subscriptionFormSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(subscriptionFormSchema) as any,
     defaultValues: {
       memberId: "",
       tierId: "",
@@ -125,7 +127,8 @@ export function CreateSubscriptionForm({
                   ) : (
                     members.map((member) => (
                       <SelectItem key={member.id} value={member.id.toString()}>
-                        {member.first_name} {member.last_name} ({member.email})
+                        {member.first_name} {member.last_name}
+                        {member.team_name && ` - ${member.team_name}`}
                       </SelectItem>
                     ))
                   )}

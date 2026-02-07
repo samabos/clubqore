@@ -1,6 +1,6 @@
 import { apiClient } from "@/api/base";
 import { ClubMember, CreateMemberRequest, ChildData } from "../types/component-types";
-import { handleApiError, NotFoundError } from "@/lib/errors";
+import { handleApiError, NotFoundError } from "@/api/errors";
 
 // Fetch all members for the current club
 export const fetchClubMembers = async (): Promise<ClubMember[]> => {

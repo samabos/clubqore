@@ -139,10 +139,10 @@ export function TeamForm({
 
     // Validation
     const newErrors: Record<string, string> = {};
-    if (!formData.name.trim()) {
+    if (!formData.name || !formData.name.trim()) {
       newErrors.name = "Team name is required";
     }
-    if (formData.name.length > 255) {
+    if (formData.name && formData.name.length > 255) {
       newErrors.name = "Team name must be less than 255 characters";
     }
     if (formData.color && !/^#[0-9A-Fa-f]{6}$/.test(formData.color)) {
@@ -255,7 +255,7 @@ export function TeamForm({
                     </div>
                   </SelectItem>
                   {availablePersonnel.map((person) => (
-                    <SelectItem key={person.id} value={person.id.toString()}>
+                    <SelectItem key={person.user_id} value={person.user_id.toString()}>
                       <div className="flex items-center gap-2">
                         <UserCog className="h-4 w-4" />
                         <span>{person.fullName}</span>

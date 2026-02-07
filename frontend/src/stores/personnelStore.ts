@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { TeamManager } from '@/modules/team/types';
+import { TeamManagerPersonnel } from '@/modules/team/types';
 import { loadAvailablePersonnel } from '@/modules/team/actions/team-actions';
 
 export interface PersonnelState {
   // Data
-  availablePersonnel: TeamManager[];
+  availablePersonnel: TeamManagerPersonnel[];
   isLoading: boolean;
   lastLoaded: number | null;
   clubId: number | null;
@@ -50,6 +50,7 @@ export const usePersonnelStore = create<PersonnelState>()(
         
         try {
           const personnel = await loadAvailablePersonnel(clubId);
+          // fullName is already computed by the backend
           set({
             availablePersonnel: personnel,
             lastLoaded: Date.now(),

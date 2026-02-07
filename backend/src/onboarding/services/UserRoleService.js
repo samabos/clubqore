@@ -90,7 +90,7 @@ export class UserRoleService {
         //  updateData.primary_role = roleData.role;
         //}
 
-        var updateResult = await trx('users')
+        await trx('users')
           .where({ id: userId })
           .update(updateData);
 
@@ -349,7 +349,7 @@ export class UserRoleService {
 
 
 
-  extractRoleSpecificData(roleData) {
+  extractRoleSpecificData(_roleData) {
     // Only club_manager is supported - no role-specific data needed
     return {};
   }

@@ -66,7 +66,7 @@ export function SeasonForm({
     try {
       await onSubmit(data);
       reset();
-    } catch (error) {
+    } catch {
       // Error handling is done in parent component
     }
   };

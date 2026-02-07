@@ -3,7 +3,7 @@ import { adminBillingRoutes } from './adminBillingRoutes.js';
 import { registerSystemConfigRoutes } from './systemConfigRoutes.js';
 import { createAuthMiddleware } from '../../auth/middleware.js';
 
-export async function registerAdminRoutes(fastify, options) {
+export async function registerAdminRoutes(fastify, _options) {
   const db = fastify.db;
   const authenticate = createAuthMiddleware(db);
 
