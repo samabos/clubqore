@@ -1,6 +1,9 @@
+import { TrainingSessionService } from '../../schedule/services/TrainingSessionService.js';
+
 export class ParentScheduleController {
   constructor(db) {
     this.db = db;
+    this.trainingSessionService = new TrainingSessionService(db);
   }
 
   /**
@@ -11,7 +14,7 @@ export class ParentScheduleController {
     const parentUserId = request.user.id;
 
     try {
-      // Get all children's team IDs with child information
+      // Get all children's team IDs with child information and club ID
       const childTeamMapping = await this.db('user_children')
         .join('team_members', 'user_children.id', 'team_members.user_child_id')
         .leftJoin('user_profiles', 'user_children.child_user_id', 'user_profiles.user_id')
@@ -19,11 +22,13 @@ export class ParentScheduleController {
         .select(
           'team_members.team_id',
           'user_children.id as child_id',
+          'user_children.club_id',
           'user_profiles.first_name as child_first_name',
           'user_profiles.last_name as child_last_name'
         );
 
       const teamIds = [...new Set(childTeamMapping.map(m => m.team_id))];
+      const clubIds = [...new Set(childTeamMapping.map(m => m.club_id).filter(Boolean))];
 
       if (teamIds.length === 0) {
         return reply.send({
@@ -32,34 +37,71 @@ export class ParentScheduleController {
         });
       }
 
-      // Fetch training sessions (through junction table)
-      // Exclude draft status - parents can see scheduled, in_progress, completed, and cancelled events
-      const trainingSessions = await this.db('training_sessions')
-        .join('training_session_teams', 'training_sessions.id', 'training_session_teams.training_session_id')
-        .join('teams', 'training_session_teams.team_id', 'teams.id')
-        .whereIn('training_session_teams.team_id', teamIds)
-        .where('training_sessions.date', '>=', this.db.fn.now())
-        .where('training_sessions.status', '!=', 'draft')
-        .orderBy('training_sessions.date', 'asc')
-        .orderBy('training_sessions.start_time', 'asc')
-        .select(
-          'training_sessions.id',
-          'training_session_teams.team_id',
-          'training_sessions.title',
-          'training_sessions.date',
-          'training_sessions.start_time',
-          'training_sessions.end_time',
-          'training_sessions.location',
-          'training_sessions.description',
-          'training_sessions.session_type',
-          'training_sessions.status',
-          'training_sessions.created_at',
-          'training_sessions.updated_at',
-          'teams.name as team_name'
-        );
+      // Use TrainingSessionService to fetch training sessions (handles recurring sessions)
+      const fromDate = new Date();
+      fromDate.setHours(0, 0, 0, 0); // Start of today
+      const toDate = new Date();
+      toDate.setFullYear(toDate.getFullYear() + 1); // 1 year from now
+
+      // Fetch all training sessions for these clubs/teams using the service
+      const trainingSessions = [];
+      for (const clubId of clubIds) {
+        for (const teamId of teamIds) {
+          const sessions = await this.trainingSessionService.getSessionsByClub(clubId, {
+            team_id: teamId,
+            from_date: fromDate.toISOString().split('T')[0],
+            to_date: toDate.toISOString().split('T')[0],
+          });
+
+          // Filter out drafts and add team info
+          const filteredSessions = sessions
+            .filter(s => s.status !== 'draft')
+            .map(s => ({
+              id: s.id,
+              team_id: teamId,
+              title: s.title,
+              date: s.occurrence_date || s.date,
+              start_time: s.start_time,
+              end_time: s.end_time,
+              location: s.location,
+              description: s.description,
+              session_type: s.session_type,
+              status: s.status,
+              created_at: s.created_at,
+              updated_at: s.updated_at,
+              team_name: s.teams?.[0]?.name || null,
+              is_recurring: s.is_recurring,
+              occurrence_date: s.occurrence_date,
+            }));
+
+          trainingSessions.push(...filteredSessions);
+        }
+      }
+
+      // Remove duplicates (same session might be returned for multiple teams)
+      const uniqueSessions = [];
+      const seenKeys = new Set();
+      for (const session of trainingSessions) {
+        const key = `${session.id}-${session.date}`;
+        if (!seenKeys.has(key)) {
+          seenKeys.add(key);
+          uniqueSessions.push(session);
+        }
+      }
+
+      // Sort by date ascending
+      uniqueSessions.sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        if (dateA.getTime() !== dateB.getTime()) {
+          return dateA.getTime() - dateB.getTime();
+        }
+        return (a.start_time || '').localeCompare(b.start_time || '');
+      });
 
       // Fetch matches (check both home and away team)
       // Exclude draft status - parents can see scheduled, in_progress, completed, and cancelled events
+      // Use CURRENT_DATE for date comparison since date column is DATE type (not TIMESTAMP)
       const matches = await this.db('matches')
         .leftJoin('teams as home_team', 'matches.home_team_id', 'home_team.id')
         .leftJoin('teams as away_team', 'matches.away_team_id', 'away_team.id')
@@ -67,7 +109,7 @@ export class ParentScheduleController {
           this.whereIn('matches.home_team_id', teamIds)
             .orWhereIn('matches.away_team_id', teamIds);
         })
-        .where('matches.date', '>=', this.db.fn.now())
+        .whereRaw('matches.date >= CURRENT_DATE')
         .where('matches.status', '!=', 'draft')
         .orderBy('matches.date', 'asc')
         .orderBy('matches.start_time', 'asc')
@@ -117,7 +159,7 @@ export class ParentScheduleController {
       };
 
       return reply.send({
-        trainingSessions: addChildNames(trainingSessions),
+        trainingSessions: addChildNames(uniqueSessions),
         matches: addChildNames(matches)
       });
     } catch (error) {
@@ -169,34 +211,74 @@ export class ParentScheduleController {
         });
       }
 
-      // Fetch training sessions (through junction table)
-      // Exclude draft status - parents can see scheduled, in_progress, completed, and cancelled events
-      const trainingSessions = await this.db('training_sessions')
-        .join('training_session_teams', 'training_sessions.id', 'training_session_teams.training_session_id')
-        .join('teams', 'training_session_teams.team_id', 'teams.id')
-        .whereIn('training_session_teams.team_id', teamIds)
-        .where('training_sessions.date', '>=', this.db.fn.now())
-        .where('training_sessions.status', '!=', 'draft')
-        .orderBy('training_sessions.date', 'asc')
-        .orderBy('training_sessions.start_time', 'asc')
-        .select(
-          'training_sessions.id',
-          'training_session_teams.team_id',
-          'training_sessions.title',
-          'training_sessions.date',
-          'training_sessions.start_time',
-          'training_sessions.end_time',
-          'training_sessions.location',
-          'training_sessions.description',
-          'training_sessions.session_type',
-          'training_sessions.status',
-          'training_sessions.created_at',
-          'training_sessions.updated_at',
-          'teams.name as team_name'
-        );
+      // Get child's club ID
+      const clubId = child.club_id;
+
+      // Use TrainingSessionService to fetch training sessions (handles recurring sessions)
+      const fromDate = new Date();
+      fromDate.setHours(0, 0, 0, 0); // Start of today
+      const toDate = new Date();
+      toDate.setFullYear(toDate.getFullYear() + 1); // 1 year from now
+
+      // Fetch all training sessions for these teams using the service
+      const trainingSessions = [];
+      if (clubId) {
+        for (const teamId of teamIds) {
+          const sessions = await this.trainingSessionService.getSessionsByClub(clubId, {
+            team_id: teamId,
+            from_date: fromDate.toISOString().split('T')[0],
+            to_date: toDate.toISOString().split('T')[0],
+          });
+
+          // Filter out drafts and add team info
+          const filteredSessions = sessions
+            .filter(s => s.status !== 'draft')
+            .map(s => ({
+              id: s.id,
+              team_id: teamId,
+              title: s.title,
+              date: s.occurrence_date || s.date,
+              start_time: s.start_time,
+              end_time: s.end_time,
+              location: s.location,
+              description: s.description,
+              session_type: s.session_type,
+              status: s.status,
+              created_at: s.created_at,
+              updated_at: s.updated_at,
+              team_name: s.teams?.[0]?.name || null,
+              is_recurring: s.is_recurring,
+              occurrence_date: s.occurrence_date,
+            }));
+
+          trainingSessions.push(...filteredSessions);
+        }
+      }
+
+      // Remove duplicates (same session might be returned for multiple teams)
+      const uniqueSessions = [];
+      const seenKeys = new Set();
+      for (const session of trainingSessions) {
+        const key = `${session.id}-${session.date}`;
+        if (!seenKeys.has(key)) {
+          seenKeys.add(key);
+          uniqueSessions.push(session);
+        }
+      }
+
+      // Sort by date ascending
+      uniqueSessions.sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        if (dateA.getTime() !== dateB.getTime()) {
+          return dateA.getTime() - dateB.getTime();
+        }
+        return (a.start_time || '').localeCompare(b.start_time || '');
+      });
 
       // Fetch matches (check both home and away team)
       // Exclude draft status - parents can see scheduled, in_progress, completed, and cancelled events
+      // Use CURRENT_DATE for date comparison since date column is DATE type (not TIMESTAMP)
       const matches = await this.db('matches')
         .leftJoin('teams as home_team', 'matches.home_team_id', 'home_team.id')
         .leftJoin('teams as away_team', 'matches.away_team_id', 'away_team.id')
@@ -204,7 +286,7 @@ export class ParentScheduleController {
           this.whereIn('matches.home_team_id', teamIds)
             .orWhereIn('matches.away_team_id', teamIds);
         })
-        .where('matches.date', '>=', this.db.fn.now())
+        .whereRaw('matches.date >= CURRENT_DATE')
         .where('matches.status', '!=', 'draft')
         .orderBy('matches.date', 'asc')
         .orderBy('matches.start_time', 'asc')
@@ -239,7 +321,7 @@ export class ParentScheduleController {
       };
 
       return reply.send({
-        trainingSessions: addChildName(trainingSessions),
+        trainingSessions: addChildName(uniqueSessions),
         matches: addChildName(matches)
       });
     } catch (error) {

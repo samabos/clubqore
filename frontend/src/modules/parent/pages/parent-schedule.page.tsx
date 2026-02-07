@@ -159,8 +159,15 @@ export function ParentSchedulePage() {
           ))}
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          No scheduled events found
+        <div className="text-center py-12">
+          <CalendarIcon className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No scheduled events found
+          </h3>
+          <p className="text-gray-500 max-w-md mx-auto">
+            Events will appear here once your children are assigned to teams
+            and the club schedules training sessions or matches.
+          </p>
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

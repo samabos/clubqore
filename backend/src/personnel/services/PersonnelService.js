@@ -280,21 +280,28 @@ export class PersonnelService {
         .whereIn('roles.name', ['team_manager', 'staff'])
         .where('user_roles.is_active', true)
         .select(
+          'user_roles.id',
           'user_roles.user_id',
+          'users.email',
           'user_profiles.first_name',
           'user_profiles.last_name',
+          'roles.name as role_name',
           'user_roles.is_active',
+          'user_accounts.account_number',
           'user_roles.created_at'
         )
         .orderBy('user_roles.created_at', 'desc');
 
       return teamManagers.map(tm => ({
-        id: tm.user_id.toString(),
-        firstName: tm.first_name || null,
-        lastName: tm.last_name || null,
-        fullName: tm.first_name && tm.last_name ? `${tm.first_name} ${tm.last_name}` : null,
-        isActive: tm.is_active,
-        createdAt: tm.created_at?.toISOString()
+        id: tm.id,
+        user_id: tm.user_id,
+        first_name: tm.first_name || '',
+        last_name: tm.last_name || '',
+        email: tm.email || '',
+        role: tm.role_name || 'team_manager',
+        is_active: tm.is_active,
+        account_number: tm.account_number || null,
+        fullName: `${tm.first_name || ''} ${tm.last_name || ''}`.trim() || 'Unknown'
       }));
     } catch (error) {
       console.error('Error in getTeamManagers:', error);

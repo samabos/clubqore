@@ -55,21 +55,23 @@ export class ParentChildrenController {
 
           if (teamIds.length > 0) {
             // Count training sessions (exclude drafts)
+            // Use CURRENT_DATE for date comparison since date column is DATE type (not TIMESTAMP)
             const trainingCount = await this.db('training_sessions')
               .join('training_session_teams', 'training_sessions.id', 'training_session_teams.training_session_id')
               .whereIn('training_session_teams.team_id', teamIds)
-              .where('training_sessions.date', '>=', this.db.fn.now())
+              .whereRaw('training_sessions.date >= CURRENT_DATE')
               .where('training_sessions.status', '!=', 'draft')
               .count('* as count')
               .first();
 
             // Count matches (exclude drafts)
+            // Use CURRENT_DATE for date comparison since date column is DATE type (not TIMESTAMP)
             const matchCount = await this.db('matches')
               .where(function() {
                 this.whereIn('matches.home_team_id', teamIds)
                   .orWhereIn('matches.away_team_id', teamIds);
               })
-              .where('matches.date', '>=', this.db.fn.now())
+              .whereRaw('matches.date >= CURRENT_DATE')
               .where('matches.status', '!=', 'draft')
               .count('* as count')
               .first();
@@ -197,21 +199,23 @@ export class ParentChildrenController {
 
       if (teamIds.length > 0) {
         // Count training sessions (exclude drafts)
+        // Use CURRENT_DATE for date comparison since date column is DATE type (not TIMESTAMP)
         const trainingCount = await this.db('training_sessions')
           .join('training_session_teams', 'training_sessions.id', 'training_session_teams.training_session_id')
           .whereIn('training_session_teams.team_id', teamIds)
-          .where('training_sessions.date', '>=', this.db.fn.now())
+          .whereRaw('training_sessions.date >= CURRENT_DATE')
           .where('training_sessions.status', '!=', 'draft')
           .count('* as count')
           .first();
 
         // Count matches (exclude drafts)
+        // Use CURRENT_DATE for date comparison since date column is DATE type (not TIMESTAMP)
         const matchCount = await this.db('matches')
           .where(function() {
             this.whereIn('matches.home_team_id', teamIds)
               .orWhereIn('matches.away_team_id', teamIds);
           })
-          .where('matches.date', '>=', this.db.fn.now())
+          .whereRaw('matches.date >= CURRENT_DATE')
           .where('matches.status', '!=', 'draft')
           .count('* as count')
           .first();

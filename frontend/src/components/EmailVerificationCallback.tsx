@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { emailVerificationAPI } from "../api/emailVerification";
-import { useAuth } from "../stores/authStore";
-import { getDefaultRouteByRole } from "../utils/roleNavigation";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { CheckCircle, AlertCircle, Loader } from "lucide-react";
 import { Button } from "./ui/button";
@@ -10,13 +8,18 @@ import { Button } from "./ui/button";
 export function EmailVerificationCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { getCurrentUser } = useAuth();
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading"
   );
   const [message, setMessage] = useState("");
+  const verificationAttempted = useRef(false);
 
   useEffect(() => {
+    // Prevent double execution in React StrictMode
+    if (verificationAttempted.current) {
+      return;
+    }
+
     const token = searchParams.get("token");
 
     if (!token) {
@@ -25,25 +28,13 @@ export function EmailVerificationCallback() {
       return;
     }
 
+    verificationAttempted.current = true;
+
     const verifyEmailToken = async () => {
       try {
-        const result = await emailVerificationAPI.verifyEmail(token);
-        const updatedUser = result.user as { isOnboarded?: boolean; roles?: string[] };
+        await emailVerificationAPI.verifyEmail(token);
         setStatus("success");
-        setMessage("Email verified successfully!");
-
-        // Refresh user data in store
-        await getCurrentUser();
-
-        // Redirect to onboarding if not completed, otherwise to role-specific dashboard
-        setTimeout(() => {
-          if (!updatedUser.isOnboarded) {
-            navigate("/onboarding");
-          } else {
-            const defaultRoute = getDefaultRouteByRole(updatedUser.roles || []);
-            navigate(defaultRoute);
-          }
-        }, 2000);
+        setMessage("Email verified successfully! You can now sign in.");
       } catch (error) {
         setStatus("error");
         setMessage(
@@ -53,7 +44,7 @@ export function EmailVerificationCallback() {
     };
 
     verifyEmailToken();
-  }, [searchParams, navigate, getCurrentUser]);
+  }, [searchParams, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
@@ -98,9 +89,12 @@ export function EmailVerificationCallback() {
                   Email Verified!
                 </h3>
                 <p className="text-gray-600 mb-4">{message}</p>
-                <p className="text-sm text-gray-500">
-                  Redirecting you to continue setup...
-                </p>
+                <Button
+                  onClick={() => navigate("/auth")}
+                  className="w-full rounded-xl gradient-primary text-white hover:opacity-90"
+                >
+                  Sign In
+                </Button>
               </div>
             </>
           )}

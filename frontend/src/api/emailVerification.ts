@@ -32,8 +32,8 @@ export const emailVerificationAPI = {
 
   // Verify email with token
   verifyEmail: async (token: string): Promise<{ user: unknown }> => {
-    const response = await apiClient('/auth/verify-email', {
-      method: 'PATCH',
+    const response = await apiClient('/auth/verify-email/confirm', {
+      method: 'POST',
       body: JSON.stringify({ token }),
     });
 

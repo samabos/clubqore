@@ -1,14 +1,7 @@
+import { useState, useEffect } from "react";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Textarea } from "../ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Building2, Globe, MapPin, Phone } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { CreateClubRequest } from "@/types/membership";
 
 interface ClubSetupProps {
@@ -16,9 +9,56 @@ interface ClubSetupProps {
   onClubDataUpdate: (clubData: Partial<CreateClubRequest>) => void;
 }
 
+interface ClubAddress {
+  street: string;
+  city: string;
+  county: string;
+  postcode: string;
+  country: string;
+}
+
+const UK_COUNTRIES = ['England', 'Scotland', 'Wales', 'Northern Ireland'] as const;
+
+// Format address parts into a single string
+function formatAddress(addr: ClubAddress): string {
+  const parts = [
+    addr.street,
+    addr.city,
+    addr.county,
+    addr.postcode,
+    addr.country
+  ].filter(Boolean);
+  return parts.join(', ');
+}
+
+// Parse a formatted address string back into parts
+function parseAddress(addressStr: string | undefined): ClubAddress {
+  if (!addressStr) {
+    return { street: '', city: '', county: '', postcode: '', country: 'England' };
+  }
+  const parts = addressStr.split(', ').map(p => p.trim());
+  return {
+    street: parts[0] || '',
+    city: parts[1] || '',
+    county: parts[2] || '',
+    postcode: parts[3] || '',
+    country: parts[4] || 'England'
+  };
+}
+
 export function ClubSetup({ clubData, onClubDataUpdate }: ClubSetupProps) {
-  const updateField = (field: keyof CreateClubRequest, value: string) => {
-    onClubDataUpdate({ ...clubData, [field]: value });
+  const [address, setAddress] = useState<ClubAddress>(() => parseAddress(clubData.address));
+
+  // Update parent when address fields change
+  useEffect(() => {
+    const formattedAddress = formatAddress(address);
+    if (formattedAddress !== clubData.address) {
+      onClubDataUpdate({ ...clubData, address: formattedAddress });
+    }
+  }, [address]);
+
+  const updateAddressField = (field: keyof ClubAddress, value: string) => {
+    setAddress(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -38,7 +78,7 @@ export function ClubSetup({ clubData, onClubDataUpdate }: ClubSetupProps) {
             <Input
               id="clubName"
               value={clubData.name || ""}
-              onChange={(e) => updateField("name", e.target.value)}
+              onChange={(e) => onClubDataUpdate({ ...clubData, name: e.target.value })}
               className="pl-10 rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
               placeholder="Enter your club name"
               required
@@ -46,114 +86,71 @@ export function ClubSetup({ clubData, onClubDataUpdate }: ClubSetupProps) {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="clubType">Club Type</Label>
-          <Select
-            value={clubData.clubType || ""}
-            onValueChange={(value) => updateField("clubType", value)}
-          >
-            <SelectTrigger className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20">
-              <SelectValue placeholder="Select club type" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              <SelectItem value="youth-academy">Youth Academy</SelectItem>
-              <SelectItem value="amateur-club">Amateur Club</SelectItem>
-              <SelectItem value="semi-professional">
-                Semi-Professional
-              </SelectItem>
-              <SelectItem value="professional">Professional Club</SelectItem>
-              <SelectItem value="training-center">Training Center</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="description">Club Description</Label>
-          <Textarea
-            id="description"
-            value={clubData.description || ""}
-            onChange={(e) => updateField("description", e.target.value)}
-            className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
-            placeholder="Tell us about your club's history, mission, and values..."
-            rows={4}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="foundedYear">Founded Year</Label>
-            <Input
-              id="foundedYear"
-              type="number"
-              value={clubData.foundedYear || ""}
-              onChange={(e) =>
-                updateField("foundedYear", parseInt(e.target.value).toString())
-              }
-              className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
-              placeholder="e.g., 1995"
-            />
-          </div>
+        <div className="space-y-4">
+          <Label>Club Address</Label>
 
           <div className="space-y-2">
-            <Label htmlFor="capacity">Member Capacity</Label>
+            <Label htmlFor="street" className="text-sm font-normal text-gray-600">Street Address</Label>
             <Input
-              id="capacity"
-              type="number"
-              value={clubData.membershipCapacity || ""}
-              onChange={(e) =>
-                updateField(
-                  "membershipCapacity",
-                  parseInt(e.target.value).toString()
-                )
-              }
+              id="street"
+              value={address.street}
+              onChange={(e) => updateAddressField("street", e.target.value)}
               className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
-              placeholder="e.g., 100"
+              placeholder="10 Stadium Road"
             />
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="website">Club Website (Optional)</Label>
-          <div className="relative">
-            <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              id="website"
-              type="url"
-              value={clubData.website || ""}
-              onChange={(e) => updateField("website", e.target.value)}
-              className="pl-10 rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
-              placeholder="https://yourclub.com"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="city" className="text-sm font-normal text-gray-600">City</Label>
+              <Input
+                id="city"
+                value={address.city}
+                onChange={(e) => updateAddressField("city", e.target.value)}
+                className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
+                placeholder="London"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="county" className="text-sm font-normal text-gray-600">County</Label>
+              <Input
+                id="county"
+                value={address.county}
+                onChange={(e) => updateAddressField("county", e.target.value)}
+                className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
+                placeholder="Greater London"
+              />
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="clubAddress">Club Address</Label>
-          <div className="relative">
-            <MapPin className="absolute left-3 top-3 text-gray-400 w-4 h-4" />
-            <Textarea
-              id="clubAddress"
-              value={clubData.address || ""}
-              onChange={(e) => updateField("address", e.target.value)}
-              className="pl-10 rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
-              placeholder="Enter your club's full address..."
-              rows={3}
-            />
-          </div>
-        </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="postcode" className="text-sm font-normal text-gray-600">Postcode</Label>
+              <Input
+                id="postcode"
+                value={address.postcode}
+                onChange={(e) => updateAddressField("postcode", e.target.value.toUpperCase())}
+                className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
+                placeholder="SW1A 1AA"
+              />
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="clubPhone">Club Phone Number</Label>
-          <div className="relative">
-            <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              id="clubPhone"
-              type="tel"
-              value={clubData.phone || ""}
-              onChange={(e) => updateField("phone", e.target.value)}
-              className="pl-10 rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20"
-              placeholder="+1 (555) 123-4567"
-            />
+            <div className="space-y-2">
+              <Label htmlFor="country" className="text-sm font-normal text-gray-600">Country</Label>
+              <select
+                id="country"
+                value={address.country}
+                onChange={(e) => updateAddressField("country", e.target.value)}
+                className="flex h-10 w-full rounded-xl border border-gray-200 bg-background px-3 py-2 text-sm focus:border-primary focus:ring-primary/20 focus:outline-none"
+              >
+                {UK_COUNTRIES.map((country) => (
+                  <option key={country} value={country}>
+                    {country}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>

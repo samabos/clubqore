@@ -24,6 +24,8 @@ export function SignInForm({
   onGoogleAuth,
   onSwitchToSignUp,
   onSwitchToForgotPassword,
+  registeredEmail,
+  onResendVerification,
 }: SignInFormProps) {
   const navigate = useNavigate();
 
@@ -74,7 +76,19 @@ export function SignInForm({
         <form onSubmit={onSignIn} className="space-y-4">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
-              {error}
+              <p>{error}</p>
+              {registeredEmail && onResendVerification && error.toLowerCase().includes('verify') && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  onClick={onResendVerification}
+                  disabled={isLoading}
+                  className="text-red-700 hover:text-red-800 p-0 h-auto mt-1 underline"
+                >
+                  {isLoading ? "Sending..." : "Resend verification email"}
+                </Button>
+              )}
             </div>
           )}
 

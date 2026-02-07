@@ -52,16 +52,6 @@ export interface ClubSetupBannerProps {
 }
 
 // Dashboard Component Types
-export interface StatItem {
-  title: string;
-  value: string;
-  change: string;
-  changeType: "increase" | "decrease" | "neutral";
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-  bgColor: string;
-}
-
 export interface Member {
   id: number;
   name: string;

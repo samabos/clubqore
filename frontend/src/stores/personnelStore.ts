@@ -50,13 +50,9 @@ export const usePersonnelStore = create<PersonnelState>()(
         
         try {
           const personnel = await loadAvailablePersonnel(clubId);
-          // Add computed fullName for display convenience
-          const personnelWithFullName = personnel.map(p => ({
-            ...p,
-            fullName: `${p.first_name} ${p.last_name}`.trim(),
-          }));
+          // fullName is already computed by the backend
           set({
-            availablePersonnel: personnelWithFullName,
+            availablePersonnel: personnel,
             lastLoaded: Date.now(),
             clubId,
             isLoading: false,

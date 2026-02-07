@@ -157,6 +157,7 @@ export class ParentInviteController {
         phone: registrationData.parent.phone,
         address: registrationData.parent.address,
         generatePassword: false,
+        emailVerified: true, // Email verified because they clicked the invite link from their email
         children: registrationData.children || []
       };
 

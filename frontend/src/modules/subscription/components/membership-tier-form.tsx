@@ -109,28 +109,26 @@ export function MembershipTierForm({
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="monthlyPrice"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Monthly Price</FormLabel>
+                <FormLabel>Monthly Price (£)</FormLabel>
                 <FormControl>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      £
-                    </span>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="pl-7"
-                      placeholder="0.00"
-                      {...field}
-                    />
-                  </div>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={field.value || ""}
+                    onChange={(e) =>
+                      field.onChange(e.target.value ? parseFloat(e.target.value) : 0)
+                    }
+                  />
                 </FormControl>
+                <FormDescription>Amount charged per month</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -141,25 +139,18 @@ export function MembershipTierForm({
             name="annualPrice"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Annual Price (Optional)</FormLabel>
+                <FormLabel>Annual Price (£)</FormLabel>
                 <FormControl>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      £
-                    </span>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="pl-7"
-                      placeholder="0.00"
-                      {...field}
-                      value={field.value || ""}
-                      onChange={(e) =>
-                        field.onChange(e.target.value ? parseFloat(e.target.value) : null)
-                      }
-                    />
-                  </div>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={field.value || ""}
+                    onChange={(e) =>
+                      field.onChange(e.target.value ? parseFloat(e.target.value) : null)
+                    }
+                  />
                 </FormControl>
                 <FormDescription>Leave empty to use monthly price x 12</FormDescription>
                 <FormMessage />

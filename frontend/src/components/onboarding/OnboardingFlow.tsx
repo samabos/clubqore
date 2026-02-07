@@ -7,7 +7,6 @@ import { useOnboarding } from "../../hooks/useOnboarding";
 import {
   ProfileSetup,
   ClubSetup,
-  PreferencesSetup,
   OnboardingComplete,
 } from "./index";
 
@@ -24,7 +23,6 @@ export function OnboardingFlow() {
     canProceed,
     setError,
     updateProfile,
-    updatePreferences,
     updateClubData,
   } = useOnboarding();
 
@@ -44,13 +42,6 @@ export function OnboardingFlow() {
           <ClubSetup
             clubData={onboardingData.clubData}
             onClubDataUpdate={updateClubData}
-          />
-        );
-      case "preferences-setup":
-        return (
-          <PreferencesSetup
-            preferences={onboardingData.preferences}
-            onPreferencesUpdate={updatePreferences}
           />
         );
       case "setup-complete":
@@ -146,7 +137,7 @@ export function OnboardingFlow() {
               ) : (
                 <>
                   {currentStep === steps.length - 1
-                    ? "Complete Setup"
+                    ? "Go to Dashboard"
                     : "Continue"}
                   {currentStep < steps.length - 1 && !isLoading && (
                     <ArrowRight className="w-4 h-4 ml-2" />

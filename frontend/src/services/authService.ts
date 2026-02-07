@@ -1,6 +1,7 @@
 import { apiClient } from "@/api/base";
 import { tokenManager } from "@/api/secureAuth";
-import { AuthUser } from "@/types/auth";
+import { AuthUser, ClubManagerSignUpData, RegistrationSuccessResponse } from "@/types/auth";
+import { Address } from "@/types/common";
 
 export interface SignInData {
   email: string;
@@ -17,6 +18,15 @@ export interface AuthResponse {
   user: AuthUser;
   accessToken?: string;
   refreshToken?: string;
+}
+
+// Custom error class to include error code
+export class AuthError extends Error {
+  code?: string;
+  constructor(message: string, code?: string) {
+    super(message);
+    this.code = code;
+  }
 }
 
 // Check if using httpOnly cookies
@@ -38,8 +48,21 @@ export class AuthService {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || errorData.error || "Login failed");
+      let errorMessage = "Login failed";
+      let errorCode: string | undefined;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+        errorCode = errorData.code;
+      } catch {
+        // Response is not JSON (e.g., 502 Bad Gateway)
+        if (response.status === 502) {
+          errorMessage = "Server is temporarily unavailable. Please try again later.";
+        } else {
+          errorMessage = `Server error (${response.status}). Please try again.`;
+        }
+      }
+      throw new AuthError(errorMessage, errorCode);
     }
 
     const data = await response.json();
@@ -61,6 +84,74 @@ export class AuthService {
   }
 
   /**
+   * Register a new club manager with club
+   * Returns success without tokens - user must verify email first
+   */
+  async signUpClubManager(userData: ClubManagerSignUpData): Promise<RegistrationSuccessResponse> {
+    // Format the address if it's an object
+    let clubAddress: string | Address | undefined = userData.clubAddress;
+    if (typeof clubAddress === 'object' && clubAddress !== null) {
+      // Keep as structured object for backend
+      clubAddress = userData.clubAddress as Address;
+    }
+
+    const response = await apiClient("/auth/register/club-manager", {
+      method: "POST",
+      body: JSON.stringify({
+        email: userData.email,
+        password: userData.password,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phone: userData.phone || undefined,
+        clubName: userData.clubName,
+        clubAddress: clubAddress || undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      let errorMessage = "Registration failed";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        if (response.status === 502) {
+          errorMessage = "Server is temporarily unavailable. Please try again later.";
+        } else {
+          errorMessage = `Server error (${response.status}). Please try again.`;
+        }
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Resend verification email (public - no auth required)
+   */
+  async resendVerificationPublic(email: string): Promise<void> {
+    const response = await apiClient("/auth/resend-verification-public", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      let errorMessage = "Failed to send verification email";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        if (response.status === 502) {
+          errorMessage = "Server is temporarily unavailable. Please try again later.";
+        } else {
+          errorMessage = `Server error (${response.status}). Please try again.`;
+        }
+      }
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
    * Register new user
    */
   async signUp(userData: SignUpData): Promise<AuthResponse> {
@@ -73,8 +164,18 @@ export class AuthService {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || errorData.error || "Registration failed");
+      let errorMessage = "Registration failed";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        if (response.status === 502) {
+          errorMessage = "Server is temporarily unavailable. Please try again later.";
+        } else {
+          errorMessage = `Server error (${response.status}). Please try again.`;
+        }
+      }
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
@@ -100,8 +201,18 @@ export class AuthService {
     const response = await apiClient("/auth/me");
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || errorData.error || "Failed to get current user");
+      let errorMessage = "Failed to get current user";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        if (response.status === 502) {
+          errorMessage = "Server is temporarily unavailable. Please try again later.";
+        } else {
+          errorMessage = `Server error (${response.status}). Please try again.`;
+        }
+      }
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
@@ -140,8 +251,18 @@ export class AuthService {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || errorData.error || "Failed to send reset email");
+      let errorMessage = "Failed to send reset email";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        if (response.status === 502) {
+          errorMessage = "Server is temporarily unavailable. Please try again later.";
+        } else {
+          errorMessage = `Server error (${response.status}). Please try again.`;
+        }
+      }
+      throw new Error(errorMessage);
     }
   }
 
@@ -155,8 +276,18 @@ export class AuthService {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || errorData.error || "Failed to reset password");
+      let errorMessage = "Failed to reset password";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        if (response.status === 502) {
+          errorMessage = "Server is temporarily unavailable. Please try again later.";
+        } else {
+          errorMessage = `Server error (${response.status}). Please try again.`;
+        }
+      }
+      throw new Error(errorMessage);
     }
   }
 
@@ -170,8 +301,18 @@ export class AuthService {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || errorData.error || "Failed to send verification email");
+      let errorMessage = "Failed to send verification email";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        if (response.status === 502) {
+          errorMessage = "Server is temporarily unavailable. Please try again later.";
+        } else {
+          errorMessage = `Server error (${response.status}). Please try again.`;
+        }
+      }
+      throw new Error(errorMessage);
     }
 
     return response.status;
@@ -200,8 +341,18 @@ export class AuthService {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || errorData.error || "Profile update failed");
+      let errorMessage = "Profile update failed";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        if (response.status === 502) {
+          errorMessage = "Server is temporarily unavailable. Please try again later.";
+        } else {
+          errorMessage = `Server error (${response.status}). Please try again.`;
+        }
+      }
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
@@ -222,8 +373,18 @@ export class AuthService {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || errorData.error || "Token refresh failed");
+      let errorMessage = "Token refresh failed";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        if (response.status === 502) {
+          errorMessage = "Server is temporarily unavailable. Please try again later.";
+        } else {
+          errorMessage = `Server error (${response.status}). Please try again.`;
+        }
+      }
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();

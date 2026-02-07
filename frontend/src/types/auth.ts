@@ -128,6 +128,27 @@ export interface SimpleSignUpData {
   confirmPassword: string;
 }
 
+export interface ClubManagerSignUpData {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  clubName: string;
+  clubAddress: string | Address;
+}
+
+export interface RegistrationSuccessResponse {
+  success: boolean;
+  message: string;
+  user: {
+    id: number;
+    email: string;
+    emailVerified: boolean;
+  };
+}
+
 export interface SignInData {
   email: string;
   password: string;

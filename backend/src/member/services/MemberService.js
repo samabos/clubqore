@@ -256,7 +256,7 @@ export class MemberService {
         email: memberData.email,
         password: memberData.password,
         generatePassword: memberData.generatePassword,
-        emailVerified: false,
+        emailVerified: memberData.emailVerified ?? false,
         isOnboarded: true
       }, trx);
 

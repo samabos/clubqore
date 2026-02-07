@@ -255,7 +255,7 @@ export function TeamForm({
                     </div>
                   </SelectItem>
                   {availablePersonnel.map((person) => (
-                    <SelectItem key={person.id} value={person.id.toString()}>
+                    <SelectItem key={person.user_id} value={person.user_id.toString()}>
                       <div className="flex items-center gap-2">
                         <UserCog className="h-4 w-4" />
                         <span>{person.fullName}</span>

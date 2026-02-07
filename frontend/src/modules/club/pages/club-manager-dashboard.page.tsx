@@ -4,7 +4,6 @@ import type { ClubMember } from "../../member/types/component-types";
 import {
   ClubSetupBanner,
   DashboardHeader,
-  StatsGrid,
   RecentMembers,
   AlertsPanel,
   UpcomingSessions,
@@ -78,7 +77,6 @@ export function ClubManagerDashboard() {
     <div className="space-y-6">
       <ClubSetupBanner hasClubSetup={hasClubSetup} />
       <DashboardHeader />
-      <StatsGrid members={members} />
 
       <div className="grid grid-cols-1 gap-6">
         <UpcomingSessions />

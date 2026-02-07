@@ -33,40 +33,57 @@ export class TeamService {
   // Get all teams for a club
   async getTeamsByClub(clubId) {
     try {
+      // Simple query: get teams with member counts
       const teams = await this.db('teams')
-        .leftJoin('users', 'teams.manager_id', 'users.id')
-        .leftJoin('user_profiles', 'users.id', 'user_profiles.user_id')
-        .leftJoin('membership_tiers', 'teams.membership_tier_id', 'membership_tiers.id')
-        .select(
-          'teams.*',
-          'users.id as manager_user_id',
-          'users.email as manager_email',
-          'user_profiles.first_name as manager_first_name',
-          'user_profiles.last_name as manager_last_name',
-          'user_profiles.avatar as manager_avatar',
-          'membership_tiers.name as membership_tier_name',
-          'membership_tiers.monthly_price as membership_tier_monthly_price',
-          'membership_tiers.annual_price as membership_tier_annual_price'
-        )
+        .select('teams.*')
         .where({ 'teams.club_id': clubId })
         .orderBy('teams.created_at', 'desc');
 
-      // Get member counts for each team (based on team_members linking children to teams)
-      const teamsWithCounts = await Promise.all(
+      // Get member counts and manager info for each team
+      const teamsWithDetails = await Promise.all(
         teams.map(async (team) => {
+          // Get member count
           const [memberCount] = await this.db('team_members')
             .count('* as count')
             .where({ team_id: team.id });
 
+          // Get manager info if manager_id exists
+          let managerInfo = null;
+          if (team.manager_id) {
+            // Verify manager is a team_manager/staff in this club
+            const manager = await this.db('user_roles')
+              .join('users', 'user_roles.user_id', 'users.id')
+              .join('user_profiles', 'users.id', 'user_profiles.user_id')
+              .join('roles', 'user_roles.role_id', 'roles.id')
+              .where('user_roles.user_id', team.manager_id)
+              .where('user_roles.club_id', clubId)
+              .whereIn('roles.name', ['team_manager', 'staff'])
+              .where('user_roles.is_active', true)
+              .select(
+                'users.id',
+                'users.email',
+                'user_profiles.first_name',
+                'user_profiles.last_name'
+              )
+              .first();
+
+            if (manager) {
+              managerInfo = manager;
+            }
+          }
+
           return {
             ...team,
-            manager_count: team.manager_user_id ? 1 : 0,
-            member_count: parseInt(memberCount.count)
+            manager_user_id: managerInfo?.id || null,
+            manager_email: managerInfo?.email || null,
+            manager_first_name: managerInfo?.first_name || null,
+            manager_last_name: managerInfo?.last_name || null,
+            member_count: parseInt(memberCount.count) || 0
           };
         })
       );
 
-      return teamsWithCounts;
+      return teamsWithDetails;
     } catch (error) {
       console.error('Error fetching teams:', error);
       throw new Error('Failed to fetch teams');
@@ -306,7 +323,7 @@ export class TeamService {
 
         // 2. CHECK: Team must have membership tier assigned
         if (!team.membership_tier_id) {
-          throw new Error('Cannot assign member: Team has no membership tier assigned. Please assign a membership tier to this team first.');
+          throw new Error('NO_MEMBERSHIP_TIER');
         }
 
         // 3. Only allow children to be assigned to teams
