@@ -14,6 +14,25 @@ export async function seed(knex) {
   const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'SuperAdmin123!';
   const superAdminName = process.env.SUPER_ADMIN_NAME || 'ClubQore Administrator';
 
+  // Ensure all required roles exist (needed for resources.js role_permissions)
+  const requiredRoles = [
+    { name: 'super_admin', display_name: 'Super Administrator', description: 'Full platform access - Service provider administrator' },
+    { name: 'admin', display_name: 'Club Administrator', description: 'Club-level administrator with full club access' },
+  ];
+
+  for (const role of requiredRoles) {
+    const existing = await knex('roles').where('name', role.name).first();
+    if (!existing) {
+      await knex('roles').insert({
+        name: role.name,
+        display_name: role.display_name,
+        description: role.description,
+        is_active: true,
+      });
+      console.log(`✅ Role created: ${role.name}`);
+    }
+  }
+
   // Check if super admin already exists
   const existingSuperAdmin = await knex('users')
     .where('email', superAdminEmail)
@@ -24,22 +43,8 @@ export async function seed(knex) {
     return;
   }
 
-  // Ensure super_admin role exists in roles table
-  let superAdminRole = await knex('roles').where('name', 'super_admin').first();
-
-  if (!superAdminRole) {
-    const [roleId] = await knex('roles').insert([
-      {
-        name: 'super_admin',
-        display_name: 'Super Administrator',
-        description: 'Full platform access - Service provider administrator',
-        is_active: true,
-      }
-    ]).returning('id');
-
-    superAdminRole = { id: typeof roleId === 'object' ? roleId.id : roleId };
-    console.log('✅ Super admin role created');
-  }
+  // Get super_admin role for user creation
+  const superAdminRole = await knex('roles').where('name', 'super_admin').first();
 
   // Hash password
   const hashedPassword = await bcrypt.hash(superAdminPassword, 10);
