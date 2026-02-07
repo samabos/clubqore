@@ -7,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Mail, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Logo } from "@/components/brand";
 
 interface RegistrationSuccessProps {
   email: string;
@@ -26,15 +27,10 @@ export function RegistrationSuccess({
       <CardHeader className="text-center pb-6">
         <Button
           variant="ghost"
-          className="flex items-center justify-center gap-3 mb-4 p-0 h-auto hover:bg-transparent cursor-pointer"
+          className="flex items-center justify-center mb-4 p-0 h-auto hover:bg-transparent cursor-pointer"
           onClick={() => navigate("/")}
         >
-          <div className="w-12 h-12 gradient-primary rounded-2xl flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-lg">CQ</span>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">ClubQore</h1>
-          </div>
+          <Logo variant="full" size="lg" />
         </Button>
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckCircle className="w-8 h-8 text-green-600" />

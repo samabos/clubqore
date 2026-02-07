@@ -12,6 +12,7 @@ import { useAuth } from "../../stores/authStore";
 import { User, LogOut, Settings, ChevronDown } from "lucide-react";
 import { getDefaultRouteByRole } from "../../utils/roleNavigation";
 import { AuthUser } from "@/types/auth";
+import { Logo } from "../brand";
 
 interface LandingNavigationProps {
   onGetStarted?: () => void;
@@ -86,12 +87,7 @@ export function LandingNavigation({ onGetStarted }: LandingNavigationProps) {
     <nav className="bg-white/75 backdrop-blur-sm sticky top-0 z-50 border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold">CQ</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900">ClubQore</span>
-          </div>
+          <Logo variant="full" size="sm" className="text-gray-900" />
 
           <div className="hidden md:flex items-center space-x-8">
             <a

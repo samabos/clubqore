@@ -7,6 +7,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "../ui/sidebar";
+import { Logo } from "../brand";
 import { MenuItem } from "../../types/user";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthUser } from "../../types/auth";
@@ -165,11 +166,9 @@ export function AppSidebar({ menuItems }: AppSidebarProps) {
           className="flex items-center gap-3 p-0 h-auto hover:bg-transparent cursor-pointer"
           onClick={() => navigate("/")}
         >
-          <div className="w-12 h-12 gradient-primary rounded-2xl flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-lg">CQ</span>
-          </div>
+          <Logo variant="icon" size="sm" />
           <div className="text-left">
-            <h2 className="text-white font-semibold text-lg">ClubQore</h2>
+            <h2 className="text-white font-bold text-xl">ClubQore</h2>
             {currentRole && (
               <p className="text-sidebar-foreground text-sm truncate">
                 {getRoleDisplayName(currentRole)}

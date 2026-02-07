@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Mail } from "lucide-react";
 import { ForgotPasswordFormProps } from "../types";
 import { useNavigate } from "react-router-dom";
+import { Logo } from "@/components/brand";
 
 export function ForgotPasswordForm({
   forgotEmail,
@@ -27,15 +28,10 @@ export function ForgotPasswordForm({
       <CardHeader className="text-center pb-6">
         <Button
           variant="ghost"
-          className="flex items-center justify-center gap-3 mb-4 p-0 h-auto hover:bg-transparent cursor-pointer"
+          className="flex items-center justify-center mb-4 p-0 h-auto hover:bg-transparent cursor-pointer"
           onClick={() => navigate("/")}
         >
-          <div className="w-12 h-12 gradient-primary rounded-2xl flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-lg">CQ</span>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">ClubQore</h1>
-          </div>
+          <Logo variant="full" size="sm" />
         </Button>
         <CardTitle className="text-xl text-gray-900">Reset Password</CardTitle>
         <CardDescription className="text-gray-600">

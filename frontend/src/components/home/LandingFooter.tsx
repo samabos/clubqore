@@ -1,4 +1,5 @@
 import { Facebook, Twitter, Linkedin, Instagram } from "lucide-react";
+import { Logo } from "../brand";
 
 export function LandingFooter() {
   return (
@@ -6,12 +7,7 @@ export function LandingFooter() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold">CQ</span>
-              </div>
-              <span className="text-lg font-bold">ClubQore</span>
-            </div>
+            <Logo variant="full" size="lg" className="text-white" />
             <p className="text-gray-400">
               The complete management solution for football clubs and academies
               worldwide.
