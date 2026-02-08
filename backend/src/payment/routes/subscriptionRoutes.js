@@ -2,9 +2,11 @@
  * Subscription Routes (Club Manager)
  *
  * Routes for club managers to view and manage subscriptions.
+ * Protected by both authentication and scope-based authorization.
  */
 
 import { SubscriptionController } from '../controllers/SubscriptionController.js';
+import { requireScope } from '../../auth/permissionMiddleware.js';
 
 /**
  * Register subscription routes for club managers
@@ -17,9 +19,14 @@ export async function subscriptionRoutes(fastify, options) {
   const { authenticate } = options;
   const controller = new SubscriptionController(fastify.db);
 
+  // Scope middleware for subscriptions resource
+  const viewScope = requireScope('subscriptions', 'view');
+  const createScope = requireScope('subscriptions', 'create');
+  const editScope = requireScope('subscriptions', 'edit');
+
   // Get available members for subscription (must be before /:subscriptionId)
   fastify.get('/available-members', {
-    preHandler: authenticate,
+    preHandler: [authenticate, viewScope],
     schema: {
       description: 'Get members who can be subscribed (no active subscription)',
       tags: ['Subscriptions'],
@@ -48,7 +55,7 @@ export async function subscriptionRoutes(fastify, options) {
 
   // Get subscription statistics (must be before /:subscriptionId)
   fastify.get('/stats', {
-    preHandler: authenticate,
+    preHandler: [authenticate, viewScope],
     schema: {
       description: 'Get subscription statistics for the club',
       tags: ['Subscriptions'],
@@ -77,7 +84,7 @@ export async function subscriptionRoutes(fastify, options) {
 
   // Get all subscriptions
   fastify.get('/', {
-    preHandler: authenticate,
+    preHandler: [authenticate, viewScope],
     schema: {
       description: 'Get all subscriptions for the club',
       tags: ['Subscriptions'],
@@ -98,7 +105,7 @@ export async function subscriptionRoutes(fastify, options) {
 
   // Create subscription for a member
   fastify.post('/', {
-    preHandler: authenticate,
+    preHandler: [authenticate, createScope],
     schema: {
       description: 'Create a subscription for a member',
       tags: ['Subscriptions'],
@@ -119,7 +126,7 @@ export async function subscriptionRoutes(fastify, options) {
 
   // Get single subscription
   fastify.get('/:subscriptionId', {
-    preHandler: authenticate,
+    preHandler: [authenticate, viewScope],
     schema: {
       description: 'Get a subscription by ID',
       tags: ['Subscriptions'],
@@ -135,7 +142,7 @@ export async function subscriptionRoutes(fastify, options) {
 
   // Cancel subscription
   fastify.post('/:subscriptionId/cancel', {
-    preHandler: authenticate,
+    preHandler: [authenticate, editScope],
     schema: {
       description: 'Cancel a subscription',
       tags: ['Subscriptions'],
@@ -158,7 +165,7 @@ export async function subscriptionRoutes(fastify, options) {
 
   // Suspend subscription
   fastify.post('/:subscriptionId/suspend', {
-    preHandler: authenticate,
+    preHandler: [authenticate, editScope],
     schema: {
       description: 'Suspend a subscription due to payment issues',
       tags: ['Subscriptions'],
@@ -174,7 +181,7 @@ export async function subscriptionRoutes(fastify, options) {
 
   // Reactivate suspended subscription
   fastify.post('/:subscriptionId/reactivate', {
-    preHandler: authenticate,
+    preHandler: [authenticate, editScope],
     schema: {
       description: 'Reactivate a suspended subscription',
       tags: ['Subscriptions'],

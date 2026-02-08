@@ -13,12 +13,12 @@ import {
   LayoutDashboard,
   Boxes,
   ShieldCheck,
-  Layers,
   Repeat,
   Wallet,
   Sliders,
   Briefcase,
   PlayCircle,
+  FileText,
 } from "lucide-react";
 import { MenuItem } from "../types/user";
 import { UserRole } from "../types/auth";
@@ -65,15 +65,14 @@ export const menuItemsByRole: Record<UserRole, MenuItem[]> = {
       ]
     },
     {
-      id: "financials",
-      label: "Financials",
+      id: "billing",
+      label: "Billing",
       icon: DollarSign,
       sortOrder: 4,
       children: [
-        { id: "membership-tiers", label: "Membership Tiers", icon: Layers, link: "/app/membership-tiers", resource: "membership-tiers", sortOrder: 1 },
-        { id: "subscriptions", label: "Subscriptions", icon: Repeat, link: "/app/subscriptions", resource: "subscriptions", sortOrder: 2 },
-        { id: "billing", label: "Billing & Invoices", icon: Receipt, link: "/app/billing", resource: "billing", sortOrder: 3 },
-        { id: "billing-settings", label: "Billing Settings", icon: Settings, link: "/app/billing/settings", resource: "billing-settings", sortOrder: 4 },
+        { id: "subscriptions", label: "Subscriptions", icon: Repeat, link: "/app/subscriptions", resource: "subscriptions", sortOrder: 1 },
+        { id: "membership-tiers", label: "Membership Tiers", icon: Boxes, link: "/app/membership-tiers", resource: "membership-tiers", sortOrder: 2 },
+        { id: "invoices", label: "Invoices", icon: Receipt, link: "/app/billing", resource: "billing", sortOrder: 3 },
       ]
     },
     { id: "profile", label: "Profile", icon: User, link: "/app/profile", resource: "profile", sortOrder: 99 },
@@ -159,29 +158,30 @@ export const menuItemsByRole: Record<UserRole, MenuItem[]> = {
       sortOrder: 3,
       children: [
         {
-          id: "billing-management",
-          label: "Billing Management",
-          icon: Receipt,
-          resource: "super-admin-billing-management",
+          id: "background-jobs",
+          label: "Background Jobs",
+          icon: PlayCircle,
+          link: "/app/admin/billing/jobs",
+          resource: "admin-billing-jobs",
           sortOrder: 1,
         },
-            {
-              id: "club-billing-settings",
-              label: "Club Billing Settings",
-              icon: Settings,
-              link: "/app/admin/billing/settings",
-              resource: "admin-billing-settings",
-              sortOrder: 1,
-            },
-            {
-              id: "billing-jobs",
-              label: "Billing Jobs",
-              icon: PlayCircle,
-              link: "/app/admin/billing/jobs",
-              resource: "admin-billing-jobs",
-              sortOrder: 2,
-            },
-          ] 
+        {
+          id: "admin-subscriptions",
+          label: "Subscriptions",
+          icon: Repeat,
+          link: "/app/admin/subscriptions",
+          resource: "admin-subscriptions",
+          sortOrder: 2,
+        },
+        {
+          id: "admin-invoices",
+          label: "Invoices",
+          icon: FileText,
+          link: "/app/admin/invoices",
+          resource: "admin-invoices",
+          sortOrder: 3,
+        },
+      ],
     },
     { id: "profile", label: "Profile", icon: User, link: "/app/profile", resource: "profile", sortOrder: 99 },
   ],

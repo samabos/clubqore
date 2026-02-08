@@ -179,8 +179,8 @@ export function AppLayout() {
           </header>
 
           {/* Main Content */}
-          <div className="flex-1 p-4 lg:p-6 bg-gray-50 pb-20 lg:pb-6">
-            <div className="items-center justify-center gap-2 lg:gap-4 mx-4">
+          <div className="flex-1 p-4 lg:p-6 bg-gray-50 pb-20 lg:pb-6 overflow-x-hidden">
+            <div className="items-center justify-center gap-2 lg:gap-4 mx-4 min-w-0">
               {/* Mobile Page Title */}
               {isMobile && (
                 <div className="mb-6">

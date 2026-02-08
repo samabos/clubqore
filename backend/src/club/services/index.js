@@ -8,5 +8,3 @@ export { ClubService } from './ClubService.js';
 // - TrainingSessionService -> schedule/services/
 // - MatchService -> schedule/services/
 // - InvoiceService -> billing/services/
-// - BillingSettingsService -> billing/services/
-// - ScheduledInvoiceJobService -> billing/services/

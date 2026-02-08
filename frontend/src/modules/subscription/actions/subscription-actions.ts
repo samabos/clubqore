@@ -251,50 +251,8 @@ export async function cancelSubscription(
   }
 }
 
-/**
- * Get members available for subscription (no active subscription)
- */
-export async function fetchAvailableMembers(): Promise<{ id: number; email: string; first_name: string; last_name: string }[]> {
-  const response = await apiClient(`/club/subscriptions/available-members`);
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to fetch available members");
-  }
-
-  const data = await response.json();
-  return data.data || [];
-}
-
-/**
- * Create a subscription for a member (club manager)
- */
-export async function createSubscriptionForMember(
-  childUserId: number,
-  membershipTierId: number,
-  billingFrequency?: "monthly" | "annual",
-  billingDayOfMonth?: number,
-  parentUserId?: number
-): Promise<Subscription> {
-  const response = await apiClient(`/club/subscriptions`, {
-    method: "POST",
-    body: JSON.stringify({
-      childUserId,
-      membershipTierId,
-      billingFrequency,
-      billingDayOfMonth,
-      parentUserId,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to create subscription");
-  }
-
-  const data = await response.json();
-  return data.data;
-}
+// Note: fetchAvailableMembers and createSubscriptionForMember removed
+// Subscriptions are created through parent onboarding flow
 
 // ==================== PARENT SUBSCRIPTION ACTIONS ====================
 

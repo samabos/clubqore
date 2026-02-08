@@ -1,3 +1,5 @@
+import { requireScope } from '../../auth/permissionMiddleware.js';
+
 export const memberRoutes = async function (fastify, options) {
     const {  clubController, memberController, authenticate } = options;
 
@@ -6,8 +8,14 @@ export const memberRoutes = async function (fastify, options) {
         fastify.addHook('onRequest', authenticate);
     }
 
+    // Scope middleware for club-members resource
+    const viewScope = requireScope('club-members', 'view');
+    const createScope = requireScope('club-members', 'create');
+    const editScope = requireScope('club-members', 'edit');
+
     // Club members - list by club
     fastify.get('/:clubId/members', {
+        preHandler: [viewScope],
         schema: {
             tags: ['Clubs'],
             summary: 'Get members for a club',
@@ -21,6 +29,7 @@ export const memberRoutes = async function (fastify, options) {
 
     // Club members - list for current manager's club
     fastify.get('/my-club/members', {
+        preHandler: [viewScope],
         schema: {
             tags: ['Clubs'],
             summary: "Get current user's club members (for club managers)"
@@ -29,6 +38,7 @@ export const memberRoutes = async function (fastify, options) {
 
     // GET /api/clubs/my-club/members/:memberId
     fastify.get('/my-club/members/:memberId', {
+        preHandler: [viewScope],
         schema: {
             tags: ['Clubs'],
             summary: "Get a specific member of the current user's club (for club managers)",
@@ -42,6 +52,7 @@ export const memberRoutes = async function (fastify, options) {
 
     // Club members - create in specific club
     fastify.post('/:clubId/members', {
+        preHandler: [createScope],
         schema: {
             tags: ['Clubs'],
             summary: 'Create member in a club (manager only)',
@@ -106,6 +117,7 @@ export const memberRoutes = async function (fastify, options) {
 
     // Club members - create in current manager's club
     fastify.post('/my-club/members', {
+        preHandler: [createScope],
         schema: {
             tags: ['Clubs'],
             summary: "Create member in current user's club (manager only)",
@@ -165,6 +177,8 @@ export const memberRoutes = async function (fastify, options) {
 
     // PUT /api/clubs/my-club/members/:memberId
     fastify.put('/my-club/members/:memberId', {
+        preHandler: [editScope],
+        schema: {
             tags: ['Clubs'],
             summary: "Create member in current user's club (manager only)",
             params: {
@@ -223,10 +237,12 @@ export const memberRoutes = async function (fastify, options) {
                 },
                 required: ['email', 'role', 'firstName', 'lastName']
             }
+        }
     }, memberController.updateMyClubMember.bind(memberController));
 
     // Club member statistics
     fastify.get('/:clubId/members/stats', {
+        preHandler: [viewScope],
         schema: {
             tags: ['Clubs'],
             summary: 'Get member statistics for a club',
@@ -240,6 +256,7 @@ export const memberRoutes = async function (fastify, options) {
 
     // Club member statistics for current manager's club
     fastify.get('/my-club/members/stats', {
+        preHandler: [viewScope],
         schema: {
             tags: ['Clubs'],
             summary: "Get member statistics for current user's club"
@@ -248,6 +265,7 @@ export const memberRoutes = async function (fastify, options) {
 
   // Update member status (end contract)
   fastify.patch('/my-club/members/:id/status', {
+    preHandler: [editScope],
     schema: {
       tags: ['Clubs'],
       summary: 'Update member status (end contract)',

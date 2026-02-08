@@ -2,10 +2,11 @@
  * Membership Tier Routes
  *
  * Routes for managing club membership tiers.
- * All routes require authentication and club manager role.
+ * All routes require authentication and scope-based authorization.
  */
 
 import { MembershipTierController } from '../controllers/MembershipTierController.js';
+import { requireScope } from '../../auth/permissionMiddleware.js';
 
 // Validation schemas
 const tierSchema = {
@@ -64,9 +65,15 @@ export async function membershipTierRoutes(fastify, options) {
   const { authenticate } = options;
   const controller = new MembershipTierController(fastify.db);
 
+  // Scope middleware for membership-tiers resource
+  const viewScope = requireScope('membership-tiers', 'view');
+  const createScope = requireScope('membership-tiers', 'create');
+  const editScope = requireScope('membership-tiers', 'edit');
+  const deleteScope = requireScope('membership-tiers', 'delete');
+
   // Get tier statistics (must be before /:tierId route)
   fastify.get('/stats', {
-    preHandler: authenticate,
+    preHandler: [authenticate, viewScope],
     schema: {
       description: 'Get membership tier statistics',
       tags: ['Membership Tiers'],
@@ -98,7 +105,7 @@ export async function membershipTierRoutes(fastify, options) {
 
   // Reorder tiers (must be before /:tierId route)
   fastify.put('/reorder', {
-    preHandler: authenticate,
+    preHandler: [authenticate, editScope],
     schema: {
       description: 'Reorder membership tiers',
       tags: ['Membership Tiers'],
@@ -127,7 +134,7 @@ export async function membershipTierRoutes(fastify, options) {
 
   // Get all tiers
   fastify.get('/', {
-    preHandler: authenticate,
+    preHandler: [authenticate, viewScope],
     schema: {
       description: 'Get all membership tiers for the club',
       tags: ['Membership Tiers'],
@@ -168,7 +175,7 @@ export async function membershipTierRoutes(fastify, options) {
 
   // Create tier
   fastify.post('/', {
-    preHandler: authenticate,
+    preHandler: [authenticate, createScope],
     schema: {
       description: 'Create a new membership tier',
       tags: ['Membership Tiers'],
@@ -201,7 +208,7 @@ export async function membershipTierRoutes(fastify, options) {
 
   // Get single tier
   fastify.get('/:tierId', {
-    preHandler: authenticate,
+    preHandler: [authenticate, viewScope],
     schema: {
       description: 'Get a membership tier by ID',
       tags: ['Membership Tiers'],
@@ -217,7 +224,7 @@ export async function membershipTierRoutes(fastify, options) {
 
   // Update tier
   fastify.put('/:tierId', {
-    preHandler: authenticate,
+    preHandler: [authenticate, editScope],
     schema: {
       description: 'Update a membership tier',
       tags: ['Membership Tiers'],
@@ -234,7 +241,7 @@ export async function membershipTierRoutes(fastify, options) {
 
   // Delete tier
   fastify.delete('/:tierId', {
-    preHandler: authenticate,
+    preHandler: [authenticate, deleteScope],
     schema: {
       description: 'Delete a membership tier',
       tags: ['Membership Tiers'],

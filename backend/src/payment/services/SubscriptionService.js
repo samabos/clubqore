@@ -3,9 +3,13 @@
  *
  * Handles subscription lifecycle management including creation, activation,
  * pausing, resuming, cancellation, tier changes, and suspension.
+ *
+ * When a subscription is activated, a GoCardless subscription is created
+ * to handle recurring payment scheduling automatically.
  */
 
 import { MembershipTierService } from './MembershipTierService.js';
+import { PaymentProviderFactory } from './PaymentProviderFactory.js';
 
 // Valid subscription status transitions
 const STATUS_TRANSITIONS = {
@@ -313,8 +317,18 @@ export class SubscriptionService {
    */
   async activateSubscription(subscriptionId, paymentMandateId, context = {}) {
     return await this.db.transaction(async (trx) => {
-      const subscription = await trx('subscriptions')
-        .where({ id: subscriptionId })
+      // Get subscription with tier details
+      const subscription = await trx('subscriptions as s')
+        .join('membership_tiers as mt', 's.membership_tier_id', 'mt.id')
+        .join('users as child', 's.child_user_id', 'child.id')
+        .leftJoin('user_profiles as child_profile', 's.child_user_id', 'child_profile.user_id')
+        .where('s.id', subscriptionId)
+        .select(
+          's.*',
+          'mt.name as tier_name',
+          trx.raw(`COALESCE(child_profile.first_name, split_part(child.email, '@', 1)) as child_first_name`),
+          trx.raw(`COALESCE(child_profile.last_name, '') as child_last_name`)
+        )
         .first();
 
       if (!subscription) {
@@ -325,11 +339,87 @@ export class SubscriptionService {
 
       this._validateStatusTransition(subscription.status, 'active');
 
+      // Get the mandate details
+      const mandate = await trx('payment_mandates')
+        .where({ id: paymentMandateId })
+        .first();
+
+      if (!mandate) {
+        const error = new Error('Payment mandate not found');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Create GoCardless subscription for recurring payments
+      let providerSubscriptionId = null;
+      let providerSubscriptionStatus = null;
+
+      const childName = `${subscription.child_first_name} ${subscription.child_last_name}`.trim();
+      const subscriptionName = `${subscription.tier_name} - ${childName}`;
+
+      const gcPayload = {
+        amount: parseFloat(subscription.amount),
+        currency: 'GBP',
+        intervalUnit: subscription.billing_frequency === 'annual' ? 'yearly' : 'monthly',
+        dayOfMonth: subscription.billing_day_of_month || 1,
+        name: subscriptionName,
+        metadata: {
+          subscription_id: subscriptionId.toString(),
+          club_id: subscription.club_id.toString(),
+          child_user_id: subscription.child_user_id.toString()
+        }
+      };
+
+      console.log(`[SubscriptionService] Creating GoCardless subscription:`, {
+        subscriptionId,
+        mandateProvider: mandate.provider,
+        providerMandateId: mandate.provider_mandate_id,
+        payload: gcPayload
+      });
+
+      try {
+        const provider = PaymentProviderFactory.getProvider(mandate.provider);
+
+        const gcSubscription = await provider.createSubscription(
+          mandate.provider_mandate_id,
+          gcPayload
+        );
+
+        providerSubscriptionId = gcSubscription.providerSubscriptionId;
+        providerSubscriptionStatus = gcSubscription.status;
+
+        console.log(`[SubscriptionService] Created GoCardless subscription successfully:`, {
+          subscriptionId,
+          gcSubscriptionId: providerSubscriptionId,
+          gcStatus: providerSubscriptionStatus
+        });
+      } catch (error) {
+        // Log detailed error for debugging
+        console.error(`[SubscriptionService] Error creating GoCardless subscription:`, {
+          subscriptionId,
+          mandateProvider: mandate.provider,
+          providerMandateId: mandate.provider_mandate_id,
+          payload: gcPayload,
+          errorMessage: error.message,
+          errorCode: error.code,
+          errorType: error.type,
+          errorDetails: error.details || error.errors,
+          errorStatusCode: error.statusCode,
+          errorRequestId: error.requestId,
+          stack: error.stack
+        });
+        // Don't fail activation - the subscription sync worker will retry
+        // The subscription will still be active in our system
+      }
+
       const [updated] = await trx('subscriptions')
         .where({ id: subscriptionId })
         .update({
           status: 'active',
           payment_mandate_id: paymentMandateId,
+          provider: mandate.provider,
+          provider_subscription_id: providerSubscriptionId,
+          provider_subscription_status: providerSubscriptionStatus,
           updated_at: new Date()
         })
         .returning('*');
@@ -337,6 +427,7 @@ export class SubscriptionService {
       await this._logEvent(trx, subscriptionId, 'activated', {
         previousStatus: subscription.status,
         newStatus: 'active',
+        providerSubscriptionId,
         context
       });
 
@@ -366,12 +457,25 @@ export class SubscriptionService {
 
       this._validateStatusTransition(subscription.status, 'paused');
 
+      // Pause GoCardless subscription if exists
+      if (subscription.provider_subscription_id && subscription.provider) {
+        try {
+          const provider = PaymentProviderFactory.getProvider(subscription.provider);
+          await provider.pauseSubscription(subscription.provider_subscription_id);
+          console.log(`Paused GoCardless subscription ${subscription.provider_subscription_id}`);
+        } catch (error) {
+          console.error(`Error pausing GoCardless subscription:`, error);
+          // Continue with local pause even if GC fails
+        }
+      }
+
       const [updated] = await trx('subscriptions')
         .where({ id: subscriptionId })
         .update({
           status: 'paused',
           paused_at: new Date(),
           resume_date: resumeDate,
+          provider_subscription_status: 'paused',
           updated_at: new Date()
         })
         .returning('*');
@@ -408,6 +512,18 @@ export class SubscriptionService {
 
       this._validateStatusTransition(subscription.status, 'active');
 
+      // Resume GoCardless subscription if exists
+      if (subscription.provider_subscription_id && subscription.provider) {
+        try {
+          const provider = PaymentProviderFactory.getProvider(subscription.provider);
+          await provider.resumeSubscription(subscription.provider_subscription_id);
+          console.log(`Resumed GoCardless subscription ${subscription.provider_subscription_id}`);
+        } catch (error) {
+          console.error(`Error resuming GoCardless subscription:`, error);
+          // Continue with local resume even if GC fails
+        }
+      }
+
       // Recalculate next billing date
       const nextBillingDate = this._calculateNextBillingDate(
         subscription.billing_day_of_month,
@@ -422,6 +538,7 @@ export class SubscriptionService {
           paused_at: null,
           resume_date: null,
           next_billing_date: nextBillingDate,
+          provider_subscription_status: 'active',
           updated_at: new Date()
         })
         .returning('*');
@@ -459,10 +576,23 @@ export class SubscriptionService {
 
       this._validateStatusTransition(subscription.status, 'cancelled');
 
+      // Cancel GoCardless subscription if exists
+      if (subscription.provider_subscription_id && subscription.provider) {
+        try {
+          const provider = PaymentProviderFactory.getProvider(subscription.provider);
+          await provider.cancelSubscription(subscription.provider_subscription_id);
+          console.log(`Cancelled GoCardless subscription ${subscription.provider_subscription_id}`);
+        } catch (error) {
+          console.error(`Error cancelling GoCardless subscription:`, error);
+          // Continue with local cancellation even if GC fails
+        }
+      }
+
       const updateData = {
         status: 'cancelled',
         cancelled_at: new Date(),
         cancellation_reason: reason,
+        provider_subscription_status: 'cancelled',
         updated_at: new Date()
       };
 
@@ -571,6 +701,21 @@ export class SubscriptionService {
       const newAmount = subscription.billing_frequency === 'annual' && newTier.annual_price
         ? newTier.annual_price
         : newTier.monthly_price;
+
+      // Update GoCardless subscription amount if exists
+      if (subscription.provider_subscription_id && subscription.provider) {
+        try {
+          const provider = PaymentProviderFactory.getProvider(subscription.provider);
+          await provider.updateSubscription(subscription.provider_subscription_id, {
+            amount: parseFloat(newAmount),
+            name: `${newTier.name} - Subscription`
+          });
+          console.log(`Updated GoCardless subscription ${subscription.provider_subscription_id} to ${newAmount}`);
+        } catch (error) {
+          console.error(`Error updating GoCardless subscription amount:`, error);
+          // Continue with local update even if GC fails
+        }
+      }
 
       // Calculate proration if needed
       let prorationAmount = 0;

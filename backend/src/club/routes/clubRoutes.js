@@ -1,3 +1,5 @@
+import { requireScope } from '../../auth/permissionMiddleware.js';
+
 export const clubRoutes = async function (fastify, options) {
   const { clubController, authenticate } = options;
 
@@ -6,8 +8,14 @@ export const clubRoutes = async function (fastify, options) {
     fastify.addHook('onRequest', authenticate);
   }
 
+  // Scope middleware for club-setup resource
+  const viewScope = requireScope('club-setup', 'view');
+  const createScope = requireScope('club-setup', 'create');
+  const editScope = requireScope('club-setup', 'edit');
+
   // Create new club
   fastify.post('/', {
+    preHandler: [createScope],
     schema: {
       tags: ['Clubs'],
       summary: 'Create new club',
@@ -32,6 +40,7 @@ export const clubRoutes = async function (fastify, options) {
 
   // Get club details
   fastify.get('/:clubId', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Clubs'],
       summary: 'Get club details',
@@ -46,6 +55,7 @@ export const clubRoutes = async function (fastify, options) {
 
   // Update club information (club managers only)
   fastify.put('/:clubId', {
+    preHandler: [editScope],
     schema: {
       tags: ['Clubs'],
       summary: 'Update club information (club managers only)',
@@ -75,6 +85,7 @@ export const clubRoutes = async function (fastify, options) {
 
   // Get current user's club (for club managers)
   fastify.get('/my-club', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Clubs'],
       summary: 'Get current user\'s club (for club managers)'
@@ -132,6 +143,7 @@ export const clubRoutes = async function (fastify, options) {
 
   // Upload club logo
   fastify.post('/:clubId/logo', {
+    preHandler: [editScope],
     schema: {
       tags: ['Clubs'],
       summary: 'Upload club logo',

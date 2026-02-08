@@ -27,12 +27,13 @@ import { registerParentRoutes } from './parent/routes/index.js';
 import { registerAdminRoutes } from './admin/index.js';
 import { postcodeRoutes } from './shared/routes/postcodeRoutes.js';
 import { registerContactRoutes } from './contact/contactRoutes.js';
-import { startInvoiceScheduler } from './workers/invoice-scheduler.js';
 import { registerPaymentRoutes } from './payment/routes/index.js';
-import { startSubscriptionBillingWorker } from './workers/subscription-billing-worker.js';
-import { startPaymentRetryWorker } from './workers/payment-retry-worker.js';
-import { startSubscriptionNotificationWorker } from './workers/subscription-notification-worker.js';
+// Removed: subscription-billing-worker, payment-retry-worker, invoice-scheduler
+// GoCardless Subscriptions now handle recurring payment scheduling and retries
+import { startNotificationRetryWorker } from './workers/notification-retry-worker.js';
+import { startSubscriptionSyncWorker } from './workers/subscription-sync-worker.js';
 import { createAuthMiddleware } from './auth/middleware.js';
+import { validateResources } from './auth/permissionMiddleware.js';
 import dbConnector from './db/connector.js';
 import { config, validateConfig } from './config/index.js';
 import logger from './config/logger.js';
@@ -197,6 +198,9 @@ async function createServer() {
   const authMiddleware = createAuthMiddleware(fastify.db);
   await fastify.register(registerPaymentRoutes, { authenticate: authMiddleware });
 
+  // Validate that all route resources exist in database
+  await validateResources(fastify.db);
+
   // Health check endpoint
   fastify.get('/health', {
     schema: {
@@ -242,36 +246,23 @@ async function startServer() {
     }
     logger.info(`❤️  Health check available at ${address}/health`);
 
-    // Start invoice scheduler
-    const invoiceScheduler = startInvoiceScheduler(fastify.db);
-    logger.info('✅ Invoice scheduler initialized');
+    // Start background workers
+    const notificationRetryWorker = startNotificationRetryWorker(fastify.db);
+    logger.info('✅ Notification retry worker initialized');
 
-    // Start subscription workers
-    const subscriptionBillingWorker = startSubscriptionBillingWorker(fastify.db);
-    logger.info('✅ Subscription billing worker initialized');
-
-    const paymentRetryWorker = startPaymentRetryWorker(fastify.db);
-    logger.info('✅ Payment retry worker initialized');
-
-    const subscriptionNotificationWorker = startSubscriptionNotificationWorker(fastify.db);
-    logger.info('✅ Subscription notification worker initialized');
+    const subscriptionSyncWorker = startSubscriptionSyncWorker(fastify.db);
+    logger.info('✅ Subscription sync worker initialized');
 
     // Graceful shutdown
     const gracefulShutdown = async (signal) => {
       logger.info(`🛑 Received ${signal}, shutting down gracefully...`);
       try {
-        // Stop the schedulers and workers
-        if (invoiceScheduler) {
-          invoiceScheduler.stop();
+        // Stop workers
+        if (notificationRetryWorker) {
+          notificationRetryWorker.stop();
         }
-        if (subscriptionBillingWorker) {
-          subscriptionBillingWorker.stop();
-        }
-        if (paymentRetryWorker) {
-          paymentRetryWorker.stop();
-        }
-        if (subscriptionNotificationWorker) {
-          subscriptionNotificationWorker.stop();
+        if (subscriptionSyncWorker) {
+          subscriptionSyncWorker.stop();
         }
         await fastify.close();
         logger.info('✅ Server closed successfully');

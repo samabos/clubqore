@@ -1,8 +1,124 @@
 /**
- * Permission Middleware for role-based authorization
+ * Permission Middleware for role-based and scope-based authorization
  *
- * This middleware provides reusable permission checks for routes
+ * This middleware provides reusable permission checks for routes.
+ * Supports both role-based (database lookup) and scope-based (JWT claim) authorization.
  */
+
+// Track all resources used in routes for validation
+const usedResources = new Set();
+
+/**
+ * Validate that all resources used in routes exist in the database.
+ * Call this after routes are registered but before accepting traffic.
+ *
+ * @param {Knex} db - Database instance
+ * @throws {Error} If any resource is missing from database
+ */
+export async function validateResources(db) {
+  if (usedResources.size === 0) {
+    console.log('⚠️  No resources registered for validation');
+    return;
+  }
+
+  try {
+    const dbResources = await db('resources').pluck('name');
+    const dbResourceSet = new Set(dbResources);
+
+    const missing = [...usedResources].filter(r => !dbResourceSet.has(r));
+
+    if (missing.length > 0) {
+      const error = `❌ Resource mismatch! The following resources are used in routes but not in database:\n   ${missing.join('\n   ')}\n\n   Fix: Add to backend/src/db/seeds/resources.js and run migrations`;
+      console.error(error);
+
+      // In development, throw to fail fast
+      if (process.env.NODE_ENV === 'development') {
+        throw new Error(error);
+      }
+    } else {
+      console.log(`✅ All ${usedResources.size} route resources validated against database`);
+    }
+  } catch (error) {
+    if (error.message?.includes('Resource mismatch')) {
+      throw error;
+    }
+    // Table might not exist yet during initial setup
+    console.warn('⚠️  Could not validate resources (table may not exist yet):', error.message);
+  }
+}
+
+/**
+ * Middleware to require specific scopes from JWT token
+ * Scopes are embedded in the JWT during login and checked without database lookup.
+ * Format: "resource:action" (e.g., "subscriptions:view", "billing:edit")
+ *
+ * @param {string} resource - Resource name (e.g., 'subscriptions', 'billing')
+ * @param {string} action - Action type: 'view', 'create', 'edit', 'delete' (default: 'view')
+ */
+export function requireScope(resource, action = 'view') {
+  // Track resource for startup validation
+  usedResources.add(resource);
+
+  const requiredScope = `${resource}:${action}`;
+
+  return async function (request, reply) {
+    // User should be attached by authenticate middleware
+    if (!request.user) {
+      return reply.code(401).send({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    // Get scopes from JWT (attached during authentication)
+    const userScopes = request.user.scopes || [];
+
+    if (!userScopes.includes(requiredScope)) {
+      request.log.warn({
+        userId: request.user.id,
+        requiredScope,
+        userScopes: userScopes.slice(0, 10), // Log first 10 scopes for debugging
+        path: request.url
+      }, 'Scope check failed');
+
+      return reply.code(403).send({
+        success: false,
+        message: `Access denied. Required scope: ${requiredScope}`
+      });
+    }
+  };
+}
+
+/**
+ * Middleware to require any of the specified scopes
+ * @param {string[]} scopes - Array of scope strings (e.g., ['subscriptions:view', 'billing:view'])
+ */
+export function requireAnyScope(scopes) {
+  return async function (request, reply) {
+    if (!request.user) {
+      return reply.code(401).send({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    const userScopes = request.user.scopes || [];
+    const hasAnyScope = scopes.some(scope => userScopes.includes(scope));
+
+    if (!hasAnyScope) {
+      request.log.warn({
+        userId: request.user.id,
+        requiredScopes: scopes,
+        path: request.url
+      }, 'Scope check failed - none of required scopes present');
+
+      return reply.code(403).send({
+        success: false,
+        message: `Access denied. Required one of: ${scopes.join(', ')}`
+      });
+    }
+  };
+}
 
 /**
  * Middleware to require specific roles

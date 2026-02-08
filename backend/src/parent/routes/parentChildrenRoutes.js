@@ -3,18 +3,25 @@
  * Routes for parents to view and manage their children's information
  */
 
+import { requireScope } from '../../auth/permissionMiddleware.js';
+
 export async function parentChildrenRoutes(fastify, options) {
   const { parentChildrenController, authenticate } = options;
 
+  // Scope middleware for parent-children resource
+  const viewScope = requireScope('parent-children', 'view');
+  const createScope = requireScope('parent-children', 'create');
+  const editScope = requireScope('parent-children', 'edit');
+
   // Get all children with enriched data
   fastify.get('/', {
-    preHandler: [authenticate],
+    preHandler: [authenticate, viewScope],
     handler: (request, reply) => parentChildrenController.getChildren(request, reply)
   });
 
   // Create a new child
   fastify.post('/', {
-    preHandler: [authenticate],
+    preHandler: [authenticate, createScope],
     schema: {
       body: {
         type: 'object',
@@ -36,7 +43,7 @@ export async function parentChildrenRoutes(fastify, options) {
 
   // Get detailed information for a specific child
   fastify.get('/:childId', {
-    preHandler: [authenticate],
+    preHandler: [authenticate, viewScope],
     schema: {
       params: {
         type: 'object',
@@ -51,7 +58,7 @@ export async function parentChildrenRoutes(fastify, options) {
 
   // Update child information
   fastify.patch('/:childId', {
-    preHandler: [authenticate],
+    preHandler: [authenticate, editScope],
     schema: {
       params: {
         type: 'object',

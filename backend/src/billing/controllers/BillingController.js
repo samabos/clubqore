@@ -1,76 +1,23 @@
 import { InvoiceService } from '../services/InvoiceService.js';
-import { BillingSettingsService } from '../services/BillingSettingsService.js';
-import { ScheduledInvoiceJobService } from '../services/ScheduledInvoiceJobService.js';
 import { ClubService } from '../../club/services/ClubService.js';
 import { emailService } from '../../shared/services/emailService.js';
 
+/**
+ * Billing Controller
+ *
+ * Note: Bulk invoicing and billing settings have been removed.
+ * Invoices are now auto-generated via GoCardless webhooks when payments are created.
+ * This controller handles viewing and managing existing invoices only.
+ */
 export class BillingController {
   constructor(db) {
     this.db = db;
     this.invoiceService = new InvoiceService(db);
-    this.billingSettingsService = new BillingSettingsService(db);
-    this.scheduledJobService = new ScheduledInvoiceJobService(db);
     this.clubService = new ClubService(db);
   }
 
-  /**
-   * Check if user has super_admin role
-   */
-  async isSuperAdmin(userId) {
-    try {
-      const userRoles = await this.db('user_roles')
-        .join('roles', 'user_roles.role_id', 'roles.id')
-        .where('user_roles.user_id', userId)
-        .select('roles.name');
-
-      return userRoles.some(role => role.name === 'super_admin');
-    } catch (error) {
-      console.error('Error checking super admin role:', error);
-      return false;
-    }
-  }
-
   // ==================== INVOICE ROUTES ====================
-
-  /**
-   * Create a new invoice
-   * POST /billing/invoices
-   */
-  async createInvoice(request, reply) {
-    try {
-      const invoiceData = request.body;
-      const userId = request.user.id;
-
-      // Get user's club ID
-      const clubId = await this.clubService.getManagersClubId(userId);
-      if (!clubId) {
-        return reply.code(400).send({
-          success: false,
-          message: 'User is not associated with a club'
-        });
-      }
-
-      // Apply service charge if enabled
-      const itemsWithCharge = await this.billingSettingsService.applyServiceCharge(
-        clubId,
-        invoiceData.items
-      );
-
-      const result = await this.invoiceService.createInvoice(
-        clubId,
-        { ...invoiceData, items: itemsWithCharge },
-        userId
-      );
-
-      reply.code(201).send(result);
-    } catch (error) {
-      request.log.error('Error creating invoice:', error);
-      reply.code(400).send({
-        success: false,
-        message: error.message || 'Failed to create invoice'
-      });
-    }
-  }
+  // Note: Manual invoice creation removed - invoices auto-generated via GoCardless webhooks
 
   /**
    * Get all invoices for a club
@@ -155,15 +102,6 @@ export class BillingController {
           success: false,
           message: 'User is not associated with a club'
         });
-      }
-
-      // Apply service charge if items provided
-      if (invoiceData.items) {
-        const itemsWithCharge = await this.billingSettingsService.applyServiceCharge(
-          clubId,
-          invoiceData.items
-        );
-        invoiceData.items = itemsWithCharge;
       }
 
       const result = await this.invoiceService.updateInvoice(invoiceId, clubId, invoiceData);
@@ -377,91 +315,6 @@ export class BillingController {
   }
 
   /**
-   * Generate seasonal invoices in bulk
-   * POST /club/:clubId/billing/invoices/bulk/seasonal
-   */
-  async generateSeasonalInvoices(request, reply) {
-    try {
-      // clubId derived from authenticated user
-      const bulkData = request.body;
-      const userId = request.user.id;
-
-      // Get user's club ID
-      const clubId = await this.clubService.getManagersClubId(userId);
-      if (!clubId) {
-        return reply.code(403).send({
-          success: false,
-          message: 'User is not associated with a club'
-        });
-      }
-
-      // Apply service charge to items
-      const itemsWithCharge = await this.billingSettingsService.applyServiceCharge(
-        clubId,
-        bulkData.items
-      );
-
-      const result = await this.invoiceService.generateSeasonalInvoices(
-        clubId,
-        { ...bulkData, items: itemsWithCharge },
-        userId
-      );
-
-      // Send email notifications to parents for published invoices
-      if (result.success && result.invoices && result.invoices.length > 0) {
-        try {
-          const club = await this.db('clubs').where('id', clubId).first();
-
-          for (const invoice of result.invoices) {
-            // Only send emails for published invoices
-            if (invoice.status === 'pending') {
-              try {
-                // Get parent data via user_children relationship
-                const parent = await this.db('users')
-                  .join('user_children', 'users.id', 'user_children.parent_id')
-                  .where('user_children.child_id', invoice.user_id)
-                  .select('users.*')
-                  .first();
-
-                if (parent && parent.email) {
-                  // Get member data
-                  const member = await this.db('users')
-                    .where('id', invoice.user_id)
-                    .first();
-
-                  // Send email notification
-                  await emailService.sendInvoiceNotification({
-                    invoiceData: invoice,
-                    parentData: parent,
-                    memberData: member,
-                    clubData: club
-                  });
-
-                  request.log.info(`Bulk invoice notification sent to parent ${parent.email} for invoice ${invoice.invoice_number}`);
-                }
-              } catch (emailError) {
-                // Log but don't fail for individual email errors
-                request.log.error(`Failed to send email for invoice ${invoice.invoice_number}:`, emailError);
-              }
-            }
-          }
-        } catch (emailError) {
-          // Log but don't fail the request if bulk email sending fails
-          request.log.error('Failed to send bulk invoice email notifications:', emailError);
-        }
-      }
-
-      reply.code(201).send(result);
-    } catch (error) {
-      request.log.error('Error generating seasonal invoices:', error);
-      reply.code(400).send({
-        success: false,
-        message: error.message || 'Failed to generate seasonal invoices'
-      });
-    }
-  }
-
-  /**
    * Get billing summary
    * GET /club/:clubId/billing/summary
    */
@@ -495,117 +348,6 @@ export class BillingController {
     }
   }
 
-  // ==================== BILLING SETTINGS ROUTES ====================
-
-  /**
-   * Get billing settings
-   * GET /club/:clubId/billing/settings
-   */
-  async getSettings(request, reply) {
-    try {
-      // clubId derived from authenticated user
-      const userId = request.user.id;
-
-      // Get user's club ID
-      const clubId = await this.clubService.getManagersClubId(userId);
-      if (!clubId) {
-        return reply.code(403).send({
-          success: false,
-          message: 'User is not associated with a club'
-        });
-      }
-
-      const settings = await this.billingSettingsService.getSettings(clubId);
-
-      reply.code(200).send({
-        success: true,
-        settings
-      });
-    } catch (error) {
-      request.log.error('Error fetching billing settings:', error);
-      reply.code(500).send({
-        success: false,
-        message: error.message || 'Failed to fetch billing settings'
-      });
-    }
-  }
-
-  /**
-   * Update billing settings
-   * PUT /club/:clubId/billing/settings
-   */
-  async updateSettings(request, reply) {
-    try {
-      // clubId derived from authenticated user
-      const settingsData = request.body;
-      const userId = request.user.id;
-
-      // Get user's club ID
-      const clubId = await this.clubService.getManagersClubId(userId);
-      if (!clubId) {
-        return reply.code(403).send({
-          success: false,
-          message: 'User is not associated with a club'
-        });
-      }
-
-      // Check if user is super admin
-      const isSuperAdmin = await this.isSuperAdmin(userId);
-
-      // If NOT super admin, strip out service charge fields
-      const allowedData = { ...settingsData };
-      if (!isSuperAdmin) {
-        delete allowedData.service_charge_enabled;
-        delete allowedData.service_charge_type;
-        delete allowedData.service_charge_value;
-        delete allowedData.service_charge_description;
-      }
-
-      const result = await this.billingSettingsService.updateSettings(clubId, allowedData);
-
-      reply.code(200).send(result);
-    } catch (error) {
-      request.log.error('Error updating billing settings:', error);
-      reply.code(400).send({
-        success: false,
-        message: error.message || 'Failed to update billing settings'
-      });
-    }
-  }
-
-  // ==================== SCHEDULED JOBS ROUTES ====================
-
-  /**
-   * Get scheduled invoice jobs
-   * GET /club/:clubId/billing/scheduled-jobs
-   */
-  async getScheduledJobs(request, reply) {
-    try {
-      // clubId derived from authenticated user
-      const filters = request.query;
-      const userId = request.user.id;
-
-      // Get user's club ID
-      const clubId = await this.clubService.getManagersClubId(userId);
-      if (!clubId) {
-        return reply.code(403).send({
-          success: false,
-          message: 'User is not associated with a club'
-        });
-      }
-
-      const jobs = await this.scheduledJobService.getJobsByClub(clubId, filters);
-
-      reply.code(200).send({
-        success: true,
-        jobs
-      });
-    } catch (error) {
-      request.log.error('Error fetching scheduled jobs:', error);
-      reply.code(500).send({
-        success: false,
-        message: error.message || 'Failed to fetch scheduled jobs'
-      });
-    }
-  }
+  // Note: Billing settings and scheduled jobs routes removed
+  // These were used for bulk invoicing which has been replaced by subscription-based billing
 }

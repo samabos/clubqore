@@ -1,5 +1,14 @@
-import { requireRole } from '../../auth/permissionMiddleware.js';
+import { requireRole, requireScope } from '../../auth/permissionMiddleware.js';
 
+/**
+ * Billing Routes
+ *
+ * Note: Manual invoice creation has been removed.
+ * Invoices are now auto-generated via GoCardless webhooks when payments are created.
+ * These routes handle viewing and managing existing invoices only.
+ *
+ * Authorization: Uses both role-based (club_manager) and scope-based (billing:*) checks.
+ */
 export async function billingRoutes(fastify, options) {
   const { billingController, authenticate } = options;
 
@@ -8,51 +17,20 @@ export async function billingRoutes(fastify, options) {
     fastify.addHook('onRequest', authenticate);
   }
 
-  // Club manager role check for billing management (write operations)
+  // Role-based check (legacy, for backward compatibility)
   const requireClubManager = requireRole(['club_manager', 'admin', 'super_admin']);
 
-  // Invoice routes - clubId is derived from authenticated user
+  // Scope-based checks (defense in depth)
+  const viewScope = requireScope('billing', 'view');
+  const editScope = requireScope('billing', 'edit');
+  const deleteScope = requireScope('billing', 'delete');
 
-  // CREATE - Requires club manager
-  fastify.post('/billing/invoices', {
-    preHandler: [requireClubManager],
-    schema: {
-      tags: ['Billing'],
-      summary: 'Create a new invoice',
-      body: {
-        type: 'object',
-        required: ['user_id', 'invoice_type', 'issue_date', 'due_date', 'items'],
-        properties: {
-          user_id: { type: 'integer' },
-          season_id: { type: ['integer', 'null'] },
-          invoice_type: { type: 'string', enum: ['seasonal', 'adhoc'] },
-          issue_date: { type: 'string', format: 'date' },
-          due_date: { type: 'string', format: 'date' },
-          tax_amount: { type: 'number', minimum: 0 },
-          discount_amount: { type: 'number', minimum: 0 },
-          notes: { type: 'string' },
-          items: {
-            type: 'array',
-            minItems: 1,
-            items: {
-              type: 'object',
-              required: ['description', 'unit_price'],
-              properties: {
-                description: { type: 'string', maxLength: 255 },
-                category: { type: 'string', enum: ['membership', 'training', 'equipment', 'tournament', 'other'] },
-                quantity: { type: 'integer', minimum: 1, default: 1 },
-                unit_price: { type: 'number', minimum: 0 }
-              }
-            }
-          }
-        }
-      }
-    }
-  }, billingController.createInvoice.bind(billingController));
+  // Invoice routes - clubId is derived from authenticated user
+  // Note: Invoice creation removed - invoices auto-generated via GoCardless webhooks
 
   // LIST - Club manager can view all invoices
   fastify.get('/billing/invoices', {
-    preHandler: [requireClubManager],
+    preHandler: [requireClubManager, viewScope],
     schema: {
       tags: ['Billing'],
       summary: 'Get all invoices for the user\'s club',
@@ -73,7 +51,7 @@ export async function billingRoutes(fastify, options) {
 
   // GET SINGLE - Club manager can view invoice details
   fastify.get('/billing/invoices/:invoiceId', {
-    preHandler: [requireClubManager],
+    preHandler: [requireClubManager, viewScope],
     schema: {
       tags: ['Billing'],
       summary: 'Get invoice by ID',
@@ -89,7 +67,7 @@ export async function billingRoutes(fastify, options) {
 
   // UPDATE - Requires club manager
   fastify.put('/billing/invoices/:invoiceId', {
-    preHandler: [requireClubManager],
+    preHandler: [requireClubManager, editScope],
     schema: {
       tags: ['Billing'],
       summary: 'Update invoice (draft only)',
@@ -105,7 +83,7 @@ export async function billingRoutes(fastify, options) {
 
   // DELETE - Requires club manager
   fastify.delete('/billing/invoices/:invoiceId', {
-    preHandler: [requireClubManager],
+    preHandler: [requireClubManager, deleteScope],
     schema: {
       tags: ['Billing'],
       summary: 'Delete invoice (draft only)',
@@ -121,7 +99,7 @@ export async function billingRoutes(fastify, options) {
 
   // PUBLISH - Requires club manager
   fastify.post('/billing/invoices/:invoiceId/publish', {
-    preHandler: [requireClubManager],
+    preHandler: [requireClubManager, editScope],
     schema: {
       tags: ['Billing'],
       summary: 'Publish invoice (draft -> pending)',
@@ -137,7 +115,7 @@ export async function billingRoutes(fastify, options) {
 
   // MARK PAID - Requires club manager
   fastify.post('/billing/invoices/:invoiceId/paid', {
-    preHandler: [requireClubManager],
+    preHandler: [requireClubManager, editScope],
     schema: {
       tags: ['Billing'],
       summary: 'Mark invoice as paid',
@@ -162,7 +140,7 @@ export async function billingRoutes(fastify, options) {
 
   // CANCEL - Requires club manager
   fastify.post('/billing/invoices/:invoiceId/cancel', {
-    preHandler: [requireClubManager],
+    preHandler: [requireClubManager, editScope],
     schema: {
       tags: ['Billing'],
       summary: 'Cancel invoice',
@@ -178,7 +156,7 @@ export async function billingRoutes(fastify, options) {
 
   // GET USER INVOICES - Club manager only
   fastify.get('/billing/users/:userId/invoices', {
-    preHandler: [requireClubManager],
+    preHandler: [requireClubManager, viewScope],
     schema: {
       tags: ['Billing'],
       summary: 'Get invoices for a specific user',
@@ -192,47 +170,9 @@ export async function billingRoutes(fastify, options) {
     }
   }, billingController.getUserInvoices.bind(billingController));
 
-  // BULK GENERATE - Requires club manager
-  fastify.post('/billing/invoices/bulk/seasonal', {
-    preHandler: [requireClubManager],
-    schema: {
-      tags: ['Billing'],
-      summary: 'Generate seasonal invoices in bulk',
-      body: {
-        type: 'object',
-        required: ['season_id', 'user_ids', 'items', 'issue_date', 'due_date'],
-        properties: {
-          season_id: { type: 'integer' },
-          user_ids: {
-            type: 'array',
-            minItems: 1,
-            items: { type: 'integer' }
-          },
-          issue_date: { type: 'string', format: 'date' },
-          due_date: { type: 'string', format: 'date' },
-          notes: { type: 'string' },
-          items: {
-            type: 'array',
-            minItems: 1,
-            items: {
-              type: 'object',
-              required: ['description', 'unit_price'],
-              properties: {
-                description: { type: 'string', maxLength: 255 },
-                category: { type: 'string', enum: ['membership', 'training', 'equipment', 'tournament', 'other'] },
-                quantity: { type: 'integer', minimum: 1, default: 1 },
-                unit_price: { type: 'number', minimum: 0 }
-              }
-            }
-          }
-        }
-      }
-    }
-  }, billingController.generateSeasonalInvoices.bind(billingController));
-
   // SUMMARY - Club manager only
   fastify.get('/billing/summary', {
-    preHandler: [requireClubManager],
+    preHandler: [requireClubManager, viewScope],
     schema: {
       tags: ['Billing'],
       summary: 'Get billing summary statistics for the user\'s club',
@@ -247,60 +187,6 @@ export async function billingRoutes(fastify, options) {
     }
   }, billingController.getBillingSummary.bind(billingController));
 
-  // Billing settings routes - Club manager only
-  fastify.get('/billing/settings', {
-    preHandler: [requireClubManager],
-    schema: {
-      tags: ['Billing Settings'],
-      summary: 'Get billing settings for the user\'s club'
-    }
-  }, billingController.getSettings.bind(billingController));
-
-  fastify.put('/billing/settings', {
-    preHandler: [requireClubManager],
-    schema: {
-      tags: ['Billing Settings'],
-      summary: 'Update billing settings',
-      body: {
-        type: 'object',
-        properties: {
-          service_charge_enabled: { type: 'boolean' },
-          service_charge_type: { type: 'string', enum: ['percentage', 'fixed'] },
-          service_charge_value: { type: 'number', minimum: 0 },
-          service_charge_description: { type: 'string', maxLength: 255 },
-          auto_generation_enabled: { type: 'boolean' },
-          days_before_season: { type: 'integer', minimum: 0, maximum: 90 },
-          default_invoice_items: {
-            type: ['array', 'null'],
-            items: {
-              type: 'object',
-              required: ['description', 'unit_price'],
-              properties: {
-                description: { type: 'string', maxLength: 255 },
-                category: { type: 'string', enum: ['membership', 'training', 'equipment', 'tournament', 'other'] },
-                quantity: { type: 'integer', minimum: 1, default: 1 },
-                unit_price: { type: 'number', minimum: 0 }
-              }
-            }
-          }
-        }
-      }
-    }
-  }, billingController.updateSettings.bind(billingController));
-
-  // Scheduled jobs routes - Club manager only
-  fastify.get('/billing/scheduled-jobs', {
-    preHandler: [requireClubManager],
-    schema: {
-      tags: ['Scheduled Invoice Jobs'],
-      summary: 'Get scheduled invoice jobs for the user\'s club',
-      querystring: {
-        type: 'object',
-        properties: {
-          status: { type: 'string', enum: ['pending', 'completed', 'failed'] },
-          season_id: { type: 'integer' }
-        }
-      }
-    }
-  }, billingController.getScheduledJobs.bind(billingController));
+  // Note: Billing settings and scheduled jobs routes removed
+  // Invoices are now auto-generated via GoCardless webhooks
 }

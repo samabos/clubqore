@@ -5,6 +5,7 @@
  */
 
 import { ParentSubscriptionController } from '../controllers/ParentSubscriptionController.js';
+import { requireScope } from '../../auth/permissionMiddleware.js';
 
 /**
  * Register parent subscription routes
@@ -17,9 +18,14 @@ export async function parentSubscriptionRoutes(fastify, options) {
   const { authenticate } = options;
   const controller = new ParentSubscriptionController(fastify.db);
 
+  // Scope middleware for parent-subscriptions resource
+  const viewScope = requireScope('parent-subscriptions', 'view');
+  const createScope = requireScope('parent-subscriptions', 'create');
+  const editScope = requireScope('parent-subscriptions', 'edit');
+
   // Get all subscriptions for the parent
   fastify.get('/', {
-    preHandler: authenticate,
+    preHandler: [authenticate, viewScope],
     schema: {
       description: 'Get all subscriptions for the authenticated parent',
       tags: ['Parent Subscriptions'],
@@ -35,7 +41,7 @@ export async function parentSubscriptionRoutes(fastify, options) {
 
   // Create a new subscription
   fastify.post('/', {
-    preHandler: authenticate,
+    preHandler: [authenticate, createScope],
     schema: {
       description: 'Create a new subscription for a child',
       tags: ['Parent Subscriptions'],
@@ -56,7 +62,7 @@ export async function parentSubscriptionRoutes(fastify, options) {
 
   // Get single subscription
   fastify.get('/:subscriptionId', {
-    preHandler: authenticate,
+    preHandler: [authenticate, viewScope],
     schema: {
       description: 'Get a subscription by ID',
       tags: ['Parent Subscriptions'],
@@ -72,7 +78,7 @@ export async function parentSubscriptionRoutes(fastify, options) {
 
   // Change subscription tier
   fastify.put('/:subscriptionId/tier', {
-    preHandler: authenticate,
+    preHandler: [authenticate, editScope],
     schema: {
       description: 'Change subscription tier',
       tags: ['Parent Subscriptions'],
@@ -96,7 +102,7 @@ export async function parentSubscriptionRoutes(fastify, options) {
 
   // Pause subscription
   fastify.post('/:subscriptionId/pause', {
-    preHandler: authenticate,
+    preHandler: [authenticate, editScope],
     schema: {
       description: 'Pause a subscription',
       tags: ['Parent Subscriptions'],
@@ -118,7 +124,7 @@ export async function parentSubscriptionRoutes(fastify, options) {
 
   // Resume subscription
   fastify.post('/:subscriptionId/resume', {
-    preHandler: authenticate,
+    preHandler: [authenticate, editScope],
     schema: {
       description: 'Resume a paused subscription',
       tags: ['Parent Subscriptions'],
@@ -134,7 +140,7 @@ export async function parentSubscriptionRoutes(fastify, options) {
 
   // Cancel subscription
   fastify.post('/:subscriptionId/cancel', {
-    preHandler: authenticate,
+    preHandler: [authenticate, editScope],
     schema: {
       description: 'Cancel a subscription',
       tags: ['Parent Subscriptions'],
@@ -157,7 +163,7 @@ export async function parentSubscriptionRoutes(fastify, options) {
 
   // Get available tiers for a club
   fastify.get('/clubs/:clubId/membership-tiers', {
-    preHandler: authenticate,
+    preHandler: [authenticate, viewScope],
     schema: {
       description: 'Get available membership tiers for a club',
       tags: ['Parent Subscriptions'],

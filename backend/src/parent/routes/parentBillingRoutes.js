@@ -1,5 +1,10 @@
+import { requireScope } from '../../auth/permissionMiddleware.js';
+
 export async function parentBillingRoutes(fastify, options) {
   const { parentBillingController, authenticate } = options;
+
+  // Scope middleware for parent-billing resource
+  const viewScope = requireScope('parent-billing', 'view');
 
   // Apply authentication middleware to all routes
   if (authenticate) {
@@ -8,6 +13,7 @@ export async function parentBillingRoutes(fastify, options) {
 
   // Get all invoices for parent's children
   fastify.get('/invoices', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Parent Billing'],
       summary: 'Get all invoices for parent\'s children',
@@ -23,6 +29,7 @@ export async function parentBillingRoutes(fastify, options) {
 
   // Get invoice by ID (verify parent owns it)
   fastify.get('/invoices/:invoiceId', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Parent Billing'],
       summary: 'Get invoice details',
@@ -38,6 +45,7 @@ export async function parentBillingRoutes(fastify, options) {
 
   // Get invoices for a specific child
   fastify.get('/children/:childUserId/invoices', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Parent Billing'],
       summary: 'Get invoices for a specific child',

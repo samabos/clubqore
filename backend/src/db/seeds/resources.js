@@ -74,7 +74,9 @@ export async function seed(knex) {
     // Billing Management subgroup
     { name: 'super-admin-billing-management', display_name: 'Billing Management', type: 'group', path: null, icon: 'Receipt', sort_order: 2 },
     { name: 'admin-billing-settings', display_name: 'Club Billing Settings', type: 'page', path: '/app/admin/billing/settings', icon: 'Settings', sort_order: 1 },
-    { name: 'admin-billing-jobs', display_name: 'Scheduled Invoice Jobs', type: 'page', path: '/app/admin/billing/jobs', icon: 'Calendar', sort_order: 2 },
+    { name: 'admin-billing-jobs', display_name: 'Background Jobs', type: 'page', path: '/app/admin/billing/jobs', icon: 'PlayCircle', sort_order: 2 },
+    { name: 'admin-subscriptions', display_name: 'Subscriptions', type: 'page', path: '/app/admin/subscriptions', icon: 'Repeat', sort_order: 3 },
+    { name: 'admin-invoices', display_name: 'Invoices', type: 'page', path: '/app/admin/invoices', icon: 'FileText', sort_order: 4 },
 
     // Shared
     { name: 'communication', display_name: 'Messages', type: 'page', path: '/communication', icon: 'MessageSquare', sort_order: 90 },
@@ -108,6 +110,8 @@ export async function seed(knex) {
     // Billing Management subgroup children
     { child: 'admin-billing-settings', parent: 'super-admin-billing-management' },
     { child: 'admin-billing-jobs', parent: 'super-admin-billing-management' },
+    { child: 'admin-subscriptions', parent: 'super-admin-billing-management' },
+    { child: 'admin-invoices', parent: 'super-admin-billing-management' },
   ];
 
   for (const { child, parent } of parentRelationships) {
@@ -161,6 +165,7 @@ export async function seed(knex) {
       'super-admin-operations',
       'super-admin-club-management', 'admin-clubs', 'admin-club-approvals',
       'super-admin-billing-management', 'admin-billing-settings', 'admin-billing-jobs',
+      'admin-subscriptions', 'admin-invoices',
       // Shared
       'communication', 'profile'
     ],

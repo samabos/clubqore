@@ -33,6 +33,15 @@ const PAYMENT_STATUS_MAP = {
   'charged_back': 'charged_back'
 };
 
+const SUBSCRIPTION_STATUS_MAP = {
+  'pending_customer_approval': 'pending',
+  'customer_approval_denied': 'cancelled',
+  'active': 'active',
+  'finished': 'finished',
+  'cancelled': 'cancelled',
+  'paused': 'paused'
+};
+
 export class GoCardlessProvider extends PaymentProviderInterface {
   /**
    * Create a new GoCardless provider instance
@@ -101,6 +110,21 @@ export class GoCardlessProvider extends PaymentProviderInterface {
     const responseData = await response.json();
 
     if (!response.ok) {
+      // Log the full error response for debugging
+      console.error('[GoCardless API Error]', {
+        method,
+        path,
+        statusCode: response.status,
+        statusText: response.statusText,
+        requestData: data,
+        responseData,
+        errorType: responseData.error?.type,
+        errorMessage: responseData.error?.message,
+        errorDetails: responseData.error?.errors,
+        errorDocumentationUrl: responseData.error?.documentation_url,
+        errorRequestId: responseData.error?.request_id
+      });
+
       let message = responseData.error?.message || 'GoCardless API error';
 
       // Provide helpful messages for common errors
@@ -111,14 +135,21 @@ export class GoCardlessProvider extends PaymentProviderInterface {
       } else if (response.status === 404) {
         message = 'GoCardless resource not found. The requested customer, mandate, or payment does not exist.';
       } else if (response.status === 422) {
-        const details = responseData.error?.errors?.map(e => e.message).join(', ');
+        const details = responseData.error?.errors?.map(e => `${e.field}: ${e.message}`).join('; ');
         message = `GoCardless validation error: ${details || message}`;
+      } else if (response.status === 409) {
+        const details = responseData.error?.errors?.map(e => e.message).join(', ');
+        message = `GoCardless conflict: ${details || message}`;
       }
 
       const error = new Error(message);
       error.code = responseData.error?.type;
+      error.type = responseData.error?.type;
       error.details = responseData.error?.errors;
+      error.errors = responseData.error?.errors;
       error.statusCode = response.status;
+      error.requestId = responseData.error?.request_id;
+      error.response = { status: response.status, data: responseData };
       throw error;
     }
 
@@ -495,6 +526,260 @@ export class GoCardlessProvider extends PaymentProviderInterface {
   }
 
   // ==========================================
+  // Subscription Operations (Recurring Payments)
+  // ==========================================
+
+  /**
+   * Create a subscription for recurring payments
+   * GoCardless will automatically create payments on the schedule
+   *
+   * @param {string} providerMandateId - The mandate to charge
+   * @param {Object} subscriptionData - Subscription details
+   * @param {number} subscriptionData.amount - Amount in currency units (e.g., 25.00 for £25)
+   * @param {string} subscriptionData.currency - Currency code (default: GBP)
+   * @param {string} subscriptionData.intervalUnit - weekly, monthly, or yearly
+   * @param {number} subscriptionData.interval - Interval multiplier (e.g., 2 for every 2 months)
+   * @param {number} subscriptionData.dayOfMonth - Day of month to charge (1-28 or -1 for last)
+   * @param {string} subscriptionData.startDate - When to start (YYYY-MM-DD)
+   * @param {number} subscriptionData.count - Number of payments (optional, for fixed term)
+   * @param {string} subscriptionData.name - Name for the subscription
+   * @param {Object} subscriptionData.metadata - Custom metadata
+   */
+  async createSubscription(providerMandateId, subscriptionData) {
+    const payload = {
+      subscriptions: {
+        amount: this.formatAmount(subscriptionData.amount, subscriptionData.currency),
+        currency: subscriptionData.currency || 'GBP',
+        interval_unit: subscriptionData.intervalUnit || 'monthly',
+        links: {
+          mandate: providerMandateId
+        },
+        metadata: subscriptionData.metadata || {}
+      }
+    };
+
+    // Interval (e.g., 2 for every 2 months)
+    if (subscriptionData.interval) {
+      payload.subscriptions.interval = subscriptionData.interval;
+    }
+
+    // Day of month (1-28 or -1 for last day)
+    // Note: For yearly subscriptions, GoCardless requires BOTH month AND day_of_month,
+    // or neither. Since we typically only have day_of_month, we skip it for yearly.
+    const intervalUnit = subscriptionData.intervalUnit || 'monthly';
+    if (subscriptionData.dayOfMonth && intervalUnit !== 'yearly') {
+      payload.subscriptions.day_of_month = subscriptionData.dayOfMonth;
+    }
+
+    // For yearly subscriptions, if we have both month and day_of_month, include them
+    if (intervalUnit === 'yearly' && subscriptionData.month && subscriptionData.dayOfMonth) {
+      payload.subscriptions.month = subscriptionData.month;
+      payload.subscriptions.day_of_month = subscriptionData.dayOfMonth;
+    }
+
+    // Start date
+    if (subscriptionData.startDate) {
+      const date = new Date(subscriptionData.startDate);
+      payload.subscriptions.start_date = date.toISOString().split('T')[0];
+    }
+
+    // Fixed number of payments (optional)
+    if (subscriptionData.count) {
+      payload.subscriptions.count = subscriptionData.count;
+    }
+
+    // Subscription name
+    if (subscriptionData.name) {
+      payload.subscriptions.name = subscriptionData.name;
+    }
+
+    const response = await this._request('POST', '/subscriptions', payload);
+
+    return {
+      providerSubscriptionId: response.subscriptions.id,
+      providerMandateId: response.subscriptions.links?.mandate,
+      amount: this.parseAmount(response.subscriptions.amount, response.subscriptions.currency),
+      currency: response.subscriptions.currency,
+      status: this.normalizeStatus('subscription', response.subscriptions.status),
+      intervalUnit: response.subscriptions.interval_unit,
+      interval: response.subscriptions.interval,
+      dayOfMonth: response.subscriptions.day_of_month,
+      startDate: response.subscriptions.start_date,
+      endDate: response.subscriptions.end_date,
+      upcomingPayments: response.subscriptions.upcoming_payments,
+      createdAt: response.subscriptions.created_at,
+      raw: response.subscriptions
+    };
+  }
+
+  /**
+   * Get a subscription by ID
+   */
+  async getSubscription(providerSubscriptionId) {
+    const response = await this._request('GET', `/subscriptions/${providerSubscriptionId}`);
+
+    return {
+      providerSubscriptionId: response.subscriptions.id,
+      providerMandateId: response.subscriptions.links?.mandate,
+      amount: this.parseAmount(response.subscriptions.amount, response.subscriptions.currency),
+      currency: response.subscriptions.currency,
+      status: this.normalizeStatus('subscription', response.subscriptions.status),
+      intervalUnit: response.subscriptions.interval_unit,
+      interval: response.subscriptions.interval,
+      dayOfMonth: response.subscriptions.day_of_month,
+      startDate: response.subscriptions.start_date,
+      endDate: response.subscriptions.end_date,
+      upcomingPayments: response.subscriptions.upcoming_payments,
+      createdAt: response.subscriptions.created_at,
+      raw: response.subscriptions
+    };
+  }
+
+  /**
+   * Update a subscription (e.g., change amount for tier change)
+   * Note: Changes apply to future payments only
+   *
+   * @param {string} providerSubscriptionId - The subscription to update
+   * @param {Object} updateData - Fields to update
+   * @param {number} updateData.amount - New amount in currency units
+   * @param {string} updateData.name - New name
+   * @param {Object} updateData.metadata - Updated metadata
+   */
+  async updateSubscription(providerSubscriptionId, updateData) {
+    const payload = { subscriptions: {} };
+
+    if (updateData.amount !== undefined) {
+      payload.subscriptions.amount = this.formatAmount(updateData.amount, updateData.currency);
+    }
+
+    if (updateData.name) {
+      payload.subscriptions.name = updateData.name;
+    }
+
+    if (updateData.metadata) {
+      payload.subscriptions.metadata = updateData.metadata;
+    }
+
+    const response = await this._request('PUT', `/subscriptions/${providerSubscriptionId}`, payload);
+
+    return {
+      providerSubscriptionId: response.subscriptions.id,
+      amount: this.parseAmount(response.subscriptions.amount, response.subscriptions.currency),
+      currency: response.subscriptions.currency,
+      status: this.normalizeStatus('subscription', response.subscriptions.status),
+      raw: response.subscriptions
+    };
+  }
+
+  /**
+   * Cancel a subscription
+   * Stops future payments from being created
+   *
+   * @param {string} providerSubscriptionId - The subscription to cancel
+   * @param {Object} options - Cancel options
+   * @param {Object} options.metadata - Metadata to add to cancellation
+   */
+  async cancelSubscription(providerSubscriptionId, options = {}) {
+    const payload = { subscriptions: {} };
+
+    if (options.metadata) {
+      payload.subscriptions.metadata = options.metadata;
+    }
+
+    const response = await this._request('POST', `/subscriptions/${providerSubscriptionId}/actions/cancel`, payload);
+
+    return {
+      providerSubscriptionId: response.subscriptions.id,
+      status: this.normalizeStatus('subscription', response.subscriptions.status),
+      raw: response.subscriptions
+    };
+  }
+
+  /**
+   * Pause a subscription
+   * Temporarily stops payments from being created
+   *
+   * @param {string} providerSubscriptionId - The subscription to pause
+   * @param {Object} options - Pause options
+   * @param {string} options.pauseCycles - Number of cycles to pause (optional)
+   * @param {Object} options.metadata - Metadata to add
+   */
+  async pauseSubscription(providerSubscriptionId, options = {}) {
+    const payload = { subscriptions: {} };
+
+    if (options.pauseCycles) {
+      payload.subscriptions.pause_cycles = options.pauseCycles;
+    }
+
+    if (options.metadata) {
+      payload.subscriptions.metadata = options.metadata;
+    }
+
+    const response = await this._request('POST', `/subscriptions/${providerSubscriptionId}/actions/pause`, payload);
+
+    return {
+      providerSubscriptionId: response.subscriptions.id,
+      status: this.normalizeStatus('subscription', response.subscriptions.status),
+      raw: response.subscriptions
+    };
+  }
+
+  /**
+   * Resume a paused subscription
+   *
+   * @param {string} providerSubscriptionId - The subscription to resume
+   * @param {Object} options - Resume options
+   * @param {Object} options.metadata - Metadata to add
+   */
+  async resumeSubscription(providerSubscriptionId, options = {}) {
+    const payload = { subscriptions: {} };
+
+    if (options.metadata) {
+      payload.subscriptions.metadata = options.metadata;
+    }
+
+    const response = await this._request('POST', `/subscriptions/${providerSubscriptionId}/actions/resume`, payload);
+
+    return {
+      providerSubscriptionId: response.subscriptions.id,
+      status: this.normalizeStatus('subscription', response.subscriptions.status),
+      raw: response.subscriptions
+    };
+  }
+
+  /**
+   * List subscriptions for a mandate
+   *
+   * @param {string} providerMandateId - The mandate to list subscriptions for
+   * @param {Object} filters - Optional filters
+   * @param {string} filters.status - Filter by status
+   */
+  async listSubscriptions(providerMandateId, filters = {}) {
+    let path = `/subscriptions?mandate=${providerMandateId}`;
+
+    if (filters.status) {
+      path += `&status=${filters.status}`;
+    }
+
+    const response = await this._request('GET', path);
+
+    return (response.subscriptions || []).map(subscription => ({
+      providerSubscriptionId: subscription.id,
+      providerMandateId: subscription.links?.mandate,
+      amount: this.parseAmount(subscription.amount, subscription.currency),
+      currency: subscription.currency,
+      status: this.normalizeStatus('subscription', subscription.status),
+      intervalUnit: subscription.interval_unit,
+      interval: subscription.interval,
+      dayOfMonth: subscription.day_of_month,
+      startDate: subscription.start_date,
+      endDate: subscription.end_date,
+      createdAt: subscription.created_at,
+      raw: subscription
+    }));
+  }
+
+  // ==========================================
   // Webhook Handling
   // ==========================================
 
@@ -516,6 +801,9 @@ export class GoCardlessProvider extends PaymentProviderInterface {
     }
     if (resourceType === 'payment') {
       return PAYMENT_STATUS_MAP[providerStatus] || providerStatus;
+    }
+    if (resourceType === 'subscription') {
+      return SUBSCRIPTION_STATUS_MAP[providerStatus] || providerStatus;
     }
     return providerStatus;
   }

@@ -1,3 +1,5 @@
+import { requireScope } from '../../auth/permissionMiddleware.js';
+
 export async function teamRoutes(fastify, options) {
   const { teamController, authenticate } = options;
 
@@ -6,8 +8,15 @@ export async function teamRoutes(fastify, options) {
     fastify.addHook('onRequest', authenticate);
   }
 
+  // Scope middleware for teams resource
+  const viewScope = requireScope('teams', 'view');
+  const createScope = requireScope('teams', 'create');
+  const editScope = requireScope('teams', 'edit');
+  const deleteScope = requireScope('teams', 'delete');
+
   // Team CRUD routes
   fastify.post('/', {
+    preHandler: [createScope],
     schema: {
       tags: ['Teams'],
       summary: 'Create a new team'
@@ -15,6 +24,7 @@ export async function teamRoutes(fastify, options) {
   }, teamController.createTeam.bind(teamController));
 
   fastify.get('/', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Teams'],
       summary: 'Get all teams for the user\'s club'
@@ -22,6 +32,7 @@ export async function teamRoutes(fastify, options) {
   }, teamController.getTeams.bind(teamController));
 
   fastify.get('/:teamId', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Teams'],
       summary: 'Get team details with managers and members',
@@ -36,6 +47,7 @@ export async function teamRoutes(fastify, options) {
   }, teamController.getTeamById.bind(teamController));
 
   fastify.put('/:teamId', {
+    preHandler: [editScope],
     schema: {
       tags: ['Teams'],
       summary: 'Update team details',
@@ -50,6 +62,7 @@ export async function teamRoutes(fastify, options) {
   }, teamController.updateTeam.bind(teamController));
 
   fastify.delete('/:teamId', {
+    preHandler: [deleteScope],
     schema: {
       tags: ['Teams'],
       summary: 'Delete team',
@@ -65,6 +78,7 @@ export async function teamRoutes(fastify, options) {
 
   // Team manager routes
   fastify.post('/:teamId/managers', {
+    preHandler: [editScope],
     schema: {
       tags: ['Teams'],
       summary: 'Assign team manager to team',
@@ -79,6 +93,7 @@ export async function teamRoutes(fastify, options) {
   }, teamController.assignTeamManager.bind(teamController));
 
   fastify.delete('/:teamId/managers/:userId', {
+    preHandler: [editScope],
     schema: {
       tags: ['Teams'],
       summary: 'Remove team manager from team',
@@ -94,6 +109,7 @@ export async function teamRoutes(fastify, options) {
   }, teamController.removeTeamManager.bind(teamController));
 
   fastify.get('/:teamId/managers', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Teams'],
       summary: 'Get all managers for a team',
@@ -109,6 +125,7 @@ export async function teamRoutes(fastify, options) {
 
   // Set team membership tier
   fastify.put('/:teamId/tier', {
+    preHandler: [editScope],
     schema: {
       tags: ['Teams'],
       summary: 'Set membership tier for a team',
@@ -132,6 +149,7 @@ export async function teamRoutes(fastify, options) {
 
   // Team member routes
   fastify.post('/:teamId/members', {
+    preHandler: [editScope],
     schema: {
       tags: ['Teams'],
       summary: 'Assign member to team (creates subscription automatically)',
@@ -156,6 +174,7 @@ export async function teamRoutes(fastify, options) {
   }, teamController.assignMemberToTeam.bind(teamController));
 
   fastify.delete('/:teamId/members/:memberId', {
+    preHandler: [editScope],
     schema: {
       tags: ['Teams'],
       summary: 'Remove member from team',
@@ -171,6 +190,7 @@ export async function teamRoutes(fastify, options) {
   }, teamController.removeMemberFromTeam.bind(teamController));
 
   fastify.get('/:teamId/members', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Teams'],
       summary: 'Get all members in a team',
@@ -185,6 +205,7 @@ export async function teamRoutes(fastify, options) {
   }, teamController.getTeamMembers.bind(teamController));
 
   fastify.get('/assigned-children', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Teams'],
       summary: 'Get all players already assigned to any team in the club',

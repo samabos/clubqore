@@ -1,3 +1,5 @@
+import { requireScope } from '../../auth/permissionMiddleware.js';
+
 /**
  * Personnel routes for club personnel management
  * Handles team managers and staff
@@ -5,12 +7,18 @@
 export async function personnelRoutes(fastify, options) {
   const { personnelController, authenticate } = options;
 
+  // Scope middleware for club-personnel resource
+  const viewScope = requireScope('club-personnel', 'view');
+  const createScope = requireScope('club-personnel', 'create');
+  const editScope = requireScope('club-personnel', 'edit');
+  const deleteScope = requireScope('club-personnel', 'delete');
+
   /**
    * GET /api/clubs/:clubId/personnel
    * Get all personnel for a club
    */
   fastify.get('/:clubId/personnel', {
-    preHandler: [authenticate]
+    preHandler: [authenticate, viewScope]
   }, (request, reply) => personnelController.getClubPersonnel(request, reply));
 
   /**
@@ -18,7 +26,7 @@ export async function personnelRoutes(fastify, options) {
    * Add new personnel to a club
    */
   fastify.post('/:clubId/personnel', {
-    preHandler: [authenticate]
+    preHandler: [authenticate, createScope]
   }, (request, reply) => personnelController.addPersonnelToClub(request, reply));
 
   /**
@@ -26,7 +34,7 @@ export async function personnelRoutes(fastify, options) {
    * Update personnel information
    */
   fastify.put('/personnel/:userRoleId', {
-    preHandler: [authenticate]
+    preHandler: [authenticate, editScope]
   }, (request, reply) => personnelController.updatePersonnel(request, reply));
 
   /**
@@ -34,7 +42,7 @@ export async function personnelRoutes(fastify, options) {
    * Remove personnel from club
    */
   fastify.delete('/personnel/:userRoleId', {
-    preHandler: [authenticate]
+    preHandler: [authenticate, deleteScope]
   }, (request, reply) => personnelController.removePersonnelFromClub(request, reply));
 
   /**
@@ -42,6 +50,6 @@ export async function personnelRoutes(fastify, options) {
    * Get team managers for a club
    */
   fastify.get('/:clubId/personnel/team-managers', {
-    preHandler: [authenticate]
+    preHandler: [authenticate, viewScope]
   }, (request, reply) => personnelController.getClubTeamManagers(request, reply));
 }

@@ -1,3 +1,5 @@
+import { requireScope } from '../../auth/permissionMiddleware.js';
+
 export async function trainingSessionRoutes(fastify, options) {
   const { trainingSessionController, authenticate } = options;
 
@@ -6,8 +8,15 @@ export async function trainingSessionRoutes(fastify, options) {
     fastify.addHook('onRequest', authenticate);
   }
 
+  // Scope middleware for schedule resource
+  const viewScope = requireScope('schedule', 'view');
+  const createScope = requireScope('schedule', 'create');
+  const editScope = requireScope('schedule', 'edit');
+  const deleteScope = requireScope('schedule', 'delete');
+
   // Training Session CRUD routes
   fastify.post('/', {
+    preHandler: [createScope],
     schema: {
       tags: ['Training Sessions'],
       summary: 'Create a new training session',
@@ -55,6 +64,7 @@ export async function trainingSessionRoutes(fastify, options) {
   }, trainingSessionController.createSession.bind(trainingSessionController));
 
   fastify.get('/', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Training Sessions'],
       summary: 'Get all training sessions for the user\'s club',
@@ -73,6 +83,7 @@ export async function trainingSessionRoutes(fastify, options) {
   }, trainingSessionController.getSessions.bind(trainingSessionController));
 
   fastify.get('/upcoming', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Training Sessions'],
       summary: 'Get upcoming training sessions',
@@ -86,6 +97,7 @@ export async function trainingSessionRoutes(fastify, options) {
   }, trainingSessionController.getUpcomingSessions.bind(trainingSessionController));
 
   fastify.get('/:sessionId', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Training Sessions'],
       summary: 'Get training session by ID',
@@ -100,6 +112,7 @@ export async function trainingSessionRoutes(fastify, options) {
   }, trainingSessionController.getSession.bind(trainingSessionController));
 
   fastify.put('/:sessionId', {
+    preHandler: [editScope],
     schema: {
       tags: ['Training Sessions'],
       summary: 'Update training session',
@@ -140,6 +153,7 @@ export async function trainingSessionRoutes(fastify, options) {
   }, trainingSessionController.updateSession.bind(trainingSessionController));
 
   fastify.delete('/:sessionId', {
+    preHandler: [deleteScope],
     schema: {
       tags: ['Training Sessions'],
       summary: 'Delete training session',
@@ -154,6 +168,7 @@ export async function trainingSessionRoutes(fastify, options) {
   }, trainingSessionController.deleteSession.bind(trainingSessionController));
 
   fastify.post('/:sessionId/publish', {
+    preHandler: [editScope],
     schema: {
       tags: ['Training Sessions'],
       summary: 'Publish training session',
@@ -168,6 +183,7 @@ export async function trainingSessionRoutes(fastify, options) {
   }, trainingSessionController.publishSession.bind(trainingSessionController));
 
   fastify.post('/:sessionId/cancel', {
+    preHandler: [editScope],
     schema: {
       tags: ['Training Sessions'],
       summary: 'Cancel training session (changes status to cancelled)',
@@ -187,6 +203,7 @@ export async function trainingSessionRoutes(fastify, options) {
 
   // Cancel single occurrence
   fastify.post('/:sessionId/occurrences/:date/cancel', {
+    preHandler: [editScope],
     schema: {
       tags: ['Training Sessions - Recurring'],
       summary: 'Cancel a single occurrence of a recurring session',
@@ -203,6 +220,7 @@ export async function trainingSessionRoutes(fastify, options) {
 
   // Reschedule single occurrence
   fastify.post('/:sessionId/occurrences/:date/reschedule', {
+    preHandler: [editScope],
     schema: {
       tags: ['Training Sessions - Recurring'],
       summary: 'Reschedule a single occurrence',
@@ -228,6 +246,7 @@ export async function trainingSessionRoutes(fastify, options) {
 
   // Modify single occurrence
   fastify.patch('/:sessionId/occurrences/:date', {
+    preHandler: [editScope],
     schema: {
       tags: ['Training Sessions - Recurring'],
       summary: 'Modify a single occurrence (change any fields)',
@@ -257,6 +276,7 @@ export async function trainingSessionRoutes(fastify, options) {
 
   // Edit this and future occurrences
   fastify.patch('/:sessionId/occurrences/:date/future', {
+    preHandler: [editScope],
     schema: {
       tags: ['Training Sessions - Recurring'],
       summary: 'Edit this and all future occurrences (splits series)',
@@ -287,6 +307,7 @@ export async function trainingSessionRoutes(fastify, options) {
 
   // Edit all occurrences
   fastify.patch('/:sessionId/all', {
+    preHandler: [editScope],
     schema: {
       tags: ['Training Sessions - Recurring'],
       summary: 'Edit all occurrences in recurring series',
@@ -316,6 +337,7 @@ export async function trainingSessionRoutes(fastify, options) {
 
   // Delete exception (restore to parent values)
   fastify.delete('/:sessionId/occurrences/:date/exception', {
+    preHandler: [editScope],
     schema: {
       tags: ['Training Sessions - Recurring'],
       summary: 'Delete exception and restore occurrence to parent values',

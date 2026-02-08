@@ -5,6 +5,7 @@
  */
 
 import { ParentPaymentMethodController } from '../controllers/ParentPaymentMethodController.js';
+import { requireScope } from '../../auth/permissionMiddleware.js';
 
 /**
  * Register parent payment method routes
@@ -17,9 +18,15 @@ export async function parentPaymentRoutes(fastify, options) {
   const { authenticate } = options;
   const controller = new ParentPaymentMethodController(fastify.db);
 
+  // Scope middleware for parent-payment-methods resource
+  const viewScope = requireScope('parent-payment-methods', 'view');
+  const createScope = requireScope('parent-payment-methods', 'create');
+  const editScope = requireScope('parent-payment-methods', 'edit');
+  const deleteScope = requireScope('parent-payment-methods', 'delete');
+
   // Get all payment methods
   fastify.get('/', {
-    preHandler: authenticate,
+    preHandler: [authenticate, viewScope],
     schema: {
       description: 'Get all payment methods for the authenticated parent',
       tags: ['Parent Payment Methods'],
@@ -47,7 +54,7 @@ export async function parentPaymentRoutes(fastify, options) {
 
   // Initiate mandate setup
   fastify.post('/mandate/setup', {
-    preHandler: authenticate,
+    preHandler: [authenticate, createScope],
     schema: {
       description: 'Initiate Direct Debit mandate setup',
       tags: ['Parent Payment Methods'],
@@ -95,7 +102,7 @@ export async function parentPaymentRoutes(fastify, options) {
 
   // Get single payment method
   fastify.get('/:paymentMethodId', {
-    preHandler: authenticate,
+    preHandler: [authenticate, viewScope],
     schema: {
       description: 'Get a payment method by ID',
       tags: ['Parent Payment Methods'],
@@ -111,7 +118,7 @@ export async function parentPaymentRoutes(fastify, options) {
 
   // Set default payment method
   fastify.put('/:paymentMethodId/default', {
-    preHandler: authenticate,
+    preHandler: [authenticate, editScope],
     schema: {
       description: 'Set a payment method as default',
       tags: ['Parent Payment Methods'],
@@ -127,7 +134,7 @@ export async function parentPaymentRoutes(fastify, options) {
 
   // Remove payment method
   fastify.delete('/:paymentMethodId', {
-    preHandler: authenticate,
+    preHandler: [authenticate, deleteScope],
     schema: {
       description: 'Remove a payment method',
       tags: ['Parent Payment Methods'],

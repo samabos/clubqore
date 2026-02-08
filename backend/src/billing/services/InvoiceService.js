@@ -5,26 +5,32 @@ export class InvoiceService {
 
   /**
    * Generate unique invoice number
-   * Format: INV-{YEAR}-{SEQUENCE}
+   * Format: {YEAR}-{SEQUENCE}-{SUFFIX}
+   *
+   * Uses a 4-character random suffix to guarantee uniqueness
+   * even when multiple invoices are created concurrently.
+   *
+   * @param {number} clubId - Club ID
+   * @param {Object} trx - Knex transaction (optional, uses this.db if not provided)
    */
-  async generateInvoiceNumber(clubId) {
+  async generateInvoiceNumber(clubId, trx = null) {
+    const db = trx || this.db;
     const year = new Date().getFullYear();
-    const prefix = `INV-${year}-`;
+    const prefix = `${year}-`;
 
-    // Get the highest sequence number for this year and club
-    const lastInvoice = await this.db('invoices')
+    // Get the count of invoices for this year and club for sequential numbering
+    const result = await db('invoices')
       .where('club_id', clubId)
       .where('invoice_number', 'like', `${prefix}%`)
-      .orderBy('invoice_number', 'desc')
+      .count('* as count')
       .first();
 
-    let sequence = 1;
-    if (lastInvoice) {
-      const lastSequence = parseInt(lastInvoice.invoice_number.split('-')[2]);
-      sequence = lastSequence + 1;
-    }
+    const sequence = (parseInt(result?.count) || 0) + 1;
 
-    return `${prefix}${String(sequence).padStart(4, '0')}`;
+    // Add random 4-char suffix to guarantee uniqueness
+    const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+
+    return `${prefix}${String(sequence).padStart(4, '0')}-${suffix}`;
   }
 
   /**
@@ -45,107 +51,115 @@ export class InvoiceService {
 
   /**
    * Create a new invoice with line items
+   * Includes retry logic for concurrent invoice number generation
    */
-  async createInvoice(clubId, invoiceData, userId) {
-    const trx = await this.db.transaction();
+  async createInvoice(clubId, invoiceData, userId, maxRetries = 3) {
+    let lastError;
 
-    try {
-      // Validate and parse user_id
-      const parsedUserId = parseInt(invoiceData.user_id);
-      if (isNaN(parsedUserId) || parsedUserId <= 0) {
-        throw new Error(`Invalid user_id: "${invoiceData.user_id}". Must be a valid positive integer.`);
-      }
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const trx = await this.db.transaction();
 
-      // Validate user exists
-      const user = await trx('user_children')
-        .select('parent_user_id', 'child_user_id')
-        .where('child_user_id', parsedUserId)
-        .first();
+      try {
+        // Validate and parse user_id
+        const parsedUserId = parseInt(invoiceData.user_id);
+        if (isNaN(parsedUserId) || parsedUserId <= 0) {
+          throw new Error(`Invalid user_id: "${invoiceData.user_id}". Must be a valid positive integer.`);
+        }
 
-      if (!user) {
-        throw new Error(`User not found with id: ${parsedUserId}`);
-      }
+        // Validate user exists
+        const user = await trx('user_children')
+          .select('parent_user_id', 'child_user_id')
+          .where('child_user_id', parsedUserId)
+          .first();
 
-      const parentUserId = user.parent_user_id;  // Parent/guardian responsible for payment (or self)
-      const childUserId = user.child_user_id;  // The member/child the invoice is for
+        if (!user) {
+          throw new Error(`User not found with id: ${parsedUserId}`);
+        }
 
-      // Calculate totals
-      const { subtotal, total } = this.calculateInvoiceTotals(
-        invoiceData.items,
-        invoiceData.tax_amount || 0,
-        invoiceData.discount_amount || 0
-      );
+        const parentUserId = user.parent_user_id;
+        const childUserId = user.child_user_id;
 
-      // Check if user is a child (has a parent)
-     // const parentRelationship = await trx('user_children')
-     //   .where('child_user_id', parsedUserId)
-     //   .first();
+        // Calculate totals
+        const { subtotal, total } = this.calculateInvoiceTotals(
+          invoiceData.items,
+          invoiceData.tax_amount || 0,
+          invoiceData.discount_amount || 0
+        );
 
-     // if (parentRelationship) {
-     //   // If user is a child, set parent as responsible party
-     //   parentUserId = parentRelationship.parent_user_id;
-     // }
+        // Generate invoice number
+        const invoiceNumber = await this.generateInvoiceNumber(clubId, trx);
 
-      // Generate invoice number
-      const invoiceNumber = await this.generateInvoiceNumber(clubId);
+        // Insert invoice
+        const invoiceStatus = invoiceData.status || 'draft';
 
-      // Insert invoice
-      // Use provided status or default to 'draft'
-      const invoiceStatus = invoiceData.status || 'draft';
+        const [result] = await trx('invoices')
+          .insert({
+            club_id: clubId,
+            parent_user_id: parentUserId,
+            child_user_id: childUserId,
+            season_id: invoiceData.season_id || null,
+            invoice_number: invoiceNumber,
+            invoice_type: invoiceData.invoice_type,
+            status: invoiceStatus,
+            issue_date: invoiceData.issue_date,
+            due_date: invoiceData.due_date,
+            subtotal,
+            tax_amount: invoiceData.tax_amount || 0,
+            discount_amount: invoiceData.discount_amount || 0,
+            total_amount: total,
+            amount_paid: 0,
+            notes: invoiceData.notes || null,
+            created_by: userId,
+            created_at: new Date(),
+            updated_at: new Date()
+          })
+          .returning('id');
 
-      const [result] = await trx('invoices')
-        .insert({
-          club_id: clubId,
-          parent_user_id: parentUserId,  // Parent/guardian responsible for payment (or self)
-          child_user_id: childUserId,     // The member/child the invoice is for
-          season_id: invoiceData.season_id || null,
-          invoice_number: invoiceNumber,
-          invoice_type: invoiceData.invoice_type,
-          status: invoiceStatus,
-          issue_date: invoiceData.issue_date,
-          due_date: invoiceData.due_date,
-          subtotal,
-          tax_amount: invoiceData.tax_amount || 0,
-          discount_amount: invoiceData.discount_amount || 0,
-          total_amount: total,
-          amount_paid: 0,
-          notes: invoiceData.notes || null,
-          created_by: userId,
+        const invoiceId = typeof result === 'object' ? result.id : result;
+
+        // Insert invoice items
+        const itemsToInsert = invoiceData.items.map(item => ({
+          invoice_id: invoiceId,
+          description: item.description,
+          category: item.category || null,
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price,
+          total_price: (item.quantity || 1) * item.unit_price,
           created_at: new Date(),
           updated_at: new Date()
-        })
-        .returning('id');
+        }));
 
-      // Extract the actual ID (handle both object and direct value)
-      const invoiceId = typeof result === 'object' ? result.id : result;
+        await trx('invoice_items').insert(itemsToInsert);
 
-      // Insert invoice items
-      const itemsToInsert = invoiceData.items.map(item => ({
-        invoice_id: invoiceId,
-        description: item.description,
-        category: item.category || null,
-        quantity: item.quantity || 1,
-        unit_price: item.unit_price,
-        total_price: (item.quantity || 1) * item.unit_price,
-        created_at: new Date(),
-        updated_at: new Date()
-      }));
+        await trx.commit();
 
-      await trx('invoice_items').insert(itemsToInsert);
+        return {
+          success: true,
+          invoice_id: invoiceId,
+          invoice_number: invoiceNumber,
+          message: 'Invoice created successfully'
+        };
+      } catch (error) {
+        await trx.rollback();
+        lastError = error;
 
-      await trx.commit();
+        // Check if it's a duplicate key error - retry if so
+        if (error.code === '23505' && error.constraint === 'invoices_invoice_number_unique') {
+          console.log(`Invoice number conflict on attempt ${attempt}, retrying...`);
+          // Small random delay to reduce collision probability
+          await new Promise(resolve => setTimeout(resolve, Math.random() * 50 + 10));
+          continue;
+        }
 
-      return {
-        success: true,
-        invoice_id: invoiceId,
-        invoice_number: invoiceNumber,
-        message: 'Invoice created successfully'
-      };
-    } catch (error) {
-      await trx.rollback();
-      console.error('Error creating invoice:', error);
-      throw error;
+        // For other errors, don't retry
+        console.error('Error creating invoice:', error);
+        throw error;
+      }
     }
+
+    // All retries exhausted
+    console.error('Failed to create invoice after all retries:', lastError);
+    throw lastError;
   }
 
   /**
@@ -638,117 +652,7 @@ export class InvoiceService {
     }
   }
 
-  /**
-   * Generate seasonal invoices in bulk
-   */
-  async generateSeasonalInvoices(clubId, bulkData, userId) {
-    const trx = await this.db.transaction();
-
-    try {
-      const { season_id, user_ids, items, issue_date, due_date, notes } = bulkData;
-
-      // Validate season belongs to club
-      const season = await trx('seasons')
-        .where('id', season_id)
-        .where('club_id', clubId)
-        .first();
-
-      if (!season) {
-        throw new Error('Season not found');
-      }
-
-      // Calculate totals
-      const { subtotal, total } = this.calculateInvoiceTotals(items, 0, 0);
-
-      const createdInvoices = [];
-
-      for (const user_id of user_ids) {
-        // Check if user is a child (has a parent)
-        const parentRelationship = await trx('user_children')
-          .where('child_user_id', user_id)
-          .first();
-
-        let parentUserId = user_id;  // Default: user is responsible for their own invoice
-        const childUserId = user_id;  // The member/child the invoice is for
-
-        if (parentRelationship) {
-          // If user is a child, set parent as responsible party
-          parentUserId = parentRelationship.parent_user_id;
-        }
-
-        // Check if user already has invoice for this season
-        const existingInvoice = await trx('invoices')
-          .where('club_id', clubId)
-          .where('child_user_id', childUserId)
-          .where('season_id', season_id)
-          .where('invoice_type', 'seasonal')
-          .first();
-
-        if (existingInvoice) {
-          console.log(`Skipping user ${user_id}, already has seasonal invoice for this season`);
-          continue;
-        }
-
-        // Generate invoice number
-        const invoiceNumber = await this.generateInvoiceNumber(clubId);
-
-        // Insert invoice
-        const [result] = await trx('invoices')
-          .insert({
-            club_id: clubId,
-            parent_user_id: parentUserId,
-            child_user_id: childUserId,
-            season_id,
-            invoice_number: invoiceNumber,
-            invoice_type: 'seasonal',
-            status: 'draft',
-            issue_date,
-            due_date,
-            subtotal,
-            tax_amount: 0,
-            discount_amount: 0,
-            total_amount: total,
-            amount_paid: 0,
-            notes,
-            created_by: userId,
-            created_at: new Date(),
-            updated_at: new Date()
-          })
-          .returning('id');
-
-        // Extract the actual ID (handle both object and direct value)
-        const invoiceId = typeof result === 'object' ? result.id : result;
-
-        // Insert invoice items
-        const itemsToInsert = items.map(item => ({
-          invoice_id: invoiceId,
-          description: item.description,
-          category: item.category || null,
-          quantity: item.quantity || 1,
-          unit_price: item.unit_price,
-          total_price: (item.quantity || 1) * item.unit_price,
-          created_at: new Date(),
-          updated_at: new Date()
-        }));
-
-        await trx('invoice_items').insert(itemsToInsert);
-
-        createdInvoices.push(invoiceId);
-      }
-
-      await trx.commit();
-
-      return {
-        success: true,
-        count: createdInvoices.length,
-        message: `${createdInvoices.length} seasonal invoice(s) created successfully`
-      };
-    } catch (error) {
-      await trx.rollback();
-      console.error('Error generating seasonal invoices:', error);
-      throw error;
-    }
-  }
+  // Note: generateSeasonalInvoices method removed - invoices auto-generated via GoCardless webhooks
 
   /**
    * Get billing summary for a club

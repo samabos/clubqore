@@ -1,3 +1,5 @@
+import { requireScope } from '../../auth/permissionMiddleware.js';
+
 export async function matchRoutes(fastify, options) {
   const { matchController, authenticate } = options;
 
@@ -6,8 +8,15 @@ export async function matchRoutes(fastify, options) {
     fastify.addHook('onRequest', authenticate);
   }
 
+  // Scope middleware for schedule resource
+  const viewScope = requireScope('schedule', 'view');
+  const createScope = requireScope('schedule', 'create');
+  const editScope = requireScope('schedule', 'edit');
+  const deleteScope = requireScope('schedule', 'delete');
+
   // Match CRUD routes
   fastify.post('/', {
+    preHandler: [createScope],
     schema: {
       tags: ['Matches'],
       summary: 'Create a new match'
@@ -15,6 +24,7 @@ export async function matchRoutes(fastify, options) {
   }, matchController.createMatch.bind(matchController));
 
   fastify.get('/', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Matches'],
       summary: 'Get all matches for the user\'s club',
@@ -34,6 +44,7 @@ export async function matchRoutes(fastify, options) {
   }, matchController.getMatches.bind(matchController));
 
   fastify.get('/upcoming', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Matches'],
       summary: 'Get upcoming matches',
@@ -47,6 +58,7 @@ export async function matchRoutes(fastify, options) {
   }, matchController.getUpcomingMatches.bind(matchController));
 
   fastify.get('/:matchId', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Matches'],
       summary: 'Get match by ID',
@@ -61,6 +73,7 @@ export async function matchRoutes(fastify, options) {
   }, matchController.getMatch.bind(matchController));
 
   fastify.put('/:matchId', {
+    preHandler: [editScope],
     schema: {
       tags: ['Matches'],
       summary: 'Update match',
@@ -75,6 +88,7 @@ export async function matchRoutes(fastify, options) {
   }, matchController.updateMatch.bind(matchController));
 
   fastify.delete('/:matchId', {
+    preHandler: [deleteScope],
     schema: {
       tags: ['Matches'],
       summary: 'Delete match',
@@ -89,6 +103,7 @@ export async function matchRoutes(fastify, options) {
   }, matchController.deleteMatch.bind(matchController));
 
   fastify.post('/:matchId/publish', {
+    preHandler: [editScope],
     schema: {
       tags: ['Matches'],
       summary: 'Publish match',
@@ -103,6 +118,7 @@ export async function matchRoutes(fastify, options) {
   }, matchController.publishMatch.bind(matchController));
 
   fastify.put('/:matchId/result', {
+    preHandler: [editScope],
     schema: {
       tags: ['Matches'],
       summary: 'Update match result',
@@ -118,6 +134,7 @@ export async function matchRoutes(fastify, options) {
 
   // Match Events routes
   fastify.post('/:matchId/events', {
+    preHandler: [createScope],
     schema: {
       tags: ['Match Events'],
       summary: 'Add match event (goal, card, substitution)',
@@ -132,6 +149,7 @@ export async function matchRoutes(fastify, options) {
   }, matchController.addMatchEvent.bind(matchController));
 
   fastify.get('/:matchId/events', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Match Events'],
       summary: 'Get all events for a match',
@@ -146,6 +164,7 @@ export async function matchRoutes(fastify, options) {
   }, matchController.getMatchEvents.bind(matchController));
 
   fastify.delete('/events/:eventId', {
+    preHandler: [deleteScope],
     schema: {
       tags: ['Match Events'],
       summary: 'Delete match event',

@@ -8,22 +8,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Search, Plus } from "lucide-react";
+import { Search, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { SubscriptionList, SubscriptionStats, CreateSubscriptionForm } from "../components";
+import { SubscriptionList, SubscriptionStats } from "../components";
 import {
   fetchSubscriptions,
   fetchSubscriptionStats,
   fetchMembershipTiers,
-  fetchAvailableMembers,
-  createSubscriptionForMember,
   cancelSubscription,
 } from "../actions/subscription-actions";
 import type {
@@ -34,26 +26,21 @@ import type {
   SubscriptionStatus,
 } from "@/types/subscription";
 
-interface AvailableMember {
-  id: number;
-  email: string;
-  first_name: string;
-  last_name: string;
-  team_name?: string;
-}
-
+/**
+ * Subscription Management Page
+ *
+ * Note: Manual subscription creation has been removed.
+ * Subscriptions are created through the parent onboarding flow when
+ * parents set up payment for their children's membership.
+ */
 export function SubscriptionManagementPage() {
   const { toast } = useToast();
 
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [stats, setStats] = useState<SubscriptionStatsType | null>(null);
   const [tiers, setTiers] = useState<MembershipTier[]>([]);
-  const [availableMembers, setAvailableMembers] = useState<AvailableMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCancelling, setIsCancelling] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const [filters, setFilters] = useState<SubscriptionFilters>({});
   const [searchTerm, setSearchTerm] = useState("");
@@ -102,63 +89,6 @@ export function SubscriptionManagementPage() {
         description: message,
         variant: "destructive",
       });
-    }
-  };
-
-  const loadAvailableMembers = async () => {
-    try {
-      setIsLoadingMembers(true);
-      const members = await fetchAvailableMembers();
-      setAvailableMembers(members);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to load available members";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingMembers(false);
-    }
-  };
-
-  const handleOpenCreateDialog = () => {
-    setShowCreateDialog(true);
-    loadAvailableMembers();
-  };
-
-  const handleCreateSubscription = async (data: {
-    memberId: number;
-    tierId: number;
-    billingFrequency: "monthly" | "annual";
-    billingDayOfMonth: number;
-  }) => {
-    try {
-      setIsCreating(true);
-      await createSubscriptionForMember(
-        data.memberId,
-        data.tierId,
-        data.billingFrequency,
-        data.billingDayOfMonth
-      );
-      toast({
-        title: "Success",
-        description: "Subscription created successfully",
-      });
-      setShowCreateDialog(false);
-      // Refresh data
-      loadSubscriptions();
-      const statsData = await fetchSubscriptionStats();
-      setStats(statsData);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to create subscription";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -237,12 +167,14 @@ export function SubscriptionManagementPage() {
         <div>
           <h1 className="text-3xl font-bold">Subscriptions</h1>
           <p className="text-muted-foreground mt-1">
-            Manage member subscriptions and monitor billing
+            View and manage member subscriptions
           </p>
         </div>
-        <Button onClick={handleOpenCreateDialog}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Subscription
+        <Button variant="outline" asChild>
+          <Link to="/app/membership-tiers">
+            <Settings className="mr-2 h-4 w-4" />
+            Manage Tiers
+          </Link>
         </Button>
       </div>
 
@@ -305,27 +237,6 @@ export function SubscriptionManagementPage() {
         onCancel={handleCancelSubscription}
         isCancelling={isCancelling}
       />
-
-      {/* Create Subscription Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Create Subscription</DialogTitle>
-            <DialogDescription>
-              Add a member to a membership tier. The subscription will be created
-              in pending status until payment is set up.
-            </DialogDescription>
-          </DialogHeader>
-          <CreateSubscriptionForm
-            members={availableMembers}
-            tiers={tiers}
-            onSubmit={handleCreateSubscription}
-            onCancel={() => setShowCreateDialog(false)}
-            isSubmitting={isCreating}
-            isLoadingMembers={isLoadingMembers}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

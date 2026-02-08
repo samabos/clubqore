@@ -49,12 +49,14 @@ export function createAuthMiddleware(db) {
       return reply.code(401).send({ error: 'User not found' });
     }
 
-    // Add user info to request
+    // Add user info to request, including roles and scopes from JWT
     request.user = {
       id: user.id,
       email: user.email,
       email_verified: user.email_verified,
-      tokenId: tokenRecord.tokenId
+      tokenId: tokenRecord.tokenId,
+      roles: payload.roles || [],    // Roles from JWT
+      scopes: payload.scopes || []   // Scopes from JWT for authorization checks
     };
   };
 }

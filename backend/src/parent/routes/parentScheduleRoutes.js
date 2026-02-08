@@ -1,5 +1,10 @@
+import { requireScope } from '../../auth/permissionMiddleware.js';
+
 export async function parentScheduleRoutes(fastify, options) {
   const { parentScheduleController, authenticate } = options;
+
+  // Scope middleware for parent-schedule resource
+  const viewScope = requireScope('parent-schedule', 'view');
 
   // Apply authentication middleware to all routes
   if (authenticate) {
@@ -8,6 +13,7 @@ export async function parentScheduleRoutes(fastify, options) {
 
   // Get all upcoming events for parent's children
   fastify.get('/schedule', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Parent Schedule'],
       summary: 'Get all upcoming events (training sessions and matches) for parent\'s children',
@@ -25,6 +31,7 @@ export async function parentScheduleRoutes(fastify, options) {
 
   // Get schedule for a specific child
   fastify.get('/children/:childId/schedule', {
+    preHandler: [viewScope],
     schema: {
       tags: ['Parent Schedule'],
       summary: 'Get upcoming events for a specific child',

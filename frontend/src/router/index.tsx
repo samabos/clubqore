@@ -24,7 +24,6 @@ import { ScheduleManagementPage } from "../modules/schedule/pages/schedule-manag
 import {
   BillingManagementPage,
   InvoiceDetailPage,
-  BillingSettingsPage,
   ParentBillingPage,
   ParentInvoiceDetailPage,
   AdminBillingSettingsPage,
@@ -43,6 +42,8 @@ import {
   PermissionManagementPage,
   SystemSettingsPage,
   BillingJobsPage,
+  AdminSubscriptionsPage,
+  AdminInvoicesPage,
 } from "../modules/admin";
 import { MyChildrenPage, ParentSchedulePage } from "../modules/parent/pages";
 import { ProfileSettingsPage } from "../modules/profile";
@@ -189,6 +190,22 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            path: "subscriptions",
+            element: (
+              <ScopeProtectedRoute resource="admin-subscriptions">
+                <AdminSubscriptionsPage />
+              </ScopeProtectedRoute>
+            ),
+          },
+          {
+            path: "invoices",
+            element: (
+              <ScopeProtectedRoute resource="admin-invoices">
+                <AdminInvoicesPage />
+              </ScopeProtectedRoute>
+            ),
+          },
+          {
             path: "analytics",
             element: (
               <ScopeProtectedRoute resource="admin-analytics">
@@ -295,14 +312,6 @@ export const router = createBrowserRouter([
         element: (
           <ScopeProtectedRoute resource="billing">
             <InvoiceDetailPage />
-          </ScopeProtectedRoute>
-        ),
-      },
-      {
-        path: "billing/settings",
-        element: (
-          <ScopeProtectedRoute resource="billing-settings">
-            <BillingSettingsPage />
           </ScopeProtectedRoute>
         ),
       },

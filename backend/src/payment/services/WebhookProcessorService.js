@@ -9,6 +9,7 @@ import { verifyWebhookSignature, parseWebhookEvents } from '../utils/webhookVali
 import { PaymentMandateService } from './PaymentMandateService.js';
 import { SubscriptionBillingService } from './SubscriptionBillingService.js';
 import { SubscriptionService } from './SubscriptionService.js';
+import { InvoiceService } from '../../billing/services/InvoiceService.js';
 import { EmailOutboxService } from '../../shared/services/emailOutboxService.js';
 import { emailService } from '../../shared/services/emailService.js';
 import { getConfig } from '../../config/index.js';
@@ -19,6 +20,7 @@ export class WebhookProcessorService {
     this.mandateService = new PaymentMandateService(db);
     this.billingService = new SubscriptionBillingService(db);
     this.subscriptionService = new SubscriptionService(db);
+    this.invoiceService = new InvoiceService(db);
     this.emailOutbox = new EmailOutboxService(db, emailService);
   }
 
@@ -111,6 +113,9 @@ export class WebhookProcessorService {
       case 'payments':
         return this._handlePaymentEvent(provider, event);
 
+      case 'subscriptions':
+        return this._handleSubscriptionEvent(provider, event);
+
       case 'refunds':
         return this._handleRefundEvent(provider, event);
 
@@ -168,14 +173,19 @@ export class WebhookProcessorService {
    * @private
    */
   async _handlePaymentEvent(provider, event) {
-    const { action, resourceId, details } = event;
+    const { action, resourceId, details, raw } = event;
 
     switch (action) {
-      case 'created':
+      case 'created': {
+        // Payment created by GoCardless subscription - create invoice
+        const invoiceResult = await this._createInvoiceForPayment(provider, resourceId, raw);
+        return { action: 'payment_created', paymentId: resourceId, ...invoiceResult };
+      }
+
       case 'submitted':
-        // Payment created/submitted - update status
+        // Payment submitted - update status
         await this._updatePaymentStatus(provider, resourceId, action);
-        return { action: `payment_${action}`, paymentId: resourceId };
+        return { action: 'payment_submitted', paymentId: resourceId };
 
       case 'confirmed':
         // Payment confirmed but not yet paid out
@@ -235,24 +245,285 @@ export class WebhookProcessorService {
   }
 
   /**
+   * Handle GoCardless subscription events
+   *
+   * @private
+   */
+  async _handleSubscriptionEvent(provider, event) {
+    const { action, resourceId } = event;
+
+    switch (action) {
+      case 'created':
+        // GoCardless subscription created - confirm in our system
+        console.log(`GC Subscription created: ${resourceId}`);
+        return { action: 'subscription_created', providerSubscriptionId: resourceId };
+
+      case 'payment_created':
+        // GoCardless created a payment for a subscription
+        // This is handled by _handlePaymentEvent with action: 'created'
+        return { action: 'subscription_payment_created', providerSubscriptionId: resourceId };
+
+      case 'cancelled': {
+        // GoCardless subscription cancelled - update our record
+        await this._syncSubscriptionStatus(provider, resourceId, 'cancelled');
+        return { action: 'subscription_cancelled', providerSubscriptionId: resourceId };
+      }
+
+      case 'finished': {
+        // GoCardless subscription finished (all payments complete)
+        await this._syncSubscriptionStatus(provider, resourceId, 'finished');
+        return { action: 'subscription_finished', providerSubscriptionId: resourceId };
+      }
+
+      case 'paused': {
+        // GoCardless subscription paused
+        await this._syncSubscriptionStatus(provider, resourceId, 'paused');
+        return { action: 'subscription_paused', providerSubscriptionId: resourceId };
+      }
+
+      case 'resumed': {
+        // GoCardless subscription resumed
+        await this._syncSubscriptionStatus(provider, resourceId, 'active');
+        return { action: 'subscription_resumed', providerSubscriptionId: resourceId };
+      }
+
+      default:
+        console.log(`Unhandled subscription action: ${action}`);
+        return { action: `subscription_${action}`, handled: false };
+    }
+  }
+
+  /**
+   * Sync subscription status from provider event
+   *
+   * @private
+   */
+  async _syncSubscriptionStatus(_provider, providerSubscriptionId, status) {
+    // Find our subscription by provider subscription ID
+    const subscription = await this.db('subscriptions')
+      .where({ provider_subscription_id: providerSubscriptionId })
+      .first();
+
+    if (!subscription) {
+      console.log(`No local subscription found for provider subscription: ${providerSubscriptionId}`);
+      return;
+    }
+
+    // Update provider subscription status
+    await this.db('subscriptions')
+      .where({ id: subscription.id })
+      .update({
+        provider_subscription_status: status,
+        updated_at: new Date()
+      });
+
+    // Also update our subscription status if needed
+    if (status === 'cancelled' && subscription.status !== 'cancelled') {
+      await this.subscriptionService.cancelSubscription(subscription.id, {
+        actorType: 'webhook',
+        reason: 'Cancelled via GoCardless'
+      });
+    } else if (status === 'paused' && subscription.status === 'active') {
+      await this.subscriptionService.pauseSubscription(subscription.id, {
+        actorType: 'webhook'
+      });
+    } else if (status === 'active' && subscription.status === 'paused') {
+      await this.subscriptionService.resumeSubscription(subscription.id, {
+        actorType: 'webhook'
+      });
+    }
+  }
+
+  /**
+   * Create invoice when GoCardless creates a payment
+   *
+   * @private
+   */
+  async _createInvoiceForPayment(provider, providerPaymentId, rawEvent) {
+    try {
+      // Get subscription from payment metadata or links
+      const metadata = rawEvent?.metadata || {};
+      const subscriptionId = metadata.subscription_id;
+      const providerSubscriptionId = rawEvent?.links?.subscription;
+
+      // Find our subscription
+      let subscription;
+      if (subscriptionId) {
+        subscription = await this.db('subscriptions')
+          .where({ id: subscriptionId })
+          .first();
+      } else if (providerSubscriptionId) {
+        subscription = await this.db('subscriptions')
+          .where({ provider_subscription_id: providerSubscriptionId })
+          .first();
+      }
+
+      if (!subscription) {
+        console.log(`No subscription found for payment ${providerPaymentId}`);
+        // Still record the payment even without subscription
+        await this._recordProviderPayment(provider, providerPaymentId, rawEvent, null);
+        return { invoiceCreated: false, reason: 'No subscription found' };
+      }
+
+      // Get subscription details with tier and child info
+      const subscriptionDetails = await this.db('subscriptions as s')
+        .join('membership_tiers as mt', 's.membership_tier_id', 'mt.id')
+        .join('users as child', 's.child_user_id', 'child.id')
+        .leftJoin('user_profiles as child_profile', 's.child_user_id', 'child_profile.user_id')
+        .where('s.id', subscription.id)
+        .select(
+          's.*',
+          'mt.name as tier_name',
+          this.db.raw(`COALESCE(child_profile.first_name, split_part(child.email, '@', 1)) as child_first_name`),
+          this.db.raw(`COALESCE(child_profile.last_name, '') as child_last_name`)
+        )
+        .first();
+
+      // Parse amount from raw event (GoCardless sends in pence)
+      const amountInPence = rawEvent?.amount || subscription.amount * 100;
+      const amount = amountInPence / 100;
+      const chargeDate = rawEvent?.charge_date;
+
+      // Create the invoice
+      const childName = `${subscriptionDetails.child_first_name} ${subscriptionDetails.child_last_name}`.trim();
+      const description = `${subscriptionDetails.tier_name} - ${childName}`;
+
+      const invoiceResult = await this.invoiceService.createInvoice(
+        subscription.club_id,
+        {
+          user_id: subscription.child_user_id,
+          invoice_type: 'subscription',
+          status: 'pending', // Will be updated when payment succeeds
+          issue_date: new Date(),
+          due_date: chargeDate ? new Date(chargeDate) : new Date(),
+          items: [{
+            description,
+            quantity: 1,
+            unit_price: amount
+          }],
+          notes: `Auto-generated for subscription payment`
+        },
+        subscription.parent_user_id // Use parent as creator for webhook-generated invoices
+      );
+
+      // Record the payment and link to invoice
+      await this._recordProviderPayment(provider, providerPaymentId, rawEvent, subscription.id, invoiceResult.invoice_id);
+
+      // Send notification to parent about upcoming payment
+      await this._sendPaymentNotification('payment_scheduled', {
+        subscriptionId: subscription.id,
+        invoiceId: invoiceResult.invoice_id,
+        payment: {
+          amount,
+          chargeDate
+        }
+      });
+
+      console.log(`Created invoice ${invoiceResult.invoice_number} for payment ${providerPaymentId}`);
+
+      return {
+        invoiceCreated: true,
+        invoiceId: invoiceResult.invoice_id,
+        invoiceNumber: invoiceResult.invoice_number
+      };
+    } catch (error) {
+      console.error(`Error creating invoice for payment ${providerPaymentId}:`, error);
+      // Don't fail the webhook - just record the payment without invoice
+      await this._recordProviderPayment(provider, providerPaymentId, rawEvent, null);
+      return { invoiceCreated: false, error: error.message };
+    }
+  }
+
+  /**
+   * Record a provider payment in our database
+   *
+   * @private
+   */
+  async _recordProviderPayment(provider, providerPaymentId, rawEvent, subscriptionId, invoiceId = null) {
+    // Check if payment already exists
+    const existing = await this.db('provider_payments')
+      .where({ provider, provider_payment_id: providerPaymentId })
+      .first();
+
+    if (existing) {
+      // Update if invoice ID is being added
+      if (invoiceId && !existing.invoice_id) {
+        await this.db('provider_payments')
+          .where({ id: existing.id })
+          .update({ invoice_id: invoiceId, updated_at: new Date() });
+      }
+      return existing.id;
+    }
+
+    // Get mandate ID if available
+    let mandateId = null;
+    if (rawEvent?.links?.mandate) {
+      const mandate = await this.db('payment_mandates')
+        .where({ provider_mandate_id: rawEvent.links.mandate })
+        .first();
+      mandateId = mandate?.id;
+    }
+
+    const amountInPence = rawEvent?.amount || 0;
+    const amount = amountInPence / 100;
+
+    const [payment] = await this.db('provider_payments')
+      .insert({
+        subscription_id: subscriptionId,
+        invoice_id: invoiceId,
+        provider,
+        provider_payment_id: providerPaymentId,
+        payment_mandate_id: mandateId,
+        amount,
+        currency: rawEvent?.currency || 'GBP',
+        status: rawEvent?.status || 'pending',
+        charge_date: rawEvent?.charge_date,
+        description: rawEvent?.description,
+        metadata: { raw: rawEvent },
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+      .returning('id');
+
+    return payment?.id || payment;
+  }
+
+  /**
    * Activate pending subscriptions for a mandate
+   *
+   * When a mandate becomes active, find all pending subscriptions for the
+   * parent user (in the same club) and activate them with this mandate.
    *
    * @private
    */
   async _activatePendingSubscriptions(providerMandateId) {
-    // Get the local mandate
-    const mandate = await this.db('payment_mandates')
-      .where({ provider_mandate_id: providerMandateId })
+    // Get the local mandate with customer details
+    const mandate = await this.db('payment_mandates as pm')
+      .join('payment_customers as pc', 'pm.payment_customer_id', 'pc.id')
+      .where({ 'pm.provider_mandate_id': providerMandateId })
+      .select('pm.*', 'pc.user_id', 'pc.club_id')
       .first();
 
     if (!mandate) return;
 
-    // Get pending subscriptions
+    console.log(`[WebhookProcessor] Looking for pending subscriptions for parent ${mandate.user_id} in club ${mandate.club_id}`);
+
+    // Find pending subscriptions for this parent in the same club
+    // that don't have a mandate linked yet (or already linked to this mandate)
     const pendingSubscriptions = await this.db('subscriptions')
-      .where({ payment_mandate_id: mandate.id, status: 'pending' });
+      .where('parent_user_id', mandate.user_id)
+      .where('club_id', mandate.club_id)
+      .where('status', 'pending')
+      .where(function() {
+        this.whereNull('payment_mandate_id')
+          .orWhere('payment_mandate_id', mandate.id);
+      });
+
+    console.log(`[WebhookProcessor] Found ${pendingSubscriptions.length} pending subscriptions to activate`);
 
     for (const subscription of pendingSubscriptions) {
       try {
+        console.log(`[WebhookProcessor] Activating subscription ${subscription.id} with mandate ${mandate.id}`);
         await this.subscriptionService.activateSubscription(
           subscription.id,
           mandate.id,

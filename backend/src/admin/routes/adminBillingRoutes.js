@@ -1,5 +1,12 @@
-import { requireRole } from '../../auth/permissionMiddleware.js';
+import { requireRole, requireScope } from '../../auth/permissionMiddleware.js';
 
+/**
+ * Admin Billing Routes
+ *
+ * Note: Billing settings, manual billing, and payment retry routes have been removed.
+ * GoCardless now handles payment scheduling and retries natively via Subscriptions API.
+ * These routes handle worker monitoring and admin invoice viewing.
+ */
 export async function adminBillingRoutes(fastify, options) {
   const { adminBillingController, authenticate } = options;
 
@@ -11,13 +18,59 @@ export async function adminBillingRoutes(fastify, options) {
   // Super admin role check for all admin routes
   const requireSuperAdmin = requireRole(['super_admin']);
 
+  // Scope middleware for admin-invoices resource
+  const invoiceViewScope = requireScope('admin-invoices', 'view');
+
+  // ============================================
+  // Invoice Management (Super Admin Only)
+  // ============================================
+
+  // Get all invoices with pagination and filters
+  fastify.get('/admin/invoices', {
+    preHandler: [requireSuperAdmin, invoiceViewScope],
+    schema: {
+      tags: ['Admin - Invoices'],
+      summary: 'List all invoices (super admin only)',
+      description: 'View all invoices across all clubs with pagination and filtering',
+      querystring: {
+        type: 'object',
+        properties: {
+          page: { type: 'integer', default: 1, minimum: 1 },
+          limit: { type: 'integer', default: 20, minimum: 1, maximum: 100 },
+          status: { type: 'string', enum: ['draft', 'pending', 'paid', 'overdue', 'cancelled'] },
+          clubId: { type: 'integer' },
+          search: { type: 'string' },
+          fromDate: { type: 'string', format: 'date' },
+          toDate: { type: 'string', format: 'date' }
+        }
+      }
+    }
+  }, adminBillingController.getAllInvoices.bind(adminBillingController));
+
+  // Get invoice details
+  fastify.get('/admin/invoices/:invoiceId', {
+    preHandler: [requireSuperAdmin, invoiceViewScope],
+    schema: {
+      tags: ['Admin - Invoices'],
+      summary: 'Get invoice details (super admin only)',
+      description: 'View detailed invoice information including items and payments',
+      params: {
+        type: 'object',
+        properties: {
+          invoiceId: { type: 'integer' }
+        },
+        required: ['invoiceId']
+      }
+    }
+  }, adminBillingController.getInvoiceDetails.bind(adminBillingController));
+
   // Get all clubs (for dropdown)
   fastify.get('/admin/clubs', {
     preHandler: [requireSuperAdmin],
     schema: {
-      tags: ['Admin - Billing'],
+      tags: ['Admin'],
       summary: 'Get all clubs (super admin only)',
-      description: 'Fetch all active clubs for super admin billing settings management',
+      description: 'Fetch all active clubs',
       response: {
         200: {
           type: 'object',
@@ -42,139 +95,6 @@ export async function adminBillingRoutes(fastify, options) {
     }
   }, adminBillingController.getAllClubs.bind(adminBillingController));
 
-  // Get billing settings for specific club
-  fastify.get('/admin/clubs/:clubId/billing/settings', {
-    preHandler: [requireSuperAdmin],
-    schema: {
-      tags: ['Admin - Billing'],
-      summary: 'Get billing settings for any club (super admin only)',
-      params: {
-        type: 'object',
-        properties: {
-          clubId: { type: 'integer' }
-        },
-        required: ['clubId']
-      }
-    }
-  }, adminBillingController.getClubBillingSettings.bind(adminBillingController));
-
-  // Update billing settings for specific club
-  fastify.put('/admin/clubs/:clubId/billing/settings', {
-    preHandler: [requireSuperAdmin],
-    schema: {
-      tags: ['Admin - Billing'],
-      summary: 'Update billing settings for any club (super admin only)',
-      params: {
-        type: 'object',
-        properties: {
-          clubId: { type: 'integer' }
-        },
-        required: ['clubId']
-      },
-      body: {
-        type: 'object',
-        properties: {
-          service_charge_enabled: { type: 'boolean' },
-          service_charge_type: { type: 'string', enum: ['percentage', 'fixed'] },
-          service_charge_value: { type: 'number', minimum: 0 },
-          service_charge_description: { type: 'string', maxLength: 255 },
-          auto_generation_enabled: { type: 'boolean' },
-          days_before_season: { type: 'integer', minimum: 0, maximum: 90 },
-          default_invoice_items: {
-            type: ['array', 'null'],
-            items: {
-              type: 'object',
-              required: ['description', 'unit_price'],
-              properties: {
-                description: { type: 'string', maxLength: 255 },
-                category: { type: 'string', enum: ['membership', 'training', 'equipment', 'tournament', 'other'] },
-                quantity: { type: 'integer', minimum: 1, default: 1 },
-                unit_price: { type: 'number', minimum: 0 }
-              }
-            }
-          }
-        }
-      }
-    }
-  }, adminBillingController.updateClubBillingSettings.bind(adminBillingController));
-
-  // ============================================
-  // Billing Job Management (Super Admin Only)
-  // ============================================
-
-  // Get subscriptions due for billing
-  fastify.get('/admin/billing/due-subscriptions', {
-    preHandler: [requireSuperAdmin],
-    schema: {
-      tags: ['Admin - Billing Jobs'],
-      summary: 'Get subscriptions due for billing (super admin only)',
-      description: 'View all subscriptions that are due for billing today or earlier',
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            count: { type: 'integer' },
-            subscriptions: { type: 'array' }
-          }
-        }
-      }
-    }
-  }, adminBillingController.getDueSubscriptions.bind(adminBillingController));
-
-  // Trigger billing manually
-  fastify.post('/admin/billing/trigger-billing', {
-    preHandler: [requireSuperAdmin],
-    schema: {
-      tags: ['Admin - Billing Jobs'],
-      summary: 'Manually trigger subscription billing (super admin only)',
-      description: 'Process billing for all due subscriptions or a specific subscription',
-      body: {
-        type: 'object',
-        properties: {
-          subscriptionId: { type: 'integer', description: 'Optional: specific subscription to bill' }
-        }
-      }
-    }
-  }, adminBillingController.triggerBilling.bind(adminBillingController));
-
-  // Get failed payments
-  fastify.get('/admin/billing/failed-payments', {
-    preHandler: [requireSuperAdmin],
-    schema: {
-      tags: ['Admin - Billing Jobs'],
-      summary: 'Get failed payments eligible for retry (super admin only)',
-      description: 'View all failed payments that can be retried',
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            count: { type: 'integer' },
-            payments: { type: 'array' }
-          }
-        }
-      }
-    }
-  }, adminBillingController.getFailedPayments.bind(adminBillingController));
-
-  // Retry a failed payment
-  fastify.post('/admin/billing/retry-payment', {
-    preHandler: [requireSuperAdmin],
-    schema: {
-      tags: ['Admin - Billing Jobs'],
-      summary: 'Manually retry a failed payment (super admin only)',
-      description: 'Retry a specific failed payment',
-      body: {
-        type: 'object',
-        required: ['paymentId'],
-        properties: {
-          paymentId: { type: 'integer', description: 'The payment ID to retry' }
-        }
-      }
-    }
-  }, adminBillingController.retryPayment.bind(adminBillingController));
-
   // ============================================
   // Worker Status & Management (Super Admin Only)
   // ============================================
@@ -183,8 +103,8 @@ export async function adminBillingRoutes(fastify, options) {
   fastify.get('/admin/billing/workers/status', {
     preHandler: [requireSuperAdmin],
     schema: {
-      tags: ['Admin - Billing Jobs'],
-      summary: 'Get status of all billing workers (super admin only)',
+      tags: ['Admin - Background Jobs'],
+      summary: 'Get status of all background workers (super admin only)',
       description: 'View status and last execution time for all background workers',
       response: {
         200: {
@@ -202,9 +122,9 @@ export async function adminBillingRoutes(fastify, options) {
   fastify.get('/admin/billing/workers/history', {
     preHandler: [requireSuperAdmin],
     schema: {
-      tags: ['Admin - Billing Jobs'],
+      tags: ['Admin - Background Jobs'],
       summary: 'Get execution history for all workers (super admin only)',
-      description: 'View recent execution history across all billing workers',
+      description: 'View recent execution history across all background workers',
       querystring: {
         type: 'object',
         properties: {
@@ -218,9 +138,9 @@ export async function adminBillingRoutes(fastify, options) {
   fastify.get('/admin/billing/workers/:name/history', {
     preHandler: [requireSuperAdmin],
     schema: {
-      tags: ['Admin - Billing Jobs'],
+      tags: ['Admin - Background Jobs'],
       summary: 'Get execution history for a specific worker (super admin only)',
-      description: 'View recent execution history for a billing worker',
+      description: 'View recent execution history for a background worker',
       params: {
         type: 'object',
         properties: {
@@ -237,19 +157,54 @@ export async function adminBillingRoutes(fastify, options) {
     }
   }, adminBillingController.getWorkerHistory.bind(adminBillingController));
 
+  // ============================================
+  // Subscription Management (Super Admin Only)
+  // ============================================
+
+  // Get all subscriptions with pagination and filters
+  fastify.get('/admin/billing/subscriptions', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Subscriptions'],
+      summary: 'List all subscriptions (super admin only)',
+      description: 'View all subscriptions across all clubs with pagination and filtering',
+      querystring: {
+        type: 'object',
+        properties: {
+          page: { type: 'integer', default: 1, minimum: 1 },
+          limit: { type: 'integer', default: 20, minimum: 1, maximum: 100 },
+          status: { type: 'string', enum: ['pending', 'active', 'paused', 'cancelled', 'suspended'] },
+          clubId: { type: 'integer' },
+          search: { type: 'string' },
+          hasProviderSubscription: { type: 'string', enum: ['true', 'false'] }
+        }
+      }
+    }
+  }, adminBillingController.getAllSubscriptions.bind(adminBillingController));
+
+  // Subscription sync diagnostic
+  fastify.get('/admin/billing/subscriptions/diagnostic', {
+    preHandler: [requireSuperAdmin],
+    schema: {
+      tags: ['Admin - Background Jobs'],
+      summary: 'Debug subscription sync issues (super admin only)',
+      description: 'View all subscriptions and why they do or do not need syncing to GoCardless'
+    }
+  }, adminBillingController.getSubscriptionDiagnostic.bind(adminBillingController));
+
   // Trigger a specific worker manually
   fastify.post('/admin/billing/workers/:name/trigger', {
     preHandler: [requireSuperAdmin],
     schema: {
-      tags: ['Admin - Billing Jobs'],
+      tags: ['Admin - Background Jobs'],
       summary: 'Manually trigger a specific worker (super admin only)',
-      description: 'Run a billing worker immediately instead of waiting for scheduled time',
+      description: 'Run a background worker immediately instead of waiting for scheduled time',
       params: {
         type: 'object',
         properties: {
           name: {
             type: 'string',
-            enum: ['subscription_billing', 'payment_retry', 'invoice_scheduler', 'subscription_notification'],
+            enum: ['subscription_sync', 'notification_retry'],
             description: 'Worker name to trigger'
           }
         },

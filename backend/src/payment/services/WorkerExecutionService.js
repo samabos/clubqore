@@ -94,15 +94,19 @@ export class WorkerExecutionService {
   /**
    * Get latest execution for each worker
    *
+   * Note: Most billing workers were removed as GoCardless handles payment
+   * scheduling and retries natively via Subscriptions API.
+   *
+   * Remaining workers:
+   * - subscription_sync: Syncs local subscriptions to GoCardless
+   * - notification_retry: Retries failed email/notification sends
+   *
    * @returns {Promise<Array>} Latest executions by worker
    */
   async getLatestExecutions() {
-    // Get all unique worker names
     const workers = [
-      'subscription_billing',
-      'payment_retry',
-      'invoice_scheduler',
-      'subscription_notification'
+      'subscription_sync',
+      'notification_retry'
     ];
 
     const results = [];
@@ -167,10 +171,8 @@ export class WorkerExecutionService {
    */
   getWorkerDisplayName(workerName) {
     const names = {
-      subscription_billing: 'Subscription Billing',
-      payment_retry: 'Payment Retry',
-      invoice_scheduler: 'Invoice Scheduler',
-      subscription_notification: 'Subscription Notifications'
+      subscription_sync: 'Subscription Sync',
+      notification_retry: 'Notification Retry'
     };
     return names[workerName] || workerName;
   }
@@ -181,10 +183,8 @@ export class WorkerExecutionService {
    */
   getWorkerSchedule(workerName) {
     const schedules = {
-      subscription_billing: 'Daily at 6:00 AM',
-      payment_retry: 'Every 4 hours',
-      invoice_scheduler: 'Daily at 6:00 AM',
-      subscription_notification: 'Daily at 9:00 AM'
+      subscription_sync: 'Every 5 minutes',
+      notification_retry: 'Every 15 minutes'
     };
     return schedules[workerName] || 'Unknown';
   }
